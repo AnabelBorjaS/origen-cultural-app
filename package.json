@@ -1,0 +1,10 @@
+{
+  "name": "origen-cultural-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MVP social cultural de Origen Cultural, listo para GitHub Pages.",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "check": "node --check app.js && node --check data.js && node --check service-worker.js"
+  }
+}

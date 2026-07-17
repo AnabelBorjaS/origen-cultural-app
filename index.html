@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Origen Cultural: red social cultural global para descubrir, seguir y valorar culturas vivas." />
+  <meta property="og:title" content="Origen Cultural" />
+  <meta property="og:description" content="Conectando al mundo con sus raíces culturales." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Origen Cultural</title>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido</a>
+  <div id="app-shell">
+    <header class="topbar">
+      <button class="icon-button mobile-only" id="menu-button" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <a class="brand" href="#inicio" aria-label="Origen Cultural, inicio">
+        <img src="assets/logo-lockup.svg" alt="Origen Cultural" />
+      </a>
+      <nav class="desktop-nav" aria-label="Navegación principal">
+        <a href="#inicio" data-route-link="inicio">Inicio</a>
+        <a href="#explorar" data-route-link="explorar">Explorar</a>
+        <a href="#pasaporte" data-route-link="pasaporte">Pasaporte Cultural</a>
+        <a href="#impacto" data-route-link="impacto">Impacto</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="text-button" id="language-toggle" aria-label="Cambiar idioma">EN</button>
+        <button class="icon-button" id="search-button" aria-label="Buscar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.4-3.4"></path></svg>
+        </button>
+        <button class="avatar-button" id="profile-button" aria-label="Abrir perfil">AB</button>
+      </div>
+    </header>
+
+    <aside class="mobile-drawer" id="mobile-drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <img src="assets/logo-lockup.svg" alt="Origen Cultural" />
+        <button class="icon-button" id="close-menu" aria-label="Cerrar menú">×</button>
+      </div>
+      <nav aria-label="Navegación móvil">
+        <a href="#inicio">Inicio</a><a href="#explorar">Explorar</a><a href="#pasaporte">Pasaporte Cultural</a>
+        <a href="#impacto">Impacto</a><a href="#unirse">Crear Perfil Cultural</a>
+      </nav>
+      <p class="drawer-manifesto">La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.</p>
+    </aside>
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+
+    <main id="main-content" tabindex="-1"></main>
+
+    <nav class="bottom-nav mobile-only" aria-label="Navegación inferior">
+      <a href="#inicio" data-route-link="inicio"><span aria-hidden="true">⌂</span><small>Inicio</small></a>
+      <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>Explorar</small></a>
+      <a class="create-action" href="#unirse" data-route-link="unirse"><span aria-hidden="true">＋</span><small>Crear</small></a>
+      <a href="#pasaporte" data-route-link="pasaporte"><span aria-hidden="true">◇</span><small>Pasaporte</small></a>
+      <a href="#perfil-anabel" data-route-link="perfil-anabel"><span aria-hidden="true">○</span><small>Perfil</small></a>
+    </nav>
+  </div>
+
+  <dialog id="search-dialog" class="modal">
+    <form method="dialog" class="modal-card search-modal-card">
+      <div class="modal-header"><div><p class="eyebrow">DESCUBRIR</p><h2>Busca cultura viva</h2></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div>
+      <label class="search-field"><span aria-hidden="true">⌕</span><input id="global-search" type="search" placeholder="Busca tradición, territorio, oficio o creador..." autocomplete="off" /></label>
+      <div id="search-results" class="search-results" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
