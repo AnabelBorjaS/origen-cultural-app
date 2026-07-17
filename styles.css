@@ -551,6 +551,441 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
   .upload-section { flex-direction: column; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MUNDO CULTURAL — GLOBO 3D
+═══════════════════════════════════════════════════════════════ */
+
+/* Page shell */
+.mundo-page {
+  min-height: calc(100vh - 60px);
+  background: var(--black);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+}
+
+.mundo-header {
+  padding: 60px var(--gutter) 36px;
+  max-width: 900px;
+}
+.mundo-title {
+  font-size: clamp(40px, 6vw, 72px);
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1;
+  margin: 8px 0 16px;
+  color: var(--white);
+}
+.mundo-lead {
+  font-size: 16px;
+  color: rgba(255,255,255,0.6);
+  max-width: 560px;
+  line-height: 1.65;
+}
+
+/* Body layout: globe + panel */
+.mundo-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: 0;
+  border-top: 1px solid #1f1f1f;
+}
+
+/* Globe column */
+.mundo-globe-wrap {
+  position: relative;
+  background: #050508;
+  overflow: hidden;
+  height: calc(100vh - 190px);
+  min-height: 520px;
+}
+#globe-container {
+  width: 100%;
+  height: 100%;
+}
+#globe-container canvas {
+  display: block;
+}
+
+/* Continent pills */
+.globe-ui-top {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 0 20px;
+  pointer-events: none;
+}
+.continent-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: all;
+}
+.cont-pill {
+  background: rgba(13,13,13,0.82);
+  color: rgba(255,255,255,0.55);
+  border: 1px solid #2c2c2c;
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all .2s;
+  backdrop-filter: blur(8px);
+}
+.cont-pill:hover { border-color: var(--sand); color: var(--sand); }
+.cont-pill.active { background: var(--sand); color: var(--black); border-color: var(--sand); font-weight: 700; }
+
+/* Globe controls */
+.globe-ui-bottom {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+.globe-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.globe-ctrl {
+  width: 36px; height: 36px;
+  background: rgba(13,13,13,0.88);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid #2c2c2c;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all .2s;
+  backdrop-filter: blur(8px);
+}
+.globe-ctrl:hover { border-color: var(--sand); color: var(--sand); }
+.globe-hint {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* Globe loader */
+.globe-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 20px;
+  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.globe-loader-ring {
+  width: 52px; height: 52px;
+  border: 2px solid #1f1f1f;
+  border-top-color: var(--sand);
+  border-radius: 50%;
+  animation: spin 1.1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Globe tooltip (injected by globe.gl) */
+.globe-tooltip {
+  background: rgba(0,0,0,0.88);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: sans-serif;
+  letter-spacing: 0.03em;
+  border: 1px solid #2c2c2c;
+  pointer-events: none;
+}
+
+/* ── CULTURAL PANEL ──────────────────────────────────────────── */
+.mundo-panel {
+  background: #0d0d0d;
+  border-left: 1px solid #1a1a1a;
+  height: calc(100vh - 190px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
+}
+.mundo-panel::-webkit-scrollbar { width: 4px; }
+.mundo-panel::-webkit-scrollbar-track { background: transparent; }
+.mundo-panel::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+
+/* Welcome state */
+.panel-welcome {
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.panel-welcome-icon {
+  font-size: 32px;
+  color: var(--sand);
+  margin-bottom: 4px;
+}
+.panel-welcome h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0;
+}
+.panel-welcome p { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; margin: 0; }
+
+.featured-countries {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+.featured-country {
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  transition: all .2s;
+  text-align: left;
+}
+.featured-country span:first-child { font-size: 22px; }
+.featured-country:hover { border-color: var(--sand); color: var(--white); background: #1a1a14; }
+
+/* Cultural card */
+.cultural-card { padding: 0 0 40px; }
+
+.card-header {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid #1a1a1a;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+}
+.card-flag { font-size: 44px; line-height: 1; flex-shrink: 0; }
+.card-country-name {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 400;
+  margin: 0 0 4px;
+  color: var(--white);
+}
+.card-meta { font-size: 12px; color: rgba(255,255,255,0.4); margin: 0; }
+.card-close {
+  position: absolute;
+  top: 20px; right: 20px;
+  width: 28px; height: 28px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 50%;
+  color: rgba(255,255,255,0.5);
+  font-size: 16px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.card-close:hover { border-color: var(--sand); color: var(--sand); }
+
+.card-section {
+  padding: 18px 24px 0;
+}
+.card-section-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--sand);
+  margin: 0 0 10px;
+}
+.card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.card-pill {
+  background: #161616;
+  border: 1px solid #242424;
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+}
+.card-curiosities {
+  padding: 0 0 0 16px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-curiosities li {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.6;
+}
+
+/* Creator minis */
+.card-creators {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.creator-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+.creator-mini:last-child { border-bottom: none; }
+.creator-mini-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.creator-mini-info a { color: var(--white); text-decoration: none; font-size: 13px; font-weight: 600; }
+.creator-mini-info span { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: capitalize; }
+.btn-follow-sm {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: rgba(255,255,255,0.6);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-follow-sm:hover { border-color: var(--sand); color: var(--sand); }
+.btn-follow-sm.on   { background: var(--sand); border-color: var(--sand); color: var(--black); font-weight: 700; }
+
+.card-empty-creators {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.card-empty-creators p { font-size: 12px; color: rgba(255,255,255,0.4); margin: 0; }
+
+.card-actions {
+  padding: 20px 24px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── FALLBACK MAP (low-perf) ─────────────────────────────────── */
+.fallback-globe {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #050508;
+}
+.fallback-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+}
+.fallback-banner .globe-icon { font-size: 24px; }
+.fallback-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 24px;
+  align-content: start;
+  overflow-y: auto;
+}
+.fallback-country-btn {
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 14px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all .2s;
+  color: var(--white);
+}
+.fallback-flag { font-size: 40px; }
+.fallback-country-btn strong { font-size: 14px; font-weight: 600; }
+.fallback-country-btn span:last-child { font-size: 11px; color: rgba(255,255,255,0.4); }
+.fallback-country-btn:hover,
+.fallback-country-btn.active {
+  border-color: var(--sand);
+  background: #1a1a14;
+}
+
+/* ── RESPONSIVE — TABLET ─────────────────────────────────────── */
+@media (max-width: 900px) {
+  .mundo-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  .mundo-globe-wrap {
+    height: 52vw;
+    min-height: 340px;
+    max-height: 480px;
+  }
+  .mundo-panel {
+    border-left: none;
+    border-top: 1px solid #1a1a1a;
+    height: auto;
+    max-height: none;
+  }
+  .mundo-header { padding: 40px var(--gutter) 24px; }
+  .featured-countries { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── RESPONSIVE — MOBILE ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  .mundo-header { padding: 32px 16px 20px; }
+  .mundo-lead   { font-size: 14px; }
+  .mundo-globe-wrap {
+    height: 280px;
+    min-height: 240px;
+  }
+  .continent-pills { gap: 4px; }
+  .cont-pill { padding: 4px 10px; font-size: 10px; }
+  .panel-welcome   { padding: 28px 16px; }
+  .card-header     { padding: 20px 16px 16px; }
+  .card-section    { padding: 16px 16px 0; }
+  .card-actions    { padding: 16px 16px 0; }
+  .card-flag       { font-size: 36px; }
+  .card-country-name { font-size: 22px; }
+  .featured-countries { grid-template-columns: 1fr 1fr; }
+  .fallback-grid { grid-template-columns: 1fr 1fr; padding: 16px; gap: 8px; }
+  .globe-ui-top  { padding: 0 10px; }
+  .globe-ui-bottom { bottom: 12px; left: 12px; }
+  .globe-ctrl { width: 32px; height: 32px; font-size: 14px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }

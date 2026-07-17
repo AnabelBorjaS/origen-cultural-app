@@ -406,17 +406,19 @@
       if (dNav) dNav.innerHTML = `
         <a href="#feed"      data-route-link="feed">Feed</a>
         <a href="#explorar"  data-route-link="explorar">Explorar</a>
+        <a href="#mundo"     data-route-link="mundo">Mundo Cultural</a>
         <a href="#crear"     data-route-link="crear">Crear</a>
         <a href="#guardados" data-route-link="guardados">Guardados</a>`;
       if (dDrawer) dDrawer.innerHTML = `
         <a href="#feed">Feed</a><a href="#explorar">Explorar</a>
+        <a href="#mundo">Mundo Cultural</a>
         <a href="#crear">Crear publicación</a>
         <a href="#guardados">Guardados</a><a href="#mi-perfil">Mi perfil</a>`;
       if (dBottom) dBottom.innerHTML = `
         <a href="#feed"      data-route-link="feed"><span>⌂</span><small>Feed</small></a>
         <a href="#explorar"  data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
         <a class="create-action" href="#crear" data-route-link="crear"><span>＋</span><small>Crear</small></a>
-        <a href="#guardados" data-route-link="guardados"><span>◇</span><small>Guardados</small></a>
+        <a href="#mundo"     data-route-link="mundo"><span>🌍</span><small>Mundo</small></a>
         <a href="#mi-perfil" data-route-link="mi-perfil"><span>○</span><small>Perfil</small></a>`;
       if (profileBtn) {
         const init = (user.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -434,17 +436,19 @@
       if (dNav) dNav.innerHTML = `
         <a href="#inicio"   data-route-link="inicio">Inicio</a>
         <a href="#explorar" data-route-link="explorar">Explorar</a>
+        <a href="#mundo"    data-route-link="mundo">Mundo Cultural</a>
         <a href="#pasaporte" data-route-link="pasaporte">Pasaporte Cultural</a>
         <a href="#impacto"  data-route-link="impacto">Impacto</a>`;
       if (dDrawer) dDrawer.innerHTML = `
         <a href="#inicio">Inicio</a><a href="#explorar">Explorar</a>
+        <a href="#mundo">Mundo Cultural</a>
         <a href="#pasaporte">Pasaporte Cultural</a>
         <a href="#impacto">Impacto</a><a href="#registro">Crear Perfil Cultural</a>`;
       if (dBottom) dBottom.innerHTML = `
         <a href="#inicio"   data-route-link="inicio"><span>⌂</span><small>Inicio</small></a>
         <a href="#explorar" data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
         <a class="create-action" href="#registro" data-route-link="registro"><span>＋</span><small>Crear</small></a>
-        <a href="#pasaporte" data-route-link="pasaporte"><span>◇</span><small>Pasaporte</small></a>
+        <a href="#mundo"    data-route-link="mundo"><span>🌍</span><small>Mundo</small></a>
         <a href="#login"    data-route-link="login"><span>○</span><small>Entrar</small></a>`;
       if (profileBtn) {
         profileBtn.style.backgroundImage = '';
@@ -1008,14 +1012,23 @@
   function currentRoute() { return location.hash.replace(/^#\/?/, '') || (isAuth() ? 'feed' : 'inicio'); }
   function go(route)       { location.hash = '#' + route; }
 
+  let _prevRoute = '';
+
   function render(route, scroll = true) {
     route = route !== undefined ? route : currentRoute();
     refreshSession();
+
+    // Destroy globe when leaving Mundo Cultural
+    if (_prevRoute === 'mundo' && route !== 'mundo' && window.MundoCultural) {
+      window.MundoCultural.destroy();
+    }
+    _prevRoute = route;
 
     let html = '';
     if      (route === 'inicio')                  html = isAuth() ? feedView()            : landingView();
     else if (route === 'feed')                    html = feedView();
     else if (route === 'explorar')                html = exploreView();
+    else if (route === 'mundo')                   html = mundoView();
     else if (route.startsWith('perfil/'))         html = creatorProfileView(route.split('/')[1]);
     else if (route.startsWith('usuario/'))        html = userProfileView(route.split('/')[1]);
     else if (route === 'mi-perfil')               html = myProfileView();
@@ -1045,8 +1058,85 @@
     if (route === 'login')         bindLogin();
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
+    if (route === 'mundo')         bindMundo();
     bindFollowButtons();
     bindLogoutBtn();
+  }
+
+  /* ── MUNDO CULTURAL ─────────────────────────────────────────── */
+  function mundoView() {
+    const continents = ['Todos','América del Sur','América del Norte','Asia','Oceanía','Europa','África'];
+    const featured   = [
+      { key:'ecuador',   flag:'🇪🇨', name:'Ecuador'   },
+      { key:'australia', flag:'🇦🇺', name:'Australia'  },
+      { key:'peru',      flag:'🇵🇪', name:'Perú'       },
+      { key:'bolivia',   flag:'🇧🇴', name:'Bolivia'    },
+      { key:'mexico',    flag:'🇲🇽', name:'México'     },
+      { key:'japan',     flag:'🇯🇵', name:'Japón'      },
+    ];
+    return `
+      <div class="mundo-page">
+        <div class="mundo-header">
+          <p class="eyebrow">EXPLORACIÓN CULTURAL</p>
+          <h1 class="mundo-title">Mundo Cultural</h1>
+          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus creadores.</p>
+        </div>
+        <div class="mundo-body">
+          <div class="mundo-globe-wrap">
+            <div id="globe-container"></div>
+            <div class="globe-ui-top">
+              <div class="continent-pills">
+                ${continents.map((c, i) => `<button class="cont-pill${i===0?' active':''}" data-cont="${c}">${c}</button>`).join('')}
+              </div>
+            </div>
+            <div class="globe-ui-bottom">
+              <div class="globe-controls">
+                <button id="globe-zoom-in"  class="globe-ctrl" title="Acercar">+</button>
+                <button id="globe-pause"    class="globe-ctrl" title="Pausar rotación">⏸</button>
+                <button id="globe-reset"    class="globe-ctrl" title="Vista inicial">⟳</button>
+                <button id="globe-zoom-out" class="globe-ctrl" title="Alejar">−</button>
+              </div>
+              <p class="globe-hint">Gira · Acerca · Toca un país</p>
+            </div>
+          </div>
+          <aside class="mundo-panel" id="mundo-panel">
+            <div class="panel-welcome">
+              <div class="panel-welcome-icon">◎</div>
+              <h3>Selecciona un territorio</h3>
+              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los creadores registrados en Origen Cultural.</p>
+              <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
+              <div class="featured-countries">
+                ${featured.map(f => `<button class="featured-country" data-fc="${f.key}"><span>${f.flag}</span><span>${f.name}</span></button>`).join('')}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>`;
+  }
+
+  function bindMundo() {
+    const globeEl = document.getElementById('globe-container');
+    const panelEl = document.getElementById('mundo-panel');
+    if (!globeEl || !panelEl || typeof MundoCultural === 'undefined') return;
+
+    MundoCultural.init(globeEl, panelEl);
+
+    document.getElementById('globe-pause')?.addEventListener('click',    () => MundoCultural.toggleRotation());
+    document.getElementById('globe-reset')?.addEventListener('click',    () => MundoCultural.resetView());
+    document.getElementById('globe-zoom-in')?.addEventListener('click',  () => MundoCultural.zoom(0.7));
+    document.getElementById('globe-zoom-out')?.addEventListener('click', () => MundoCultural.zoom(1.4));
+
+    document.querySelectorAll('.cont-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cont-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        MundoCultural.focusContinent(btn.dataset.cont);
+      });
+    });
+
+    panelEl.querySelectorAll('[data-fc]').forEach(btn => {
+      btn.addEventListener('click', () => MundoCultural.selectCountry(btn.dataset.fc));
+    });
   }
 
   /* Post interactions (like, comment, save, share, report, carousel) */
