@@ -16,8 +16,8 @@ window.ORIGEN_DATA = {
       links: { instagram: "https://www.instagram.com/origen.cultural", email: "mailto:info.origencultural@gmail.com" },
       followers: 1284,
       posts: [
-        { image: "assets/images/embroidery.jpg", title: "El tiempo que vive en cada puntada", text: "Bordar también es recordar. Cada color conserva una historia que merece ser contada por quienes la mantienen viva." },
-        { image: "assets/images/mural.jpg", title: "Territorio que habla", text: "Los símbolos de una comunidad también habitan sus calles, sus paredes y sus encuentros." }
+        { image: "assets/images/embroidery.jpg", title: "El tiempo que vive en cada puntada", text: "Bordar también es recordar. Cada color conserva una historia que merece ser contada." },
+        { image: "assets/images/mural.jpg", title: "Territorio que habla", text: "Los símbolos de una comunidad habitan sus calles, paredes y encuentros." }
       ]
     },
     {
@@ -104,5 +104,111 @@ window.ORIGEN_DATA = {
     { value: "01", label: "País en validación inicial" },
     { value: "02", label: "Rutas principales del MVP" },
     { value: "100%", label: "Conexión directa y autónoma" }
+  ],
+  posts: [
+    {
+      id: "p1",
+      authorId: "pakarina",
+      type: "photo",
+      media: ["assets/images/embroidery.jpg"],
+      title: "El tiempo que vive en cada puntada",
+      description: "Bordar también es recordar. Cada color conserva una historia que merece ser contada por quienes la mantienen viva. Este tejido tardó tres semanas en completarse, sosteniendo el hilo de cinco generaciones.",
+      category: "Artesanía y tradición",
+      territory: "Yaruquí, Ecuador",
+      tags: ["Bordado", "Textiles", "Memoria viva"],
+      timestamp: "2026-07-16T10:30:00Z",
+      likes: 234
+    },
+    {
+      id: "p2",
+      authorId: "chawar",
+      type: "photo",
+      media: ["assets/images/chawar.jpg"],
+      title: "Del penco a la memoria",
+      description: "Una tradición que une territorio, saber y trabajo humano. El agave andino ha sostenido comunidades enteras durante siglos. Hoy buscamos que esa sabiduría perviva y sea reconocida globalmente.",
+      category: "Gastronomía ancestral",
+      territory: "Pichincha, Ecuador",
+      tags: ["Agave andino", "Gastronomía", "Mujeres creadoras"],
+      timestamp: "2026-07-16T07:15:00Z",
+      likes: 189
+    },
+    {
+      id: "p3",
+      authorId: "yaruqui-vivo",
+      type: "carousel",
+      media: ["assets/images/territory.jpg", "assets/images/caves.jpg", "assets/images/landscape.jpg"],
+      title: "Yaruquí desde adentro",
+      description: "Un recorrido fotográfico por los espacios, paisajes y memorias que definen nuestra identidad colectiva. Cada imagen es un capítulo de una historia que se construye cada día.",
+      category: "Territorio y memoria",
+      territory: "Yaruquí, Ecuador",
+      tags: ["Territorio", "Patrimonio vivo", "Comunidad"],
+      timestamp: "2026-07-15T15:45:00Z",
+      likes: 312
+    },
+    {
+      id: "p4",
+      authorId: "aji-de-piedra",
+      type: "photo",
+      media: ["assets/images/gastronomy.jpg"],
+      title: "La cultura alrededor de la mesa",
+      description: "Una receta puede guardar el mapa afectivo de toda una comunidad. Nuestros platos no solo alimentan: narran. Ingredientes del territorio, manos que recuerdan, sabores que identifican.",
+      category: "Gastronomía tradicional",
+      territory: "Yaruquí, Ecuador",
+      tags: ["Cocina tradicional", "Recetas", "Hospitalidad"],
+      timestamp: "2026-07-15T12:00:00Z",
+      likes: 156
+    },
+    {
+      id: "p5",
+      authorId: "danza-andina",
+      type: "photo",
+      media: ["assets/images/dance.jpg"],
+      title: "Cuando una comunidad baila",
+      description: "El movimiento se convierte en lenguaje, encuentro y continuidad. La danza andina no es espectáculo: es rito, es memoria colectiva, es el cuerpo recordando lo que las palabras no alcanzan a decir.",
+      category: "Música y danza",
+      territory: "Quito, Ecuador",
+      tags: ["Danza", "Música", "Celebración"],
+      timestamp: "2026-07-14T19:30:00Z",
+      likes: 421
+    },
+    {
+      id: "p6",
+      authorId: "pakarina",
+      type: "text",
+      media: [],
+      title: "Sobre por qué bordamos",
+      description: "Bordar no es solo tejer. Es comunicarse con los ancestros. Cuando una bordadora de Pakarina toma el hilo, no solo crea una pieza: mantiene una conversación que comenzó hace siglos. Cada puntada tiene una intención. Cada color, un significado. Cada patrón, una historia de la comunidad.",
+      category: "Artesanía y tradición",
+      territory: "Yaruquí, Ecuador",
+      tags: ["Reflexión", "Cultura", "Identidad"],
+      timestamp: "2026-07-14T08:00:00Z",
+      likes: 98
+    },
+    {
+      id: "p7",
+      authorId: "yaruqui-vivo",
+      type: "photo",
+      media: ["assets/images/mural.jpg"],
+      title: "Las paredes también hablan",
+      description: "Los murales de Yaruquí son páginas de una historia colectiva escrita en color. Arte que transforma espacios comunes en lugares de memoria y orgullo cultural.",
+      category: "Arte y territorio",
+      territory: "Yaruquí, Ecuador",
+      tags: ["Arte urbano", "Mural", "Identidad"],
+      timestamp: "2026-07-13T11:20:00Z",
+      likes: 267
+    },
+    {
+      id: "p8",
+      authorId: "chawar",
+      type: "carousel",
+      media: ["assets/images/landscape.jpg", "assets/images/territory.jpg"],
+      title: "El paisaje del agave",
+      description: "Recorrimos el territorio para documentar los campos donde crece el penco andino. Un ecosistema cultural y natural que sostiene prácticas ancestrales en toda la región.",
+      category: "Gastronomía ancestral",
+      territory: "Pichincha, Ecuador",
+      tags: ["Territorio", "Naturaleza", "Sostenibilidad"],
+      timestamp: "2026-07-12T16:00:00Z",
+      likes: 143
+    }
   ]
 };

@@ -1,138 +1,980 @@
+// ORIGEN Cultural — Red Social Cultural Demo
+// localStorage-based · Supabase-ready architecture
 (() => {
+  'use strict';
+
+  /* ═══════════════════════════════════════════════════════════
+     SEED DATA
+  ═══════════════════════════════════════════════════════════ */
   const { creators, categories, impact } = window.ORIGEN_DATA;
-  const app = document.getElementById('main-content');
-  const toast = document.getElementById('toast');
-  const searchDialog = document.getElementById('search-dialog');
+  const SEED_POSTS = window.ORIGEN_DATA.posts || [];
+
+  /* ═══════════════════════════════════════════════════════════
+     DOM REFS
+  ═══════════════════════════════════════════════════════════ */
+  const $app    = document.getElementById('main-content');
+  const $toast  = document.getElementById('toast');
+  const $search = document.getElementById('search-dialog');
+
+  /* ═══════════════════════════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════════════════════════ */
   const state = {
     lang: localStorage.getItem('origen-lang') || 'es',
-    favorites: new Set(JSON.parse(localStorage.getItem('origen-favorites') || '[]')),
-    following: new Set(JSON.parse(localStorage.getItem('origen-following') || '[]')),
     activeCategory: 'Todos',
-    query: ''
+    query: '',
+    regStep: 1,
+    regData: {},
+    createData: { type: 'photo', media: [], tags: [] },
+    openComments: new Set(),
+    carIdx: {},
+    editAvatar: null,
+    editCover: null,
   };
 
+  /* ═══════════════════════════════════════════════════════════
+     LOCAL DB (localStorage abstraction — swap for Supabase)
+  ═══════════════════════════════════════════════════════════ */
+  const DB = {
+    get(k, d)    { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v)    { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { showToast('Almacenamiento lleno. Elimina imágenes para continuar.'); return false; } },
+    users()      { return this.get('oc-users', {}); },
+    setUsers(u)  { this.set('oc-users', u); },
+    session()    { return this.get('oc-session', null); },
+    setSession(u){ this.set('oc-session', u); },
+    clearSess()  { localStorage.removeItem('oc-session'); },
+    posts()      { return this.get('oc-posts', []); },
+    setPosts(p)  { this.set('oc-posts', p); },
+    likes()      { return this.get('oc-likes', {}); },
+    setLikes(l)  { this.set('oc-likes', l); },
+    comments()   { return this.get('oc-comments', {}); },
+    setComments(c){ this.set('oc-comments', c); },
+    saves()      { return this.get('oc-saves', {}); },
+    setSaves(s)  { this.set('oc-saves', s); },
+    follows()    { return this.get('oc-follows', {}); },
+    setFollows(f){ this.set('oc-follows', f); },
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     COPY / i18n
+  ═══════════════════════════════════════════════════════════ */
   const copy = {
     es: {
-      home: 'Inicio', explore: 'Explorar', passport: 'Pasaporte Cultural', impact: 'Impacto',
       tagline: 'Conectando al mundo con sus raíces culturales.',
       intro: 'La red social cultural global donde personas, comunidades, negocios y organizaciones muestran quiénes son, qué representan y qué ofrecen al mundo.',
       exploreCta: 'Explorar culturas', createCta: 'Crear Perfil Cultural',
       visible: 'Origen Cultural no vende cultura: hace visible a quienes la mantienen viva.',
       manifest: 'La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.',
-      featured: 'Historias culturales destacadas', featuredBody: 'Descubre perfiles creados para presentar la cultura con contexto, belleza, dignidad y conexión directa.',
+      featured: 'Historias culturales destacadas',
+      featuredBody: 'Descubre perfiles creados para presentar la cultura con contexto, belleza, dignidad y conexión directa.',
       seeAll: 'Ver todos', pilot: 'Piloto Ecuador · visión global',
-      creatorsTitle: 'Cultura viva, contada por sus protagonistas', creatorsBody: 'Explora perfiles de personas, comunidades y negocios que preservan, practican, recrean y comparten cultura.',
-      impactTitle: 'Construyendo una infraestructura cultural global', impactBody: 'El piloto valida perfiles, descubrimiento y contacto directo antes de escalar funcionalidades sociales y monetización ética.',
-      joinTitle: 'Tu historia cultural merece ser encontrada.', joinBody: 'Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.',
+      creatorsTitle: 'Cultura viva, contada por sus protagonistas',
+      creatorsBody: 'Explora perfiles de personas, comunidades y negocios que preservan, practican, recrean y comparten cultura.',
+      impactTitle: 'Construyendo una infraestructura cultural global',
+      impactBody: 'El piloto valida perfiles, descubrimiento y contacto directo antes de escalar funcionalidades sociales y monetización ética.',
       follow: 'Seguir', following: 'Siguiendo', save: 'Guardar', saved: 'Guardado', profile: 'Ver perfil',
-      searchPlaceholder: 'Busca por cultura, tradición, territorio o creador', noResults: 'No encontramos perfiles con esos criterios.',
-      discover: 'Descubre culturas vivas', discoverSub: 'Busca por país, ciudad, categoría, tradición, oficio u oferta cultural.',
-      passportTitle: 'Mi Pasaporte Cultural', passportSub: 'Una trayectoria personal de culturas descubiertas, perfiles guardados y aprendizajes compartidos.',
-      creatorJoin: 'Creador Cultural', explorerJoin: 'Explorador Cultural', joinHeading: 'Empieza tu camino en Origen Cultural', joinIntro: 'Elige cómo deseas participar. Esta demostración guarda la información solo en tu navegador.',
-      impactPage: 'Impacto con dignidad cultural', impactPageSub: 'Medimos crecimiento sin reducir la cultura a una transacción.',
+      searchPlaceholder: 'Busca por cultura, tradición, territorio o creador',
+      noResults: 'No encontramos perfiles con esos criterios.',
+      discover: 'Descubre culturas vivas',
+      discoverSub: 'Busca por país, ciudad, categoría, tradición, oficio u oferta cultural.',
+      passportTitle: 'Mi Pasaporte Cultural',
+      passportSub: 'Una trayectoria personal de culturas descubiertas, perfiles guardados y aprendizajes compartidos.',
+      impactPage: 'Impacto con dignidad cultural',
+      impactPageSub: 'Medimos crecimiento sin reducir la cultura a una transacción.',
     },
     en: {
-      home: 'Home', explore: 'Explore', passport: 'Cultural Passport', impact: 'Impact',
       tagline: 'Connecting the world with its cultural roots.',
       intro: 'The global cultural social network where people, communities, businesses and organisations show who they are, what they represent and what they offer the world.',
       exploreCta: 'Explore cultures', createCta: 'Create Cultural Profile',
       visible: 'Origen Cultural does not sell culture: it makes visible those who keep it alive.',
       manifest: 'Culture is not just another product. It is identity, memory, knowledge and future.',
-      featured: 'Featured cultural stories', featuredBody: 'Discover profiles designed to present culture with context, beauty, dignity and direct connection.',
+      featured: 'Featured cultural stories',
+      featuredBody: 'Discover profiles designed to present culture with context, beauty, dignity and direct connection.',
       seeAll: 'View all', pilot: 'Ecuador pilot · global vision',
-      creatorsTitle: 'Living culture, told by its protagonists', creatorsBody: 'Explore profiles of people, communities and businesses that preserve, practise, recreate and share culture.',
-      impactTitle: 'Building global cultural infrastructure', impactBody: 'The pilot validates profiles, discovery and direct contact before scaling social features and ethical monetisation.',
-      joinTitle: 'Your cultural story deserves to be found.', joinBody: 'Build a premium digital presence, keep control of your narrative and connect with explorers and allies around the world.',
+      creatorsTitle: 'Living culture, told by its protagonists',
+      creatorsBody: 'Explore profiles of people, communities and businesses that preserve, practise, recreate and share culture.',
+      impactTitle: 'Building global cultural infrastructure',
+      impactBody: 'The pilot validates profiles, discovery and direct contact before scaling social features and ethical monetisation.',
       follow: 'Follow', following: 'Following', save: 'Save', saved: 'Saved', profile: 'View profile',
-      searchPlaceholder: 'Search culture, tradition, territory or creator', noResults: 'No profiles match those criteria.',
-      discover: 'Discover living cultures', discoverSub: 'Search by country, city, category, tradition, craft or cultural offering.',
-      passportTitle: 'My Cultural Passport', passportSub: 'A personal journey of cultures discovered, profiles saved and learning shared.',
-      creatorJoin: 'Cultural Creator', explorerJoin: 'Cultural Explorer', joinHeading: 'Start your journey in Origen Cultural', joinIntro: 'Choose how you want to participate. This demonstration stores information only in your browser.',
-      impactPage: 'Impact with cultural dignity', impactPageSub: 'We measure growth without reducing culture to a transaction.',
+      searchPlaceholder: 'Search culture, tradition, territory or creator',
+      noResults: 'No profiles match those criteria.',
+      discover: 'Discover living cultures',
+      discoverSub: 'Search by country, city, category, tradition, craft or cultural offering.',
+      passportTitle: 'My Cultural Passport',
+      passportSub: 'A personal journey of cultures discovered, profiles saved and learning shared.',
+      impactPage: 'Impact with cultural dignity',
+      impactPageSub: 'We measure growth without reducing culture to a transaction.',
     }
   };
-  const t = key => copy[state.lang][key] || key;
+  const t = k => (copy[state.lang] || copy.es)[k] || k;
 
-  function saveState() {
-    localStorage.setItem('origen-favorites', JSON.stringify([...state.favorites]));
-    localStorage.setItem('origen-following', JSON.stringify([...state.following]));
+  /* ═══════════════════════════════════════════════════════════
+     UTILS
+  ═══════════════════════════════════════════════════════════ */
+  function showToast(msg, ms = 2800) {
+    $toast.textContent = msg;
+    $toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => $toast.classList.remove('show'), ms);
   }
-  function showToast(message) {
-    toast.textContent = message;
-    toast.classList.add('show');
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function esc(s) { const d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+  function timeAgo(ts) {
+    const s = (Date.now() - new Date(ts).getTime()) / 1000;
+    if (s < 60)     return 'ahora';
+    if (s < 3600)   return `${~~(s / 60)}m`;
+    if (s < 86400)  return `${~~(s / 3600)}h`;
+    if (s < 604800) return `${~~(s / 86400)}d`;
+    return new Date(ts).toLocaleDateString('es', { day: 'numeric', month: 'short' });
   }
-  function verifiedBadge(c) { return c.verified ? '<span class="verified" title="Verificación Cultural">✓</span>' : ''; }
+  async function resizeImg(file, maxW = 900, q = 0.78) {
+    return new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const sc = Math.min(1, maxW / img.width);
+          const c  = document.createElement('canvas');
+          c.width  = img.width  * sc;
+          c.height = img.height * sc;
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', q));
+        };
+        img.src = e.target.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     AUTH
+  ═══════════════════════════════════════════════════════════ */
+  const me     = () => DB.session();
+  const isAuth = () => !!me();
+
+  function doLogin(email, pw) {
+    const users = DB.users();
+    const user  = Object.values(users).find(u => u.email === email && u.password === pw);
+    if (!user) return false;
+    DB.setSession(user);
+    return true;
+  }
+  function doRegister(data) {
+    const users = DB.users();
+    if (Object.values(users).find(u => u.email === data.email))
+      return { ok: false, error: 'Este correo ya está registrado.' };
+    const user = { ...data, id: uid(), createdAt: new Date().toISOString() };
+    users[user.id] = user;
+    DB.setUsers(users);
+    DB.setSession(user);
+    return { ok: true, user };
+  }
+  function doLogout() { DB.clearSess(); updateShell(); go('inicio'); }
+  function refreshSession() {
+    const u = me(); if (!u) return;
+    const users = DB.users();
+    if (users[u.id]) DB.setSession(users[u.id]);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PROFILES
+  ═══════════════════════════════════════════════════════════ */
+  function getProfile(id) {
+    const c = creators.find(x => x.id === id);
+    if (c) return { ...c, _kind: 'creator' };
+    const u = DB.users()[id];
+    return u ? { ...u, _kind: 'user' } : null;
+  }
+  function avatarEl(profile, sz = 'md') {
+    if (!profile) return `<div class="ava ava-${sz} ava-init">OC</div>`;
+    const init = (profile.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const src  = profile.avatar || profile.image;
+    if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
+    return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" onerror="this.parentElement.classList.add('ava-init');this.parentElement.textContent='${init}';"></div>`;
+  }
+  function verBadge(p) { return p && p.verified ? '<span class="verified" title="Verificación Cultural">✓</span>' : ''; }
+
+  /* ═══════════════════════════════════════════════════════════
+     POSTS
+  ═══════════════════════════════════════════════════════════ */
+  function allPosts() {
+    return [...DB.posts(), ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }
+  function feedPosts() {
+    const user    = me();
+    const all     = allPosts();
+    if (!user) return all.slice(0, 10);
+    const follows = DB.follows()[user.id] || [];
+    const mine    = all.filter(p => p.authorId === user.id || follows.includes(p.authorId));
+    const disc    = all.filter(p => p.authorId !== user.id && !follows.includes(p.authorId));
+    return [...mine, ...disc];
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     SOCIAL LINKS COMPONENT
+  ═══════════════════════════════════════════════════════════ */
+  function socialLinksHtml(profile) {
+    if (!profile.links || !Object.keys(profile.links).length) return '';
+    const icons = { instagram:'IG', facebook:'FB', tiktok:'TK', youtube:'YT', linkedin:'LI', whatsapp:'WA', email:'✉', web:'↗' };
+    const entries = Object.entries(profile.links).filter(([, v]) => v && v.trim());
+    if (!entries.length) return '';
+    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     POST CARD COMPONENT
+  ═══════════════════════════════════════════════════════════ */
+  function postCard(post) {
+    const user   = me();
+    const author = getProfile(post.authorId);
+    if (!author) return '';
+
+    const likes      = DB.likes();
+    const postLikes  = likes[post.id] || [];
+    const totalLikes = postLikes.length + (postLikes.length === 0 ? (post.likes || 0) : 0);
+    const liked      = !!(user && postLikes.includes(user.id));
+
+    const allComs = DB.comments();
+    const coms    = allComs[post.id] || [];
+
+    const savesMap  = DB.saves();
+    const saved     = !!(user && (savesMap[user.id] || []).includes(post.id));
+
+    const followsMap = DB.follows();
+    const myFollows  = user ? (followsMap[user.id] || []) : [];
+    const following  = myFollows.includes(post.authorId);
+    const isOwn      = !!(user && user.id === post.authorId);
+
+    const showComs = state.openComments.has(post.id);
+    const cidx     = Math.min(state.carIdx[post.id] || 0, (post.media || []).length - 1 || 0);
+
+    /* media */
+    let media = '';
+    if ((post.type === 'photo' || post.type === 'carousel') && post.media && post.media.length) {
+      const isCarousel = post.type === 'carousel' && post.media.length > 1;
+      media = `<div class="post-media${isCarousel ? ' is-carousel' : ''}" data-pid="${post.id}">
+        <img src="${post.media[cidx]}" alt="${esc(post.title)}" loading="lazy">
+        ${isCarousel ? `
+          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${post.id}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
+          ${cidx > 0 ? `<button class="car-btn car-l" data-car="${post.id}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
+          ${cidx < post.media.length - 1 ? `<button class="car-btn car-r" data-car="${post.id}" data-cdir="1" aria-label="Siguiente">›</button>` : ''}
+          <span class="car-count">${cidx + 1} / ${post.media.length}</span>
+        ` : ''}
+      </div>`;
+    } else if (post.type === 'video' && post.media && post.media.length) {
+      media = `<div class="post-media"><video controls preload="metadata" src="${post.media[0]}" style="width:100%;display:block;max-height:480px"></video></div>`;
+    }
+
+    const authorHref = author._kind === 'creator' ? `#perfil/${author.id}` : `#usuario/${author.id}`;
+
+    return `<article class="post-card${post.type === 'text' ? ' post-text' : ''}" data-pid="${post.id}">
+      <div class="post-head">
+        <a class="post-author-link" href="${authorHref}">
+          ${avatarEl(author, 'sm')}
+          <div class="post-author-info">
+            <strong>${esc(author.name)} ${verBadge(author)}</strong>
+            <span>${esc(author.type || author.accountType || 'Origen Cultural')}${post.territory ? ' · ' + esc(post.territory) : ''} · ${timeAgo(post.timestamp)}</span>
+          </div>
+        </a>
+        <div class="post-head-r">
+          ${user && !isOwn && !following ? `<button class="btn-follow-sm" data-fuser="${post.authorId}">+ Seguir</button>` : ''}
+          ${user && !isOwn && following  ? `<button class="btn-follow-sm on" data-fuser="${post.authorId}">Siguiendo</button>` : ''}
+          <button class="post-more-btn" data-pmore="${post.id}" aria-label="Más opciones">···</button>
+        </div>
+      </div>
+      ${media}
+      <div class="post-body${post.type === 'text' ? ' post-text-body' : ''}">
+        ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
+        <h3 class="post-title">${esc(post.title)}</h3>
+        <p class="post-desc">${esc(post.description)}</p>
+        ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="post-actions">
+        <button class="pact like-btn${liked ? ' on' : ''}" data-like="${post.id}" ${!user ? 'data-needs-auth' : ''} aria-label="Me gusta">
+          ${liked ? '♥' : '♡'}<span>${totalLikes}</span>
+        </button>
+        <button class="pact com-btn" data-tcoms="${post.id}" aria-label="Comentarios">
+          ◎<span>${coms.length}</span>
+        </button>
+        <button class="pact save-btn${saved ? ' on' : ''}" data-save="${post.id}" ${!user ? 'data-needs-auth' : ''} aria-label="${saved ? 'Guardado' : 'Guardar'}">
+          ${saved ? '◆' : '◇'}
+        </button>
+        <button class="pact share-btn" data-share="${post.id}" aria-label="Compartir">↗</button>
+        <button class="pact report-btn" data-report="${post.id}" aria-label="Reportar" style="margin-left:auto">⚑</button>
+      </div>
+      ${showComs ? commentBlock(post.id, coms) : ''}
+    </article>`;
+  }
+
+  function commentBlock(postId, coms) {
+    const user = me();
+    return `<div class="com-section" id="coms-${postId}">
+      ${coms.slice(-10).map(c => {
+        const a = getProfile(c.authorId);
+        return `<div class="com-row">
+          ${avatarEl(a, 'xs')}
+          <div class="com-bubble">
+            <strong>${esc(a ? a.name : 'Usuario')}</strong>
+            <p>${esc(c.text)}</p>
+            <time>${timeAgo(c.ts)}</time>
+          </div>
+        </div>`;
+      }).join('')}
+      ${user
+        ? `<form class="com-form" data-cf="${postId}">
+            ${avatarEl(user, 'xs')}
+            <input type="text" name="text" placeholder="Añade un comentario..." required autocomplete="off">
+            <button type="submit" aria-label="Publicar">→</button>
+          </form>`
+        : `<p class="com-login"><a href="#login">Inicia sesión</a> para comentar.</p>`}
+    </div>`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     STORIES ROW
+  ═══════════════════════════════════════════════════════════ */
+  function storiesRow() {
+    const user     = me();
+    const myFollow = user ? (DB.follows()[user.id] || []) : [];
+    const all      = [...creators, ...Object.values(DB.users())].slice(0, 14);
+    return `<div class="stories-row"><div class="stories-scroll">
+      ${user ? `<a class="story-item" href="#mi-perfil">
+        <div class="story-ring own">${avatarEl(user, 'story')}</div>
+        <span>Yo</span>
+      </a>` : ''}
+      ${all.map(a => {
+        const isCreator = !!creators.find(c => c.id === a.id);
+        const href      = isCreator ? `#perfil/${a.id}` : `#usuario/${a.id}`;
+        const ring      = myFollow.includes(a.id) ? ' following' : '';
+        return `<a class="story-item" href="${href}">
+          <div class="story-ring${ring}">${avatarEl(a, 'story')}</div>
+          <span>${esc((a.name || '').split(' ')[0])}</span>
+        </a>`;
+      }).join('')}
+    </div></div>`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     CREATOR CARD (directory)
+  ═══════════════════════════════════════════════════════════ */
   function creatorCard(c) {
-    const saved = state.favorites.has(c.id);
+    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const saved = favs.includes(c.id);
     return `<article class="creator-card">
       <div class="creator-card-image">
         <a href="#perfil/${c.id}" aria-label="${t('profile')}: ${c.name}"><img src="${c.image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
-        <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-label="${saved ? t('saved') : t('save')} ${c.name}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
+        <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
       </div>
       <div class="creator-card-body">
-        <div class="creator-meta"><span>${c.type}</span><span>${verifiedBadge(c)} ${c.location}</span></div>
+        <div class="creator-meta"><span>${c.type}</span><span>${verBadge(c)} ${c.location}</span></div>
         <h3><a href="#perfil/${c.id}">${c.name}</a></h3>
         <p>${c.short}</p>
-        <div class="creator-tags">${c.tags.map(tag => `<span>${tag}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers)} seguidores</span><a class="link-arrow" href="#perfil/${c.id}">${t('profile')}</a></div>
+        <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
+        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers)} seguidores</span><a class="link-arrow" href="#perfil/${c.id}">${t('profile')}</a></div>
       </div>
     </article>`;
   }
+
+  /* ═══════════════════════════════════════════════════════════
+     FOOTER
+  ═══════════════════════════════════════════════════════════ */
   function footer() {
     return `<footer class="footer"><div class="footer-inner">
       <div class="footer-top">
         <div class="footer-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"><p>${t('tagline')}<br><br>Una red social cultural para descubrir, seguir y valorar culturas vivas.</p></div>
-        <div><h4>Explorar</h4><div class="footer-links"><a href="#explorar">Perfiles culturales</a><a href="#inicio">Historias</a><a href="#pasaporte">Pasaporte Cultural</a></div></div>
-        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#unirse">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
+        <div><h4>Explorar</h4><div class="footer-links"><a href="#explorar">Perfiles culturales</a><a href="#feed">Feed cultural</a><a href="#pasaporte">Pasaporte Cultural</a></div></div>
+        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
         <div><h4>Social</h4><div class="footer-links"><a href="https://www.instagram.com/origen.cultural" target="_blank" rel="noreferrer">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></div></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Diseñado con dignidad cultural · Piloto Ecuador · Visión global</span></div>
+      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Demo funcional · Versión productiva: Supabase</span></div>
     </div></footer>`;
   }
-  function homeView() {
-    const featured = creators.slice(0,5);
+
+  /* ═══════════════════════════════════════════════════════════
+     SHELL / NAV
+  ═══════════════════════════════════════════════════════════ */
+  function updateShell() {
+    const user       = me();
+    const dNav       = document.querySelector('.desktop-nav');
+    const dDrawer    = document.querySelector('.mobile-drawer nav');
+    const dBottom    = document.querySelector('.bottom-nav');
+    const profileBtn = document.getElementById('profile-button');
+    const langBtn    = document.getElementById('language-toggle');
+    if (langBtn) langBtn.textContent = state.lang === 'es' ? 'EN' : 'ES';
+
+    if (user) {
+      if (dNav) dNav.innerHTML = `
+        <a href="#feed"      data-route-link="feed">Feed</a>
+        <a href="#explorar"  data-route-link="explorar">Explorar</a>
+        <a href="#crear"     data-route-link="crear">Crear</a>
+        <a href="#guardados" data-route-link="guardados">Guardados</a>`;
+      if (dDrawer) dDrawer.innerHTML = `
+        <a href="#feed">Feed</a><a href="#explorar">Explorar</a>
+        <a href="#crear">Crear publicación</a>
+        <a href="#guardados">Guardados</a><a href="#mi-perfil">Mi perfil</a>`;
+      if (dBottom) dBottom.innerHTML = `
+        <a href="#feed"      data-route-link="feed"><span>⌂</span><small>Feed</small></a>
+        <a href="#explorar"  data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
+        <a class="create-action" href="#crear" data-route-link="crear"><span>＋</span><small>Crear</small></a>
+        <a href="#guardados" data-route-link="guardados"><span>◇</span><small>Guardados</small></a>
+        <a href="#mi-perfil" data-route-link="mi-perfil"><span>○</span><small>Perfil</small></a>`;
+      if (profileBtn) {
+        const init = (user.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+        if (user.avatar) {
+          profileBtn.style.backgroundImage = `url(${user.avatar})`;
+          profileBtn.style.backgroundSize  = 'cover';
+          profileBtn.textContent = '';
+        } else {
+          profileBtn.style.backgroundImage = '';
+          profileBtn.textContent = init;
+        }
+        profileBtn.onclick = () => go('mi-perfil');
+      }
+    } else {
+      if (dNav) dNav.innerHTML = `
+        <a href="#inicio"   data-route-link="inicio">Inicio</a>
+        <a href="#explorar" data-route-link="explorar">Explorar</a>
+        <a href="#pasaporte" data-route-link="pasaporte">Pasaporte Cultural</a>
+        <a href="#impacto"  data-route-link="impacto">Impacto</a>`;
+      if (dDrawer) dDrawer.innerHTML = `
+        <a href="#inicio">Inicio</a><a href="#explorar">Explorar</a>
+        <a href="#pasaporte">Pasaporte Cultural</a>
+        <a href="#impacto">Impacto</a><a href="#registro">Crear Perfil Cultural</a>`;
+      if (dBottom) dBottom.innerHTML = `
+        <a href="#inicio"   data-route-link="inicio"><span>⌂</span><small>Inicio</small></a>
+        <a href="#explorar" data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
+        <a class="create-action" href="#registro" data-route-link="registro"><span>＋</span><small>Crear</small></a>
+        <a href="#pasaporte" data-route-link="pasaporte"><span>◇</span><small>Pasaporte</small></a>
+        <a href="#login"    data-route-link="login"><span>○</span><small>Entrar</small></a>`;
+      if (profileBtn) {
+        profileBtn.style.backgroundImage = '';
+        profileBtn.textContent = '○';
+        profileBtn.onclick = () => go('login');
+      }
+    }
+
+    /* active link */
+    const r    = currentRoute();
+    const base = r.startsWith('perfil/') || r.startsWith('usuario/') ? 'explorar' : r;
+    document.querySelectorAll('[data-route-link]').forEach(a =>
+      a.classList.toggle('active', a.dataset.routeLink === base));
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     VIEWS
+  ═══════════════════════════════════════════════════════════ */
+
+  /* ── LANDING ─────────────────────────────────────────────── */
+  function landingView() {
+    const featured = creators.slice(0, 5);
     return `<section class="hero">
-      <div class="hero-copy"><p class="eyebrow">RED SOCIAL CULTURAL GLOBAL</p><h1>ORIGEN <span>CULTURAL</span></h1><p class="lead">${t('intro')}</p><div class="hero-actions"><a class="btn light" href="#explorar">${t('exploreCta')}</a><a class="btn secondary" style="border-color:#fff;color:#fff" href="#unirse">${t('createCta')}</a></div></div>
-      <div class="hero-media"><img src="assets/images/embroidery.jpg" alt="Mujer bordando una pieza cultural"><div class="hero-caption">${t('pilot')}<br><strong>${t('visible')}</strong></div></div>
+      <div class="hero-copy">
+        <p class="eyebrow">RED SOCIAL CULTURAL GLOBAL</p>
+        <h1>ORIGEN <span>CULTURAL</span></h1>
+        <p class="lead">${t('intro')}</p>
+        <div class="hero-actions">
+          <a class="btn light" href="#registro">Crear perfil cultural</a>
+          <a class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" href="#explorar">Explorar culturas</a>
+          <a href="#login" style="color:var(--sand);font-size:13px;letter-spacing:.06em;padding:14px 0">¿Ya tienes cuenta? Entrar →</a>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img src="assets/images/embroidery.jpg" alt="Mujer bordando una pieza cultural">
+        <div class="hero-caption">${t('pilot')}<br><strong>${t('visible')}</strong></div>
+      </div>
     </section>
-    <section class="section manifesto"><div class="section-inner manifesto-grid"><p class="eyebrow">DECLARACIÓN FUNDACIONAL</p><div><p class="manifesto-quote">${t('manifest').replace('identidad, memoria, conocimiento y futuro', '<em>identidad, memoria, conocimiento y futuro</em>').replace('identity, memory, knowledge and future', '<em>identity, memory, knowledge and future</em>')}</p><p class="manifesto-copy">Origen Cultural nace para que la cultura se muestre con el valor que merece: con contexto, autonomía, belleza, pertenencia y proyección global.</p></div></div></section>
-    <section class="section"><div class="section-inner"><div class="section-head"><div><p class="eyebrow">CURADURÍA CULTURAL</p><h2>${t('featured')}</h2></div><div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div></div>
-      <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${c.image}" alt="${c.name}" loading="lazy"><div class="story-card-content"><div class="meta">${verifiedBadge(c)} ${c.category} · ${c.location}</div><h3>${c.name}</h3><p>${c.short}</p></div></a>`).join('')}</div>
-    </div></section>
-    <section class="section" style="background:var(--grey-2)"><div class="section-inner"><div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div><div class="creator-grid">${creators.slice(0,3).map(creatorCard).join('')}</div></div></section>
-    <section class="section impact-band"><div class="section-inner"><div class="section-head"><div><p class="eyebrow">MVP · PILOTO ECUADOR</p><h2>${t('impactTitle')}</h2></div><p>${t('impactBody')}</p></div><div class="impact-grid">${impact.map(i => `<div class="impact-item"><strong>${i.value}</strong><span>${i.label}</span></div>`).join('')}</div></div></section>
-    <section class="cta-panel"><img src="assets/images/mural.jpg" alt="Mural cultural comunitario"><div class="cta-content"><p class="eyebrow">CREADORES CULTURALES</p><h2>${t('joinTitle')}</h2><p>${t('joinBody')}</p><a class="btn light" href="#unirse">${t('createCta')}</a></div></section>${footer()}`;
+    <section class="section manifesto">
+      <div class="section-inner manifesto-grid">
+        <p class="eyebrow">DECLARACIÓN FUNDACIONAL</p>
+        <div>
+          <p class="manifesto-quote">${t('manifest').replace('identidad, memoria, conocimiento y futuro', '<em>identidad, memoria, conocimiento y futuro</em>')}</p>
+          <p class="manifesto-copy">Origen Cultural nace para que la cultura se muestre con el valor que merece: con contexto, autonomía, belleza, pertenencia y proyección global.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div><p class="eyebrow">CURADURÍA CULTURAL</p><h2>${t('featured')}</h2></div>
+          <div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div>
+        </div>
+        <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${c.image}" alt="${c.name}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${c.category} · ${c.location}</div><h3>${c.name}</h3><p>${c.short}</p></div></a>`).join('')}</div>
+      </div>
+    </section>
+    <section class="section" style="background:var(--grey-2)">
+      <div class="section-inner">
+        <div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
+        <div class="creator-grid">${creators.slice(0, 3).map(creatorCard).join('')}</div>
+      </div>
+    </section>
+    <section class="section impact-band">
+      <div class="section-inner">
+        <div class="section-head"><div><p class="eyebrow">MVP · PILOTO ECUADOR</p><h2>${t('impactTitle')}</h2></div><p>${t('impactBody')}</p></div>
+        <div class="impact-grid">${impact.map(i => `<div class="impact-item"><strong>${i.value}</strong><span>${i.label}</span></div>`).join('')}
+        </div>
+      </div>
+    </section>
+    <section class="cta-panel">
+      <img src="assets/images/mural.jpg" alt="Mural cultural">
+      <div class="cta-content">
+        <p class="eyebrow">CREADORES CULTURALES</p>
+        <h2>Tu historia cultural merece ser encontrada.</h2>
+        <p>Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.</p>
+        <a class="btn light" href="#registro">Empezar ahora</a>
+      </div>
+    </section>
+    ${footer()}`;
   }
+
+  /* ── FEED ────────────────────────────────────────────────── */
+  function feedView() {
+    if (!isAuth()) return loginView();
+    const posts = feedPosts();
+    const user  = me();
+    const myFollows = DB.follows()[user.id] || [];
+    return `<div class="feed-layout">
+      ${storiesRow()}
+      <div class="feed-col">
+        <div class="feed-hdr">
+          <h2>Feed cultural</h2>
+          <a class="btn" href="#crear" style="min-height:38px;padding:0 20px;font-size:11px;letter-spacing:.1em">＋ Publicar</a>
+        </div>
+        <div id="feed-posts">
+          ${posts.length
+            ? posts.map(postCard).join('')
+            : `<div class="empty-feed"><p>Sigue creadores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar creadores</a></div>`}
+        </div>
+      </div>
+      <aside class="feed-aside">
+        <div class="aside-card">
+          <p class="eyebrow">DESCUBRIR</p>
+          <h3>Creadores culturales</h3>
+          ${creators.slice(0, 4).map(c => `<div class="aside-row">
+            <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
+            <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
+            <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? 'Siguiendo' : '+ Seguir'}</button>
+          </div>`).join('')}
+          <a class="link-arrow" href="#explorar" style="display:block;margin-top:18px;font-size:12px">Ver todos →</a>
+        </div>
+        <div class="aside-card">
+          <p class="eyebrow">CATEGORÍAS</p>
+          ${categories.slice(1).map(cat => `<a href="#explorar" class="aside-cat">${cat}</a>`).join('')}
+        </div>
+        <div class="aside-card">
+          <p class="eyebrow">MI PERFIL</p>
+          <div class="aside-row">
+            ${avatarEl(user, 'sm')}
+            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}</p></div>
+          </div>
+          <a href="#mi-perfil" class="link-arrow" style="display:block;margin-top:12px;font-size:12px">Ver mi perfil →</a>
+        </div>
+      </aside>
+    </div>`;
+  }
+
+  /* ── EXPLORE ─────────────────────────────────────────────── */
   function exploreView() {
-    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">DIRECTORIO CULTURAL</p><h1>${t('discover')}</h1><p class="lead">${t('discoverSub')}</p></div></section>
-    <section class="section"><div class="section-inner"><div class="search-toolbar"><input id="explore-search" class="search-input" type="search" placeholder="${t('searchPlaceholder')}" value="${state.query}"><button class="btn" id="clear-filters">Limpiar filtros</button></div><div class="category-strip" aria-label="Categorías">${categories.map(cat => `<button class="chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">${cat}</button>`).join('')}</div><div id="explore-grid" class="creator-grid"></div></div></section>${footer()}`;
+    return `<section class="page-hero">
+      <div class="section-inner">
+        <p class="eyebrow">DIRECTORIO CULTURAL</p>
+        <h1>${t('discover')}</h1>
+        <p class="lead">${t('discoverSub')}</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-inner">
+        <div class="search-toolbar">
+          <input id="explore-search" class="search-input" type="search" placeholder="${t('searchPlaceholder')}" value="${esc(state.query)}">
+          <button class="btn" id="clear-filters">Limpiar filtros</button>
+        </div>
+        <div class="category-strip" aria-label="Categorías">
+          ${categories.map(cat => `<button class="chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">${cat}</button>`).join('')}
+        </div>
+        <div id="explore-grid" class="creator-grid"></div>
+      </div>
+    </section>
+    ${footer()}`;
   }
-  function renderExploreResults() {
+  function renderExploreGrid() {
     const grid = document.getElementById('explore-grid'); if (!grid) return;
     const q = state.query.toLowerCase().trim();
     const filtered = creators.filter(c => {
-      const categoryMatch = state.activeCategory === 'Todos' || c.category.toLowerCase().includes(state.activeCategory.toLowerCase().replace('artesanía','artesanía')) || c.tags.some(t => t.toLowerCase().includes(state.activeCategory.toLowerCase()));
-      const queryMatch = !q || [c.name,c.type,c.category,c.location,c.short,...c.tags].join(' ').toLowerCase().includes(q);
-      return categoryMatch && queryMatch;
+      const catOk = state.activeCategory === 'Todos' || c.category.toLowerCase().includes(state.activeCategory.toLowerCase()) || c.tags.some(tg => tg.toLowerCase().includes(state.activeCategory.toLowerCase()));
+      const qOk   = !q || [c.name, c.type, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
+      return catOk && qOk;
     });
-    grid.innerHTML = filtered.length ? filtered.map(creatorCard).join('') : `<div class="empty-state"><h3>${t('noResults')}</h3><p>Prueba con otra categoría o palabra clave.</p></div>`;
-    bindFavoriteButtons();
+    grid.innerHTML = filtered.length
+      ? filtered.map(creatorCard).join('')
+      : `<div class="empty-state"><h3>${t('noResults')}</h3><p>Prueba con otra categoría o palabra clave.</p></div>`;
+    bindFavorites();
   }
-  function profileView(id) {
+
+  /* ── CREATOR PROFILE ─────────────────────────────────────── */
+  function creatorProfileView(id) {
     const c = creators.find(x => x.id === id) || creators[0];
-    const following = state.following.has(c.id);
-    return `<section class="profile-hero"><img class="profile-cover" src="${c.cover}" alt="Territorio de ${c.name}"><div class="profile-hero-content"><img class="profile-avatar" src="${c.image}" alt="Perfil de ${c.name}"><div class="profile-title"><p class="eyebrow">${c.type} · ${c.location}</p><h1>${c.name} ${verifiedBadge(c)}</h1><p>${c.category} · ${Intl.NumberFormat().format(c.followers)} seguidores</p></div><div class="profile-actions"><button class="btn light" data-follow="${c.id}">${following ? t('following') : t('follow')}</button><button class="btn secondary" style="border-color:#fff;color:#fff" data-favorite="${c.id}">${state.favorites.has(c.id) ? t('saved') : t('save')}</button></div></div></section>
-    <section class="profile-layout"><div><div class="profile-story"><p class="eyebrow">SU HISTORIA CULTURAL</p><h2>Una puerta directa a su identidad</h2><p>${c.story}</p><div class="creator-tags">${c.tags.map(tag => `<span>${tag}</span>`).join('')}</div></div><div style="margin-top:70px"><p class="eyebrow">PUBLICACIONES</p><h2>Historias compartidas</h2><div class="posts-grid">${c.posts.map(p => `<article class="post-card"><img src="${p.image}" alt="${p.title}"><div class="post-card-body"><h3>${p.title}</h3><p>${p.text}</p><a class="link-arrow" href="#perfil/${c.id}">Leer historia</a></div></article>`).join('')}</div></div></div>
-      <aside class="profile-aside"><p class="eyebrow">PERFIL CULTURAL</p><dl><div><dt>Tipo</dt><dd>${c.type}</dd></div><div><dt>Ubicación</dt><dd>${c.location}</dd></div><div><dt>Verificación cultural</dt><dd>${c.verified ? 'Perfil verificado manualmente' : 'Verificación en proceso'}</dd></div><div><dt>Contacto</dt><dd>Conexión directa mediante canales propios.</dd></div></dl><div class="external-links">${Object.entries(c.links).map(([k,v]) => `<a href="${v}" target="_blank" rel="noreferrer"><span>${k}</span><span>↗</span></a>`).join('')}</div><p class="form-note" style="margin-top:20px">Origen Cultural no administra la venta ni se apropia de la historia del creador. El perfil conserva su autonomía narrativa y comercial.</p></aside></section>${footer()}`;
+    const user = me();
+    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const isFollowing = myFollows.includes(c.id);
+    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const isSaved = favs.includes(c.id);
+    const cPosts = allPosts().filter(p => p.authorId === c.id);
+    return `<section class="profile-hero">
+      <img class="profile-cover" src="${c.cover}" alt="Portada de ${esc(c.name)}">
+      <div class="profile-hero-content">
+        <img class="profile-avatar" src="${c.image}" alt="${esc(c.name)}">
+        <div class="profile-title">
+          <p class="eyebrow">${c.type} · ${c.location}</p>
+          <h1>${esc(c.name)} ${verBadge(c)}</h1>
+          <p>${c.category} · ${Intl.NumberFormat('es').format(c.followers)} seguidores</p>
+        </div>
+        <div class="profile-actions">
+          <button class="btn light" data-fuser="${c.id}">${isFollowing ? t('following') : t('follow')}</button>
+          <button class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" data-favorite="${c.id}">${isSaved ? t('saved') : t('save')}</button>
+        </div>
+      </div>
+    </section>
+    <section class="profile-layout">
+      <div>
+        <div class="profile-story">
+          <p class="eyebrow">SU HISTORIA CULTURAL</p>
+          <h2>Una puerta directa a su identidad</h2>
+          <p>${c.story}</p>
+          <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
+        </div>
+        <div style="margin-top:60px">
+          <p class="eyebrow">PUBLICACIONES (${cPosts.length || c.posts.length})</p>
+          ${cPosts.length
+            ? `<div id="creator-posts" style="margin-top:20px">${cPosts.map(postCard).join('')}</div>`
+            : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${p.image}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
+        </div>
+      </div>
+      <aside class="profile-aside">
+        <p class="eyebrow">PERFIL CULTURAL</p>
+        <dl>
+          <div><dt>Tipo</dt><dd>${c.type}</dd></div>
+          <div><dt>Ubicación</dt><dd>${c.location}</dd></div>
+          <div><dt>Verificación</dt><dd>${c.verified ? 'Verificado manualmente' : 'En proceso'}</dd></div>
+        </dl>
+        ${socialLinksHtml(c)}
+        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del creador.</p>
+      </aside>
+    </section>
+    ${footer()}`;
   }
+
+  /* ── USER PROFILE ────────────────────────────────────────── */
+  function userProfileView(id) {
+    const user    = me();
+    const profile = DB.users()[id];
+    if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
+    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const isMe      = !!(user && user.id === id);
+    const following = myFollows.includes(id);
+    const followsMap = DB.follows();
+    const follCount  = Object.values(followsMap).filter(list => list.includes(id)).length;
+    const followCount = (followsMap[id] || []).length;
+    const uPosts = allPosts().filter(p => p.authorId === id);
+    return `<section class="profile-hero">
+      ${profile.cover
+        ? `<img class="profile-cover" src="${profile.cover}" alt="Portada">`
+        : `<div class="profile-cover-blank"></div>`}
+      <div class="profile-hero-content">
+        ${avatarEl(profile, 'lg')}
+        <div class="profile-title">
+          <p class="eyebrow">${profile.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
+          <h1>${esc(profile.name)}</h1>
+          <p>${follCount} seguidores · ${followCount} siguiendo · ${uPosts.length} publicaciones</p>
+        </div>
+        <div class="profile-actions">
+          ${isMe
+            ? `<a class="btn light" href="#editar-perfil">Editar perfil</a>`
+            : `<button class="btn light" data-fuser="${id}">${following ? t('following') : t('follow')}</button>`}
+        </div>
+      </div>
+    </section>
+    <section class="profile-layout">
+      <div>
+        ${profile.story ? `<div class="profile-story"><p class="eyebrow">HISTORIA CULTURAL</p><p>${esc(profile.story)}</p></div>` : ''}
+        ${profile.categories && profile.categories.length ? `<div class="creator-tags" style="margin:18px 0">${profile.categories.map(cat => `<span>${esc(cat)}</span>`).join('')}</div>` : ''}
+        <div style="margin-top:40px">
+          <p class="eyebrow">PUBLICACIONES (${uPosts.length})</p>
+          ${uPosts.length
+            ? `<div style="margin-top:20px">${uPosts.map(postCard).join('')}</div>`
+            : `<div class="empty-state" style="margin-top:20px;border:1px dashed #ddd;padding:40px;text-align:center">
+                <p>Aún no hay publicaciones.</p>
+                ${isMe ? `<a class="btn" href="#crear" style="margin-top:14px">Crear primera publicación</a>` : ''}
+              </div>`}
+        </div>
+      </div>
+      <aside class="profile-aside">
+        <p class="eyebrow">PERFIL CULTURAL</p>
+        <dl>
+          <div><dt>Tipo</dt><dd>${profile.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}</dd></div>
+          ${profile.location ? `<div><dt>Ubicación</dt><dd>${esc(profile.location)}</dd></div>` : ''}
+          ${profile.categories && profile.categories.length ? `<div><dt>Categorías</dt><dd>${profile.categories.map(esc).join(', ')}</dd></div>` : ''}
+        </dl>
+        ${socialLinksHtml(profile)}
+        ${isMe ? `<a href="#editar-perfil" class="btn secondary" style="width:100%;margin-top:20px;text-align:center">Editar perfil</a>
+                  <button id="logout-btn-aside" class="btn" style="width:100%;margin-top:10px;background:transparent;color:#888;border-color:#ddd">Cerrar sesión</button>` : ''}
+      </aside>
+    </section>
+    ${footer()}`;
+  }
+  function myProfileView() {
+    const user = me();
+    if (!user) { go('login'); return ''; }
+    return userProfileView(user.id);
+  }
+
+  /* ── SAVED ───────────────────────────────────────────────── */
+  function savedView() {
+    const user = me();
+    if (!user) { go('login'); return ''; }
+    const saves = DB.saves()[user.id] || [];
+    const saved = allPosts().filter(p => saves.includes(p.id));
+    return `<section class="page-hero">
+      <div class="section-inner">
+        <p class="eyebrow">MI COLECCIÓN</p>
+        <h1>Guardados</h1>
+        <p class="lead">${saved.length} publicación${saved.length !== 1 ? 'es' : ''} guardada${saved.length !== 1 ? 's' : ''}</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-inner">
+        ${saved.length
+          ? `<div class="saved-grid">${saved.map(postCard).join('')}</div>`
+          : `<div class="empty-state"><h3>Aún no guardaste publicaciones</h3><p>Guarda publicaciones del feed para verlas aquí.</p><a class="btn" href="#feed" style="margin-top:20px">Ir al feed</a></div>`}
+      </div>
+    </section>
+    ${footer()}`;
+  }
+
+  /* ── CREATE POST ─────────────────────────────────────────── */
+  function createPostView() {
+    const user = me();
+    if (!user) { go('login'); return ''; }
+    const d = state.createData;
+    const types = [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
+    const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const hasMedia = d.media && d.media.length > 0;
+
+    return `<section class="page-hero" style="min-height:220px">
+      <div class="section-inner">
+        <p class="eyebrow">NUEVA PUBLICACIÓN</p>
+        <h1>Compartir cultura</h1>
+      </div>
+    </section>
+    <div class="create-layout">
+      <div class="create-form-wrap">
+        <div class="create-type-strip">
+          ${types.map(([v, label]) => `<button class="create-type-btn${d.type === v ? ' active' : ''}" data-ctype="${v}">${label}</button>`).join('')}
+        </div>
+        ${d.type !== 'text' ? `
+          <div class="upload-zone wide" id="post-media-zone">
+            ${hasMedia
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${src}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
+              : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
+            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/*' : 'image/*'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
+          </div>` : ''}
+        <form class="form-grid" id="create-form">
+          <div class="form-field full"><label>Título *</label><input name="title" required placeholder="Un título que invite a descubrir" value="${esc(d.title || '')}"></div>
+          <div class="form-field full"><label>Descripción *</label><textarea name="description" rows="4" required placeholder="Comparte el contexto, la historia o el significado cultural...">${esc(d.description || '')}</textarea></div>
+          <div class="form-field"><label>Categoría cultural</label><select name="category">${CATS.map(c => `<option${d.category === c ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
+          <div class="form-field"><label>Territorio</label><input name="territory" placeholder="Ciudad, región o país" value="${esc(d.territory || '')}"></div>
+          <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
+          <div class="form-field full">
+            <button class="btn" type="submit" style="width:100%">Publicar →</button>
+            <p class="form-note" style="margin-top:12px">Publicación guardada en esta demo funcional. La versión productiva conectará con Supabase Storage.</p>
+          </div>
+        </form>
+      </div>
+      <div class="create-preview-wrap">
+        <p class="eyebrow" style="margin-bottom:16px">VISTA PREVIA</p>
+        ${d.title || hasMedia
+          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+          : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
+      </div>
+    </div>`;
+  }
+
+  /* ── EDIT PROFILE ────────────────────────────────────────── */
+  function editProfileView() {
+    const user = me();
+    if (!user) { go('login'); return ''; }
+    const CATS = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const userCats = user.categories || [];
+    return `<section class="page-hero" style="min-height:200px">
+      <div class="section-inner">
+        <p class="eyebrow">MI CUENTA</p>
+        <h1>Editar perfil</h1>
+      </div>
+    </section>
+    <div class="edit-wrap">
+      <div class="upload-section">
+        <div class="upload-zone" id="edit-avatar-zone">
+          ${user.avatar ? `<img src="${user.avatar}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
+          <input type="file" id="edit-avatar-input" accept="image/*" style="display:none">
+          <button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>
+        </div>
+        <div class="upload-zone wide" id="edit-cover-zone">
+          ${user.cover
+            ? `<img src="${user.cover}" class="edit-cover-preview" alt="Portada">`
+            : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
+          <input type="file" id="edit-cover-input" accept="image/*" style="display:none">
+          <button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>
+        </div>
+      </div>
+      <form class="form-grid" id="edit-form">
+        <div class="form-field"><label>Nombre</label><input name="name" value="${esc(user.name || '')}"></div>
+        <div class="form-field"><label>Ubicación</label><input name="location" value="${esc(user.location || '')}" placeholder="Ciudad, País"></div>
+        <div class="form-field full"><label>Tu historia cultural</label><textarea name="story" rows="4" placeholder="¿Quién eres, qué representas y qué deseas compartir?">${esc(user.story || '')}</textarea></div>
+        <div class="form-field full">
+          <label>Categorías culturales</label>
+          <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${userCats.includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
+        </div>
+        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES SOCIALES</p>
+        ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo'],['web','Sitio web']].map(([k, label]) =>
+          `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(user.links && user.links[k] ? user.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+        <div class="form-field full">
+          <button class="btn" type="submit" style="width:100%">Guardar cambios</button>
+        </div>
+      </form>
+      <button id="logout-btn" class="btn secondary" style="width:100%;margin-top:16px;color:#666;border-color:#ddd">Cerrar sesión</button>
+    </div>`;
+  }
+
+  /* ── REGISTER WIZARD ─────────────────────────────────────── */
+  function registerView() {
+    const step  = state.regStep;
+    const d     = state.regData;
+    const steps = ['Tipo de cuenta','Datos básicos','Foto y portada','Tu historia','Redes sociales'];
+    const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+
+    const progress = `<div class="wizard-progress">
+      <div class="wizard-steps">
+        ${steps.map((_, i) => `
+          <div class="wstep${i + 1 === step ? ' active' : i + 1 < step ? ' done' : ''}">
+            ${i + 1 < step ? '✓' : i + 1}
+          </div>
+          ${i < steps.length - 1 ? `<div class="wline${i + 1 < step ? ' done' : ''}"></div>` : ''}
+        `).join('')}
+      </div>
+      <p class="wizard-label">Paso ${step} de ${steps.length} · ${steps[step - 1]}</p>
+    </div>`;
+
+    let body = '';
+    if (step === 1) {
+      body = `<div class="atype-grid">
+        <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
+          <span class="atype-icon">◈</span>
+          <h3>Creador Cultural</h3>
+          <p>Persona, comunidad, negocio u organización que preserva, practica o comparte cultura.</p>
+        </button>
+        <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
+          <span class="atype-icon">◎</span>
+          <h3>Explorador Cultural</h3>
+          <p>Persona interesada en descubrir, aprender y conectar con culturas vivas del mundo.</p>
+        </button>
+      </div>`;
+    } else if (step === 2) {
+      body = `<form class="form-grid" id="reg-basic">
+        <div class="form-field"><label>Nombre completo *</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
+        <div class="form-field"><label>Correo electrónico *</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
+        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="6"></div>
+        <div class="form-field"><label>País y ciudad *</label><input name="location" required placeholder="Quito, Ecuador" value="${esc(d.location || '')}"></div>
+      </form>`;
+    } else if (step === 3) {
+      body = `<div class="upload-section">
+        <div class="upload-zone" id="reg-avatar-zone">
+          ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="Foto de perfil">` : `<div class="upload-placeholder"><span>+</span><p>Foto de perfil</p><small>Opcional</small></div>`}
+          <input type="file" id="reg-avatar-input" accept="image/*" style="display:none">
+          <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">Subir foto de perfil</button>
+        </div>
+        <div class="upload-zone wide" id="reg-cover-zone">
+          ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="Portada">` : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p><small>Opcional</small></div>`}
+          <input type="file" id="reg-cover-input" accept="image/*" style="display:none">
+          <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">Subir portada</button>
+        </div>
+      </div>`;
+    } else if (step === 4) {
+      body = `<form class="form-grid" id="reg-story">
+        <div class="form-field full"><label>Tu historia cultural</label><textarea name="story" rows="4" placeholder="¿Quién eres, qué representas y qué deseas compartir con el mundo?">${esc(d.story || '')}</textarea></div>
+        <div class="form-field full">
+          <label>Categorías culturales</label>
+          <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${(d.categories || []).includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
+        </div>
+      </form>`;
+    } else if (step === 5) {
+      body = `<form class="form-grid" id="reg-social">
+        <p class="form-note full" style="grid-column:1/-1">Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.</p>
+        ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo electrónico'],['web','Sitio web']].map(([k, label]) =>
+          `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+      </form>`;
+    }
+
+    return `<div class="auth-page">
+      <div class="auth-card wide">
+        <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+        ${progress}
+        <div class="wizard-body">${body}</div>
+        <div id="reg-error" class="form-error" style="display:none"></div>
+        <div class="wizard-nav">
+          ${step > 1 ? `<button class="btn secondary" id="reg-back">← Atrás</button>` : '<div></div>'}
+          <button class="btn" id="reg-next">${step < 5 ? 'Siguiente →' : 'Crear mi perfil'}</button>
+        </div>
+        <p class="auth-alt">¿Ya tienes cuenta? <a href="#login">Iniciar sesión</a></p>
+      </div>
+    </div>`;
+  }
+
+  /* ── LOGIN ───────────────────────────────────────────────── */
+  function loginView() {
+    return `<div class="auth-page">
+      <div class="auth-card">
+        <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+        <h2>Bienvenida de vuelta</h2>
+        <p class="auth-sub">Inicia sesión en tu cuenta de Origen Cultural</p>
+        <form class="form-grid" id="login-form">
+          <div class="form-field full"><label>Correo electrónico</label><input type="email" name="email" required autocomplete="email"></div>
+          <div class="form-field full"><label>Contraseña</label><input type="password" name="password" required autocomplete="current-password"></div>
+          <div id="login-error" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">Correo o contraseña incorrectos.</p></div>
+          <div class="form-field full"><button class="btn" type="submit" style="width:100%">Entrar</button></div>
+        </form>
+        <p class="auth-alt">¿No tienes cuenta? <a href="#registro">Crear perfil cultural</a></p>
+        <p class="auth-alt"><a href="#explorar" style="color:#888">Explorar sin cuenta →</a></p>
+      </div>
+    </div>`;
+  }
+
+  /* ── PASSPORT ────────────────────────────────────────────── */
   function passportView() {
-    return `<section class="passport-page"><div class="passport-shell"><div class="section-head"><div><p class="eyebrow">TRAYECTORIA INTERCULTURAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${t('passportSub')}</p></div><article class="passport-card"><div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>OC-EC-0001</div></div><div class="passport-person"><div class="avatar">AB</div><div><p class="eyebrow">EXPLORADORA CULTURAL</p><h2>Anabel Borja</h2><p>Brisbane, Australia · Origen: Ecuador</p></div></div><div class="passport-progress"><div class="progress-stat"><strong>${state.favorites.size}</strong><span>Perfiles guardados</span></div><div class="progress-stat"><strong>${state.following.size}</strong><span>Creadores seguidos</span></div><div class="progress-stat"><strong>01</strong><span>Cultura explorada</span></div></div></article><div class="level-section"><p class="eyebrow">NIVEL CULTURAL</p><h2>Semilla · Nivel 1</h2><div class="level-track"><div class="level-fill"></div></div><p>34% para alcanzar el nivel Caminante Cultural.</p><div class="badges"><div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div><div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div><div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Creadores Culturales para desbloquearla.</p></div></div></div></div></section>${footer()}`;
+    const user = me();
+    const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const foll = JSON.parse(localStorage.getItem('origen-following') || '[]');
+    const name = user ? user.name : 'Anabel Borja';
+    const init = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    return `<section class="passport-page"><div class="passport-shell">
+      <div class="section-head"><div><p class="eyebrow">TRAYECTORIA INTERCULTURAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${t('passportSub')}</p></div>
+      <article class="passport-card">
+        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>OC-EC-0001</div></div>
+        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'CREADOR CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
+        <div class="passport-progress">
+          <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
+          <div class="progress-stat"><strong>${foll.length}</strong><span>Creadores seguidos</span></div>
+          <div class="progress-stat"><strong>${user ? DB.posts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
+        </div>
+      </article>
+      <div class="level-section"><p class="eyebrow">NIVEL CULTURAL</p><h2>Semilla · Nivel 1</h2><div class="level-track"><div class="level-fill"></div></div><p>34% para alcanzar el nivel Caminante Cultural.</p>
+        <div class="badges">
+          <div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div>
+          <div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div>
+          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Creadores Culturales para desbloquearla.</p></div>
+        </div>
+      </div>
+    </div></section>${footer()}`;
   }
-  function joinView() {
-    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">UNIRSE AL ECOSISTEMA</p><h1>${t('joinHeading')}</h1><p class="lead">${t('joinIntro')}</p></div></section><section class="join-layout"><div><p class="eyebrow">DOS RUTAS · UNA RED</p><h2>¿Cómo quieres participar?</h2><p class="lead" style="font-size:17px">Como Creador Cultural puedes construir un perfil premium. Como Explorador Cultural puedes descubrir, seguir y guardar culturas vivas.</p><div class="values-grid" style="grid-template-columns:1fr"><div class="value-card"><span class="number">01</span><h3>Dignidad cultural</h3><p>Tu historia mantiene contexto, consentimiento y control.</p></div><div class="value-card"><span class="number">02</span><h3>Conexión directa</h3><p>La plataforma dirige a tus propios canales, sin comisión inicial.</p></div></div></div><form id="join-form"><div class="role-options"><label class="role-option"><input type="radio" name="role" value="creator" checked> <strong>${t('creatorJoin')}</strong><p>Persona, comunidad, negocio u organización.</p></label><label class="role-option"><input type="radio" name="role" value="explorer"> <strong>${t('explorerJoin')}</strong><p>Persona interesada en descubrir y aprender.</p></label></div><div class="form-grid" style="margin-top:24px"><div class="form-field"><label for="name">Nombre</label><input id="name" name="name" required autocomplete="name"></div><div class="form-field"><label for="email">Correo</label><input id="email" name="email" type="email" required autocomplete="email"></div><div class="form-field"><label for="country">País</label><input id="country" name="country" required></div><div class="form-field"><label for="category">Categoría cultural</label><select id="category" name="category"><option>Artesanía y tradiciones</option><option>Gastronomía</option><option>Música y danza</option><option>Territorio y patrimonio</option><option>Educación cultural</option><option>Otra</option></select></div><div class="form-field full"><label for="story">Cuéntanos brevemente tu historia cultural</label><textarea id="story" name="story" placeholder="¿Quién eres, qué representas y qué deseas compartir con el mundo?"></textarea></div><div class="form-field full"><label><input type="checkbox" required> Confirmo que tengo derecho y consentimiento para compartir esta información cultural.</label></div><div class="form-field full"><button class="btn" type="submit">Enviar solicitud de perfil</button><p class="form-note">Prototipo: la solicitud se guarda localmente para demostrar el flujo. La versión productiva se conectará a Supabase y a un proceso de revisión manual.</p></div></div></form></section>${footer()}`;
-  }
+
+  /* ── IMPACT ──────────────────────────────────────────────── */
   function impactView() {
     const values = [
       ['Dignidad cultural','La cultura se presenta con respeto, contexto y valor, no como espectáculo vacío.'],
@@ -142,80 +984,593 @@
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
       ['Soberanía narrativa','Cada creador decide qué mostrar, qué reservar y cómo ser contactado.']
     ];
-    return `<section class="page-hero" style="background:var(--black);color:var(--white)"><div class="section-inner"><p class="eyebrow">PROPÓSITO · ÉTICA · ESCALA</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div></section><section class="section"><div class="section-inner"><div class="section-head"><div><p class="eyebrow">VALORES DE MARCA</p><h2>La cultura con el valor que merece</h2></div><p>Origen Cultural prioriza consentimiento, representación autónoma, contexto y conexión humana. La tecnología facilita el encuentro; no sustituye la voz cultural.</p></div><div class="values-grid">${values.map((v,i)=>`<article class="value-card"><span class="number">0${i+1}</span><h3>${v[0]}</h3><p>${v[1]}</p></article>`).join('')}</div></div></section><section class="section impact-band"><div class="section-inner"><div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, demanda real, funcionalidades sociales, monetización ética y expansión internacional.</p></div><div class="impact-grid"><div class="impact-item"><strong>0</strong><span>Preparación, identidad, formularios y criterios de verificación</span></div><div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Creadores Culturales</span></div><div class="impact-item"><strong>2</strong><span>MVP social: explorar, seguir, guardar y publicar</span></div><div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div></div></div></section>${footer()}`;
-  }
-  function demoUserProfile() {
-    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">MI PERFIL CULTURAL</p><h1>Anabel Borja</h1><p class="lead">Exploradora Cultural · Ecuador → Australia · Fundadora de Origen Cultural</p></div></section><section class="profile-layout"><div><p class="eyebrow">IDENTIDAD CULTURAL</p><h2>Conectar culturas desde la comunicación</h2><p class="lead">Este perfil de demostración representa la ruta del Explorador Cultural. Reúne descubrimientos, perfiles guardados, conexiones y aprendizaje progresivo.</p><div class="creator-grid" style="grid-template-columns:repeat(2,1fr)">${creators.filter(c=>state.favorites.has(c.id)).map(creatorCard).join('') || '<div class="empty-state"><h3>Aún no tienes perfiles guardados</h3><p>Explora la red y guarda las historias que quieras volver a visitar.</p><a class="btn" href="#explorar">Explorar perfiles</a></div>'}</div></div><aside class="profile-aside"><p class="eyebrow">RESUMEN</p><dl><div><dt>Origen</dt><dd>Quito, Ecuador</dd></div><div><dt>Ubicación actual</dt><dd>Brisbane, Australia</dd></div><div><dt>Perfiles guardados</dt><dd>${state.favorites.size}</dd></div><div><dt>Creadores seguidos</dt><dd>${state.following.size}</dd></div></dl><div class="external-links"><a href="#pasaporte"><span>Mi Pasaporte Cultural</span><span>→</span></a><a href="#explorar"><span>Explorar culturas</span><span>→</span></a></div></aside></section>${footer()}`;
-  }
-  function bindFavoriteButtons() {
-    document.querySelectorAll('[data-favorite]').forEach(btn => btn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
-      const id = btn.dataset.favorite;
-      state.favorites.has(id) ? state.favorites.delete(id) : state.favorites.add(id);
-      saveState(); showToast(state.favorites.has(id) ? 'Perfil guardado en tu Pasaporte Cultural' : 'Perfil eliminado de guardados');
-      const route = currentRoute(); render(route, false);
-    }));
-  }
-  function bindCommon() {
-    bindFavoriteButtons();
-    document.querySelectorAll('[data-follow]').forEach(btn => btn.addEventListener('click', () => {
-      const id = btn.dataset.follow;
-      state.following.has(id) ? state.following.delete(id) : state.following.add(id);
-      saveState(); showToast(state.following.has(id) ? 'Ahora sigues este Perfil Cultural' : 'Dejaste de seguir este perfil');
-      render(currentRoute(), false);
-    }));
-    const form = document.getElementById('join-form');
-    if (form) form.addEventListener('submit', e => {
-      e.preventDefault();
-      const entry = Object.fromEntries(new FormData(form));
-      localStorage.setItem('origen-demo-application', JSON.stringify(entry));
-      form.reset(); showToast('Solicitud guardada. Bienvenida/o a Origen Cultural.');
-    });
-  }
-  function currentRoute() { return location.hash.replace(/^#\/?/, '') || 'inicio'; }
-  function updateActive(route) {
-    const base = route.startsWith('perfil/') ? 'explorar' : route;
-    document.querySelectorAll('[data-route-link]').forEach(a => a.classList.toggle('active', a.dataset.routeLink === base));
-  }
-  function render(route = currentRoute(), scroll = true) {
-    if (route === 'inicio') app.innerHTML = homeView();
-    else if (route === 'explorar') app.innerHTML = exploreView();
-    else if (route.startsWith('perfil/')) app.innerHTML = profileView(route.split('/')[1]);
-    else if (route === 'pasaporte') app.innerHTML = passportView();
-    else if (route === 'unirse') app.innerHTML = joinView();
-    else if (route === 'impacto') app.innerHTML = impactView();
-    else if (route === 'perfil-anabel') app.innerHTML = demoUserProfile();
-    else app.innerHTML = homeView();
-    updateActive(route); bindCommon();
-    if (route === 'explorar') {
-      renderExploreResults();
-      document.getElementById('explore-search').addEventListener('input', e => { state.query = e.target.value; renderExploreResults(); });
-      document.querySelectorAll('[data-category]').forEach(btn => btn.addEventListener('click', () => { state.activeCategory = btn.dataset.category; document.querySelectorAll('[data-category]').forEach(b=>b.classList.toggle('active',b===btn)); renderExploreResults(); }));
-      document.getElementById('clear-filters').addEventListener('click', () => { state.query=''; state.activeCategory='Todos'; render('explorar',false); });
-    }
-    if (scroll) window.scrollTo({top:0, behavior:'instant'});
+    return `<section class="page-hero" style="background:var(--black);color:var(--white)">
+      <div class="section-inner"><p class="eyebrow">PROPÓSITO · ÉTICA · ESCALA</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div>
+    </section>
+    <section class="section"><div class="section-inner">
+      <div class="section-head"><div><p class="eyebrow">VALORES DE MARCA</p><h2>La cultura con el valor que merece</h2></div><p>Origen Cultural prioriza consentimiento, representación autónoma, contexto y conexión humana.</p></div>
+      <div class="values-grid">${values.map((v, i) => `<article class="value-card"><span class="number">0${i + 1}</span><h3>${v[0]}</h3><p>${v[1]}</p></article>`).join('')}</div>
+    </div></section>
+    <section class="section impact-band"><div class="section-inner">
+      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
+      <div class="impact-grid">
+        <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Creadores Culturales</span></div>
+        <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
+        <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
+      </div>
+    </div></section>${footer()}`;
   }
 
-  // Navigation and shell interactions
-  window.addEventListener('hashchange', () => { closeDrawer(); render(); });
-  document.getElementById('language-toggle').addEventListener('click', () => {
-    state.lang = state.lang === 'es' ? 'en' : 'es'; localStorage.setItem('origen-lang', state.lang);
-    document.getElementById('language-toggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
-    document.documentElement.lang = state.lang; render(currentRoute(), false); showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
-  });
-  document.getElementById('profile-button').addEventListener('click', () => location.hash = '#perfil-anabel');
-  const drawer = document.getElementById('mobile-drawer'); const overlay = document.getElementById('drawer-overlay'); const menuBtn = document.getElementById('menu-button');
-  function openDrawer(){ drawer.classList.add('open'); overlay.classList.add('open'); drawer.setAttribute('aria-hidden','false'); menuBtn.setAttribute('aria-expanded','true'); }
-  function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); menuBtn.setAttribute('aria-expanded','false'); }
-  menuBtn.addEventListener('click', openDrawer); document.getElementById('close-menu').addEventListener('click', closeDrawer); overlay.addEventListener('click', closeDrawer);
-  document.getElementById('search-button').addEventListener('click', () => { searchDialog.showModal(); setTimeout(()=>document.getElementById('global-search').focus(),40); populateSearch(''); });
-  const globalSearch = document.getElementById('global-search'); globalSearch.addEventListener('input', e => populateSearch(e.target.value));
-  function populateSearch(query) {
-    const q=query.toLowerCase().trim(); const results=creators.filter(c=>!q||[c.name,c.category,c.location,c.short,...c.tags].join(' ').toLowerCase().includes(q));
-    document.getElementById('search-results').innerHTML=results.map(c=>`<a class="search-result" href="#perfil/${c.id}" onclick="document.getElementById('search-dialog').close()"><img src="${c.image}" alt=""><div><h4>${c.name} ${verifiedBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`).join('') || `<div class="empty-state">${t('noResults')}</div>`;
+  /* ═══════════════════════════════════════════════════════════
+     ROUTER
+  ═══════════════════════════════════════════════════════════ */
+  function currentRoute() { return location.hash.replace(/^#\/?/, '') || (isAuth() ? 'feed' : 'inicio'); }
+  function go(route)       { location.hash = '#' + route; }
+
+  function render(route, scroll = true) {
+    route = route !== undefined ? route : currentRoute();
+    refreshSession();
+
+    let html = '';
+    if      (route === 'inicio')                  html = isAuth() ? feedView()            : landingView();
+    else if (route === 'feed')                    html = feedView();
+    else if (route === 'explorar')                html = exploreView();
+    else if (route.startsWith('perfil/'))         html = creatorProfileView(route.split('/')[1]);
+    else if (route.startsWith('usuario/'))        html = userProfileView(route.split('/')[1]);
+    else if (route === 'mi-perfil')               html = myProfileView();
+    else if (route === 'editar-perfil')           html = editProfileView();
+    else if (route === 'guardados')               html = savedView();
+    else if (route === 'crear')                   html = createPostView();
+    else if (route === 'registro')                html = registerView();
+    else if (route === 'login')                   html = loginView();
+    else if (route === 'pasaporte')               html = passportView();
+    else if (route === 'impacto')                 html = impactView();
+    else                                          html = isAuth() ? feedView() : landingView();
+
+    $app.innerHTML = html;
+    updateShell();
+    bindAll(route);
+    if (scroll) window.scrollTo({ top: 0, behavior: 'instant' });
   }
-  document.getElementById('language-toggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
+
+  /* ═══════════════════════════════════════════════════════════
+     EVENT BINDING
+  ═══════════════════════════════════════════════════════════ */
+  function bindAll(route) {
+    bindPostInteractions();
+    bindFavorites();
+    if (route === 'explorar')      bindExplore();
+    if (route === 'registro')      bindRegister();
+    if (route === 'login')         bindLogin();
+    if (route === 'crear')         bindCreatePost();
+    if (route === 'editar-perfil') bindEditProfile();
+    bindFollowButtons();
+    bindLogoutBtn();
+  }
+
+  /* Post interactions (like, comment, save, share, report, carousel) */
+  function bindPostInteractions() {
+    /* likes */
+    document.querySelectorAll('[data-like]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!isAuth()) { showToast('Inicia sesión para dar me gusta.'); go('login'); return; }
+        const pid  = btn.dataset.like;
+        const user = me();
+        const lks  = DB.likes();
+        if (!lks[pid]) lks[pid] = [];
+        const idx = lks[pid].indexOf(user.id);
+        if (idx === -1) lks[pid].push(user.id); else lks[pid].splice(idx, 1);
+        DB.setLikes(lks);
+        rerenderPost(pid);
+      });
+    });
+
+    /* toggle comments */
+    document.querySelectorAll('[data-tcoms]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pid = btn.dataset.tcoms;
+        state.openComments.has(pid) ? state.openComments.delete(pid) : state.openComments.add(pid);
+        rerenderPost(pid);
+      });
+    });
+
+    /* saves */
+    document.querySelectorAll('[data-save]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!isAuth()) { showToast('Inicia sesión para guardar publicaciones.'); go('login'); return; }
+        const pid  = btn.dataset.save;
+        const user = me();
+        const svs  = DB.saves();
+        if (!svs[user.id]) svs[user.id] = [];
+        const idx = svs[user.id].indexOf(pid);
+        if (idx === -1) { svs[user.id].push(pid); showToast('Publicación guardada.'); }
+        else            { svs[user.id].splice(idx, 1); showToast('Publicación eliminada de guardados.'); }
+        DB.setSaves(svs);
+        rerenderPost(pid);
+      });
+    });
+
+    /* share */
+    document.querySelectorAll('[data-share]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = window.location.href.split('#')[0] + '#feed';
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showToast('Enlace copiado al portapapeles.'));
+        else showToast('Comparte este enlace: ' + url);
+      });
+    });
+
+    /* report */
+    document.querySelectorAll('[data-report]').forEach(btn => {
+      btn.addEventListener('click', () => showToast('Reporte enviado. Gracias por ayudarnos a mantener la comunidad.'));
+    });
+
+    /* more (···) */
+    document.querySelectorAll('[data-pmore]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pid  = btn.dataset.pmore;
+        const user = me();
+        const post = DB.posts().find(p => p.id === pid);
+        if (user && post && post.authorId === user.id) {
+          if (confirm('¿Eliminar esta publicación?')) {
+            const updated = DB.posts().filter(p => p.id !== pid);
+            DB.setPosts(updated);
+            showToast('Publicación eliminada.');
+            render(currentRoute(), false);
+          }
+        } else {
+          showToast('Reportar o guardar este perfil para no ver más contenido similar.');
+        }
+      });
+    });
+
+    /* carousel navigation */
+    document.querySelectorAll('[data-cdir]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const pid  = btn.dataset.car;
+        const dir  = parseInt(btn.dataset.cdir, 10);
+        const post = allPosts().find(p => p.id === pid);
+        if (!post) return;
+        const cur  = state.carIdx[pid] || 0;
+        state.carIdx[pid] = Math.max(0, Math.min(post.media.length - 1, cur + dir));
+        rerenderPost(pid);
+      });
+    });
+    document.querySelectorAll('[data-car][data-ci]').forEach(dot => {
+      dot.addEventListener('click', e => {
+        e.stopPropagation();
+        state.carIdx[dot.dataset.car] = parseInt(dot.dataset.ci, 10);
+        rerenderPost(dot.dataset.car);
+      });
+    });
+
+    /* comment forms */
+    document.querySelectorAll('[data-cf]').forEach(form => {
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const pid  = form.dataset.cf;
+        const text = new FormData(form).get('text').trim();
+        if (!text || !isAuth()) return;
+        const user = me();
+        const coms = DB.comments();
+        if (!coms[pid]) coms[pid] = [];
+        coms[pid].push({ id: uid(), authorId: user.id, text, ts: new Date().toISOString() });
+        DB.setComments(coms);
+        rerenderPost(pid);
+      });
+    });
+
+    /* needs-auth buttons */
+    document.querySelectorAll('[data-needs-auth]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        if (!isAuth()) { e.stopPropagation(); showToast('Inicia sesión para interactuar.'); go('login'); }
+      }, true);
+    });
+  }
+
+  /* Re-render a single post card in place */
+  function rerenderPost(pid) {
+    const card = document.querySelector(`[data-pid="${pid}"]`);
+    if (!card) return;
+    const post = allPosts().find(p => p.id === pid);
+    if (!post) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = postCard(post);
+    const newCard = tmp.firstElementChild;
+    card.replaceWith(newCard);
+    // Rebind on the new card only
+    const bindOn = (sel, ev, handler) => newCard.querySelectorAll(sel).forEach(el => el.addEventListener(ev, handler));
+    const pid2 = pid;
+    bindOn('[data-like]', 'click', () => document.querySelector(`[data-pid="${pid2}"] [data-like]`) && document.querySelector(`[data-pid="${pid2}"] [data-like]`).dispatchEvent && null);
+    // Re-run full bind to pick up new elements
+    bindPostInteractions();
+    bindFollowButtons();
+  }
+
+  /* Favorites (directory profiles) */
+  function bindFavorites() {
+    document.querySelectorAll('[data-favorite]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        const id   = btn.dataset.favorite;
+        const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+        const idx  = favs.indexOf(id);
+        if (idx === -1) { favs.push(id); showToast('Perfil guardado en tu Pasaporte Cultural.'); }
+        else            { favs.splice(idx, 1); showToast('Perfil eliminado de guardados.'); }
+        localStorage.setItem('origen-favorites', JSON.stringify(favs));
+        render(currentRoute(), false);
+      });
+    });
+  }
+
+  /* Follow buttons (user or creator) */
+  function bindFollowButtons() {
+    document.querySelectorAll('[data-fuser]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!isAuth()) { showToast('Inicia sesión para seguir.'); go('login'); return; }
+        const targetId = btn.dataset.fuser;
+        const user     = me();
+        const follows  = DB.follows();
+        if (!follows[user.id]) follows[user.id] = [];
+        const idx = follows[user.id].indexOf(targetId);
+        if (idx === -1) {
+          follows[user.id].push(targetId);
+          btn.textContent = 'Siguiendo'; btn.classList.add('on');
+          showToast('¡Ahora sigues este perfil cultural!');
+        } else {
+          follows[user.id].splice(idx, 1);
+          btn.textContent = '+ Seguir'; btn.classList.remove('on');
+          showToast('Dejaste de seguir este perfil.');
+        }
+        DB.setFollows(follows);
+        // Also sync with legacy localStorage
+        const legFoll = JSON.parse(localStorage.getItem('origen-following') || '[]');
+        const legIdx  = legFoll.indexOf(targetId);
+        if (idx === -1 && legIdx === -1) legFoll.push(targetId);
+        else if (idx !== -1 && legIdx !== -1) legFoll.splice(legIdx, 1);
+        localStorage.setItem('origen-following', JSON.stringify(legFoll));
+      });
+    });
+  }
+
+  /* Logout */
+  function bindLogoutBtn() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
+    const logoutAside = document.getElementById('logout-btn-aside');
+    if (logoutAside) logoutAside.addEventListener('click', doLogout);
+  }
+
+  /* Explore */
+  function bindExplore() {
+    renderExploreGrid();
+    const searchEl = document.getElementById('explore-search');
+    if (searchEl) searchEl.addEventListener('input', e => { state.query = e.target.value; renderExploreGrid(); });
+    document.querySelectorAll('[data-category]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.activeCategory = btn.dataset.category;
+        document.querySelectorAll('[data-category]').forEach(b => b.classList.toggle('active', b === btn));
+        renderExploreGrid();
+      });
+    });
+    const clearBtn = document.getElementById('clear-filters');
+    if (clearBtn) clearBtn.addEventListener('click', () => { state.query = ''; state.activeCategory = 'Todos'; render('explorar', false); });
+  }
+
+  /* Login */
+  function bindLogin() {
+    const form = document.getElementById('login-form');
+    if (!form) return;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const { email, password } = Object.fromEntries(new FormData(form));
+      const ok = doLogin(email, password);
+      if (ok) { updateShell(); go('feed'); }
+      else    { const err = document.getElementById('login-error'); if (err) err.style.display = 'block'; }
+    });
+  }
+
+  /* Register wizard */
+  function bindRegister() {
+    /* account type selection */
+    document.querySelectorAll('[data-atype]').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('[data-atype]').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        state.regData.accountType = card.dataset.atype;
+      });
+    });
+
+    /* category chips */
+    document.querySelectorAll('[data-cat]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        const cat  = chip.dataset.cat;
+        if (!state.regData.categories) state.regData.categories = [];
+        const idx  = state.regData.categories.indexOf(cat);
+        if (idx === -1) state.regData.categories.push(cat);
+        else            state.regData.categories.splice(idx, 1);
+      });
+    });
+
+    /* photo uploads (step 3) */
+    const regAvatarInput = document.getElementById('reg-avatar-input');
+    if (regAvatarInput) {
+      regAvatarInput.addEventListener('change', async e => {
+        const file = e.target.files[0]; if (!file) return;
+        state.regData.avatar = await resizeImg(file, 400);
+        render('registro', false);
+      });
+    }
+    const regCoverInput = document.getElementById('reg-cover-input');
+    if (regCoverInput) {
+      regCoverInput.addEventListener('change', async e => {
+        const file = e.target.files[0]; if (!file) return;
+        state.regData.cover = await resizeImg(file, 1200);
+        render('registro', false);
+      });
+    }
+
+    /* back */
+    const backBtn = document.getElementById('reg-back');
+    if (backBtn) backBtn.addEventListener('click', () => { state.regStep--; render('registro', false); });
+
+    /* next / submit */
+    const nextBtn = document.getElementById('reg-next');
+    if (!nextBtn) return;
+    nextBtn.addEventListener('click', () => {
+      const step = state.regStep;
+      const errEl = document.getElementById('reg-error');
+
+      if (step === 1) {
+        if (!state.regData.accountType) { if (errEl) { errEl.textContent = 'Selecciona un tipo de cuenta.'; errEl.style.display = 'block'; } return; }
+        if (errEl) errEl.style.display = 'none';
+        state.regStep++; render('registro', false);
+      } else if (step === 2) {
+        const form = document.getElementById('reg-basic');
+        if (!form || !form.reportValidity()) return;
+        const fd = Object.fromEntries(new FormData(form));
+        Object.assign(state.regData, fd);
+        state.regStep++; render('registro', false);
+      } else if (step === 3) {
+        state.regStep++; render('registro', false);
+      } else if (step === 4) {
+        const form = document.getElementById('reg-story');
+        if (form) { const fd = Object.fromEntries(new FormData(form)); Object.assign(state.regData, fd); }
+        state.regStep++; render('registro', false);
+      } else if (step === 5) {
+        const form = document.getElementById('reg-social');
+        if (form) {
+          const fd = Object.fromEntries(new FormData(form));
+          const links = {};
+          ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
+          state.regData.links = links;
+        }
+        const result = doRegister(state.regData);
+        if (result.ok) {
+          state.regStep = 1; state.regData = {};
+          showToast('¡Bienvenida/o a Origen Cultural!');
+          updateShell(); go('feed');
+        } else {
+          if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
+        }
+      }
+    });
+  }
+
+  /* Create post */
+  function bindCreatePost() {
+    /* type buttons */
+    document.querySelectorAll('[data-ctype]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.createData.type  = btn.dataset.ctype;
+        state.createData.media = [];
+        render('crear', false);
+      });
+    });
+
+    /* media upload zone click */
+    const mediaZone  = document.getElementById('post-media-zone');
+    const mediaInput = document.getElementById('post-media-input');
+    if (mediaZone && mediaInput) {
+      mediaZone.addEventListener('click', e => {
+        if (e.target.closest('[data-rmidx]') || e.target.closest('#add-more-media')) return;
+        mediaInput.click();
+      });
+      mediaInput.addEventListener('change', async e => {
+        const files = Array.from(e.target.files || []);
+        if (state.createData.type === 'video') {
+          state.createData.media = [URL.createObjectURL(files[0])];
+        } else {
+          const resized = await Promise.all(files.map(f => resizeImg(f, 900)));
+          if (state.createData.type === 'carousel') state.createData.media = [...(state.createData.media || []), ...resized];
+          else state.createData.media = resized;
+        }
+        render('crear', false);
+      });
+    }
+
+    /* add more media (carousel) */
+    const addMore = document.getElementById('add-more-media');
+    if (addMore) addMore.addEventListener('click', e => { e.stopPropagation(); mediaInput && mediaInput.click(); });
+
+    /* remove media thumbnail */
+    document.querySelectorAll('[data-rmidx]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.rmidx, 10);
+        state.createData.media.splice(idx, 1);
+        render('crear', false);
+      });
+    });
+
+    /* form inputs → update preview */
+    const form = document.getElementById('create-form');
+    if (!form) return;
+    ['title','description','category','territory','tags'].forEach(field => {
+      const el = form.querySelector(`[name="${field}"]`);
+      if (el) el.addEventListener('input', () => {
+        state.createData[field] = field === 'tags'
+          ? el.value.split(',').map(s => s.trim()).filter(Boolean)
+          : el.value;
+        // Throttle preview re-render
+        clearTimeout(bindCreatePost._prev);
+        bindCreatePost._prev = setTimeout(() => render('crear', false), 350);
+      });
+    });
+
+    /* submit */
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const user = me(); if (!user) return;
+      const fd = Object.fromEntries(new FormData(form));
+      if (state.createData.type !== 'text' && (!state.createData.media || !state.createData.media.length)) {
+        showToast('Por favor sube al menos una imagen o video.'); return;
+      }
+      const post = {
+        id:          uid(),
+        authorId:    user.id,
+        type:        state.createData.type,
+        media:       state.createData.media || [],
+        title:       fd.title,
+        description: fd.description,
+        category:    fd.category,
+        territory:   fd.territory,
+        tags:        fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
+        timestamp:   new Date().toISOString(),
+        likes:       0,
+      };
+      const posts = DB.posts();
+      posts.unshift(post);
+      DB.setPosts(posts);
+      state.createData = { type: 'photo', media: [], tags: [] };
+      showToast('¡Publicación creada!');
+      go('feed');
+    });
+  }
+
+  /* Edit profile */
+  function bindEditProfile() {
+    /* category chips */
+    const userCats = { list: me() ? (me().categories || []) : [] };
+    document.querySelectorAll('[data-cat]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        const cat = chip.dataset.cat;
+        const idx = userCats.list.indexOf(cat);
+        if (idx === -1) userCats.list.push(cat); else userCats.list.splice(idx, 1);
+      });
+    });
+
+    /* avatar upload */
+    const avaInput = document.getElementById('edit-avatar-input');
+    if (avaInput) avaInput.addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      state.editAvatar = await resizeImg(file, 400);
+      const zone = document.getElementById('edit-avatar-zone');
+      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${state.editAvatar}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/*" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
+    });
+
+    /* cover upload */
+    const covInput = document.getElementById('edit-cover-input');
+    if (covInput) covInput.addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      state.editCover = await resizeImg(file, 1200);
+      const zone = document.getElementById('edit-cover-zone');
+      if (zone) zone.innerHTML = `<img src="${state.editCover}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/*" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
+    });
+
+    /* form submit */
+    const form = document.getElementById('edit-form');
+    if (!form) return;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const user = me(); if (!user) return;
+      const fd   = Object.fromEntries(new FormData(form));
+      const links = {};
+      ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
+      const updated = {
+        ...user,
+        name:       fd.name || user.name,
+        location:   fd.location,
+        story:      fd.story,
+        categories: userCats.list,
+        links,
+        avatar:     state.editAvatar || user.avatar,
+        cover:      state.editCover  || user.cover,
+      };
+      const users = DB.users();
+      users[user.id] = updated;
+      DB.setUsers(users);
+      DB.setSession(updated);
+      state.editAvatar = null; state.editCover = null;
+      showToast('¡Perfil actualizado!');
+      go('mi-perfil');
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     GLOBAL SHELL EVENTS (search, drawer, language)
+  ═══════════════════════════════════════════════════════════ */
+  const drawer   = document.getElementById('mobile-drawer');
+  const overlay  = document.getElementById('drawer-overlay');
+  const menuBtn  = document.getElementById('menu-button');
+  const closeBtn = document.getElementById('close-menu');
+
+  function openDrawer()  { drawer.classList.add('open'); overlay.classList.add('open'); drawer.setAttribute('aria-hidden','false'); menuBtn.setAttribute('aria-expanded','true'); }
+  function closeDrawer() { drawer.classList.remove('open'); overlay.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); menuBtn.setAttribute('aria-expanded','false'); }
+
+  menuBtn.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (overlay)  overlay.addEventListener('click', closeDrawer);
+
+  document.getElementById('language-toggle').addEventListener('click', () => {
+    state.lang = state.lang === 'es' ? 'en' : 'es';
+    localStorage.setItem('origen-lang', state.lang);
+    document.getElementById('language-toggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
+    document.documentElement.lang = state.lang;
+    render(currentRoute(), false);
+    showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
+  });
+
+  /* Global search */
+  const globalSearch = document.getElementById('global-search');
+  if (globalSearch) {
+    globalSearch.addEventListener('input', e => populateSearch(e.target.value));
+    document.getElementById('search-button').addEventListener('click', () => {
+      $search.showModal();
+      setTimeout(() => globalSearch.focus(), 40);
+      populateSearch('');
+    });
+  }
+  function populateSearch(query) {
+    const q = query.toLowerCase().trim();
+    const results = creators.filter(c => !q || [c.name, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q));
+    const resPosts = allPosts().filter(p => q && [p.title, p.description, ...(p.tags || [])].join(' ').toLowerCase().includes(q)).slice(0, 4);
+    const $res = document.getElementById('search-results');
+    if (!$res) return;
+    $res.innerHTML = [
+      ...results.map(c => `<a class="search-result" href="#perfil/${c.id}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`),
+      ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" onclick="document.getElementById('search-dialog').close();state.openComments.clear()"><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
+    ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     HASH CHANGE → RENDER
+  ═══════════════════════════════════════════════════════════ */
+  window.addEventListener('hashchange', () => {
+    closeDrawer();
+    render(currentRoute());
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════════ */
   document.documentElement.lang = state.lang;
-  render();
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
+  render(currentRoute());
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+  }
+
 })();

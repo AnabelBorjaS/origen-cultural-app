@@ -1,0 +1,1 @@
+- [Social network architecture](social-arch.md) — localStorage DB abstraction designed to swap 1:1 with Supabase; all data keys documented there.
