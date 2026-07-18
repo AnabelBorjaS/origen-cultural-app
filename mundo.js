@@ -10,122 +10,242 @@ window.MundoCultural = (() => {
     ecuador: {
       key: 'ecuador', flag: '🇪🇨',
       name: 'Ecuador', continent: 'América del Sur',
-      capital: 'Quito', population: '18 millones',
       languages: ['Español', 'Kichwa', 'Shuar', 'Achuar'],
-      traditions: ['Inti Raymi — Fiesta del Sol', 'Carnaval de Guaranda', 'Fiesta del Yamor', 'Pase del Niño Viajero'],
-      gastronomy: ['Ceviche de camarón', 'Llapingachos', 'Cuy asado', 'Fanesca', 'Hornado pastuzo', 'Colada morada'],
-      music: ['Pasillo', 'Sanjuanito', 'Tonada', 'Pasacalle', 'Albazo'],
-      celebrations: ['Inti Raymi (junio)', 'Carnaval (febrero)', 'Día de los Difuntos (noviembre)', 'Fundación de Quito (agosto)'],
-      crafts: ['Bordado a mano de Yaruquí', 'Sombrero de paja toquilla', 'Cerámica de Cotacachi', 'Tejido de totora', 'Shigra'],
-      curiosities: [
-        'Primer país del mundo en reconocer los Derechos de la Naturaleza en su Constitución (2008).',
-        'Posee 4 mundos naturales: Costa, Sierra, Amazonía y las Islas Galápagos.',
-        'El famoso «sombrero Panamá» es en realidad originario de Montecristi, Ecuador.',
-        'La Mitad del Mundo: el país toma su nombre por la línea ecuatorial que lo atraviesa.'
-      ],
       lat: -1.83, lng: -78.18, altitude: 1.8,
       creatorIds: ['pakarina', 'chawar', 'aji-de-piedra', 'yaruqui-vivo', 'danza-andina'],
-      geoNames: ['Ecuador']
+      geoNames: ['Ecuador'],
+      microhistorias: [
+        {
+          id: 'ec-1', cat: 'Artesanía · Identidad',
+          txt: 'El llamado «sombrero Panamá» nace en Montecristi, Ecuador. Las tejedoras trabajan de madrugada para aprovechar la humedad que suaviza la paja toquilla y permite el tejido más fino.',
+          src: 'UNESCO / Artesanas de Montecristi, Ecuador',
+          href: '#explorar'
+        },
+        {
+          id: 'ec-2', cat: 'Gastronomía · Ritual',
+          txt: 'La colada morada se prepara en noviembre para honrar a los difuntos. Cada familia añade sus propias flores y frutas: la receta es también un mapa de memoria familiar y afecto.',
+          src: 'Ministerio de Cultura del Ecuador / INPC',
+          href: '#explorar'
+        },
+        {
+          id: 'ec-3', cat: 'Lengua · Cosmovisión',
+          txt: 'En kichwa, «Pachamama» no significa solo «Madre Tierra»: «pacha» es tiempo y espacio a la vez; «mama», madre. Nombrarla es reconocer que el universo entero es un ser vivo.',
+          src: 'Academia de la Lengua Kichwa del Ecuador',
+          href: '#explorar'
+        },
+        {
+          id: 'ec-4', cat: 'Artesanía · Comunidad',
+          txt: 'Las shigras son bolsas tejidas en fibra de cabuya por mujeres kichwas del Cotopaxi. Cada nudo y color cuenta una historia familiar que se transmite de generación en generación.',
+          src: 'Comunidades Kichwa de Cotopaxi / INPC Ecuador',
+          href: '#explorar'
+        },
+        {
+          id: 'ec-5', cat: 'Tradición · Territorio',
+          txt: 'El Inti Raymi kichwa no es una recreación turística: es una celebración viva del solsticio que comunidades de la Sierra practican sin interrupción desde antes de la conquista española.',
+          src: 'Comunidad Kichwa Panzaleo / INPC Ecuador',
+          href: '#mundo'
+        }
+      ]
     },
     australia: {
       key: 'australia', flag: '🇦🇺',
       name: 'Australia', continent: 'Oceanía',
-      capital: 'Canberra', population: '26 millones',
       languages: ['Inglés (oficial)', 'Yolŋu Matha', 'Warlpiri', '+250 lenguas aborígenes'],
-      traditions: ['Corroboree (ceremonias aborígenes)', 'ANZAC Day', 'Australia Day', 'Naidoc Week'],
-      gastronomy: ['Vegemite', 'Tim Tam', 'Meat pie', 'Pavlova', 'Barramundi a la parrilla', 'Lamington'],
-      music: ['Didgeridoo (yidaki)', 'Rock australiano', 'Música country', 'Música de los Pueblos del Desierto'],
-      celebrations: ['Australia Day (enero)', 'ANZAC Day (abril)', 'Melbourne Cup (noviembre)', 'Sydney New Year'],
-      crafts: ['Arte puntillista aborigen', 'Dot painting', 'Boomerang artesanal', 'Cestería de Pueblos Originarios'],
-      curiosities: [
-        'Los pueblos aborígenes australianos tienen la cultura continua más antigua del mundo: más de 65.000 años.',
-        'Uluru (Ayers Rock) es uno de los lugares más sagrados del mundo para los Anangu.',
-        'Australia tiene más especies animales únicas que cualquier otro continente.',
-        'El didgeridoo es el instrumento de viento continuo más antiguo del mundo.'
-      ],
       lat: -25.27, lng: 133.77, altitude: 1.8,
       creatorIds: [],
-      geoNames: ['Australia']
+      geoNames: ['Australia'],
+      microhistorias: [
+        {
+          id: 'au-1', cat: 'Territorio · Ley Sagrada',
+          txt: 'Los Anangu no fotografían ciertas zonas de Uluru porque consideran que hacerlo viola una ley espiritual viva, no una norma turística. Uluru no es un monumento: es un ser.',
+          src: 'Tjukurpa Law / Anangu Pitjantjatjara Yankunytjatjara',
+          href: '#explorar'
+        },
+        {
+          id: 'au-2', cat: 'Música · Ceremonia',
+          txt: 'El yidaki —conocido como didgeridoo— se toca con respiración circular continua. Requiere años de práctica y pertenece a ceremonias sagradas de los Yolŋu: no es música de entretenimiento.',
+          src: 'Yolŋu Elders / Australian Institute of Aboriginal Studies',
+          href: '#explorar'
+        },
+        {
+          id: 'au-3', cat: 'Arte · Cosmología',
+          txt: 'El arte puntillista aborigen no es decorativo: cada punto conecta mapas sagrados del Tiempo del Sueño, la cosmología que explica el origen del mundo para los Pueblos del Desierto.',
+          src: 'Desart / Araluen Arts Centre, Australia Central',
+          href: '#explorar'
+        },
+        {
+          id: 'au-4', cat: 'Lengua · Tiempo',
+          txt: 'Australia alberga más de 250 lenguas indígenas. Algunas no tienen tiempo lineal ni puntos cardinales fijos: cada lengua es también una manera distinta de concebir y habitar el mundo.',
+          src: 'AIATSIS — Instituto Australiano de Estudios Aborígenes',
+          href: '#explorar'
+        },
+        {
+          id: 'au-5', cat: 'Tradición · Transmisión',
+          txt: 'El Corroboree no es un espectáculo: es un encuentro ceremonial donde canto, danza y pintura corporal transmiten leyes y conocimientos de unas generaciones a otras, en comunidades específicas.',
+          src: 'AIATSIS / Consejo de Ancianos Aborígenes',
+          href: '#explorar'
+        }
+      ]
     },
     peru: {
       key: 'peru', flag: '🇵🇪',
       name: 'Perú', continent: 'América del Sur',
-      capital: 'Lima', population: '33 millones',
       languages: ['Español', 'Quechua', 'Aimara'],
-      traditions: ['Inti Raymi en Cusco', 'Fiesta de la Candelaria en Puno (UNESCO)', 'Semana Santa de Ayacucho', 'Corpus Christi cusqueño'],
-      gastronomy: ['Ceviche (Patrimonio UNESCO)', 'Lomo saltado', 'Ají de gallina', 'Cuy al horno', 'Chicha morada', 'Papa a la Huancaína'],
-      music: ['Marinera norteña', 'Huayno andino', 'Vals peruano', 'Festejo afroperuano', 'Landó'],
-      celebrations: ['Inti Raymi (junio)', 'Candelaria de Puno (febrero)', 'Corpus Christi (junio)', 'Fiestas Patrias (julio)'],
-      crafts: ['Textiles andinos de alpaca', 'Retablos ayacuchanos', 'Cerámica de Quinua', 'Mates burilados de Huancayo', 'Tapices de Sarhua'],
-      curiosities: [
-        'Machu Picchu fue construida en el siglo XV por el Imperio Inca y es Maravilla del Mundo Moderno.',
-        'El Perú tiene la mayor biodiversidad de papa del mundo: más de 3.000 variedades.',
-        'El ceviche peruano está reconocido como Patrimonio Cultural de la Nación.',
-        'La Amazonía peruana alberga el 13% de todos los bosques tropicales del planeta.'
-      ],
       lat: -9.19, lng: -75.02, altitude: 1.8,
       creatorIds: [],
-      geoNames: ['Peru', 'Perú']
+      geoNames: ['Peru', 'Perú'],
+      microhistorias: [
+        {
+          id: 'pe-1', cat: 'Gastronomía · Biodiversidad',
+          txt: 'Perú conserva más de 3.000 variedades de papa domesticadas hace 8.000 años en el altiplano andino. Cada variedad tiene nombre propio en quechua y propiedades distintas según la altitud.',
+          src: 'Centro Internacional de la Papa (CIP) — Lima',
+          href: '#explorar'
+        },
+        {
+          id: 'pe-2', cat: 'Música · Danza',
+          txt: 'La marinera norteña representa el cortejo entre dos personas usando solo un pañuelo blanco como intermediario. Su coreografía sin contacto fue declarada Patrimonio Cultural de la Nación en 1986.',
+          src: 'MINCUL — Ministerio de Cultura del Perú',
+          href: '#explorar'
+        },
+        {
+          id: 'pe-3', cat: 'Artesanía · Historia Viva',
+          txt: 'Los retablos ayacuchanos nacieron como altares portátiles para evangelizar. Hoy los artesanos los usan para narrar conflictos sociales, cosechas, fiestas y la historia reciente de sus comunidades.',
+          src: 'Museo de Arte Popular — Ayacucho, Perú',
+          href: '#explorar'
+        },
+        {
+          id: 'pe-4', cat: 'Tradición · Sincretismo',
+          txt: 'En Cusco, el Corpus Christi fusiona la procesión católica con el culto andino a los ancestros. Durante siglos, los pueblos indígenas llevaron a sus muertos junto a imágenes de santos.',
+          src: 'UNSAAC — Universidad Nacional San Antonio Abad del Cusco',
+          href: '#explorar'
+        },
+        {
+          id: 'pe-5', cat: 'Lengua · Emoción',
+          txt: 'En quechua, «llaki» es tristeza profunda y forma de amor al mismo tiempo. El idioma contiene maneras de sentir que el español no alcanza a nombrar con una sola palabra.',
+          src: 'Academia Mayor de la Lengua Quechua — Cusco',
+          href: '#explorar'
+        }
+      ]
     },
     bolivia: {
       key: 'bolivia', flag: '🇧🇴',
       name: 'Bolivia', continent: 'América del Sur',
-      capital: 'Sucre (constitucional) / La Paz (sede de gobierno)', population: '12 millones',
       languages: ['Español', 'Quechua', 'Aimara', '+33 lenguas indígenas (todas co-oficiales)'],
-      traditions: ['Carnaval de Oruro (Patrimonio UNESCO)', 'Tinku (ritual de encuentro)', 'Alasitas (miniaturas del Ekeko)', 'Gran Poder de La Paz'],
-      gastronomy: ['Salteña', 'Silpancho', 'Pique macho', 'Sopa de maní', 'Api morado', 'Thimpu'],
-      music: ['Saya afraboliviana', 'Cueca boliviana', 'Taquirari', 'Morenada', 'Caporales'],
-      celebrations: ['Carnaval de Oruro (febrero)', 'Alasitas (enero)', 'Gran Poder (junio)', 'Día de los Muertos (noviembre)'],
-      crafts: ['Tejidos de los Jalq\'a', 'Máscaras del Carnaval de Oruro', 'Cerámica de Tiwanaku', 'Sombreros bombín', 'Aguayos'],
-      curiosities: [
-        'Bolivia reconoce 36 idiomas oficiales en su Constitución, más que cualquier otro país del mundo.',
-        'El Salar de Uyuni es el espejo natural más grande del planeta: 10.000 km² de sal.',
-        'La Paz es la capital administrativa más alta del mundo, a 3.640 metros sobre el nivel del mar.',
-        'El Carnaval de Oruro es considerado «Obra Maestra del Patrimonio Oral» por la UNESCO.'
-      ],
       lat: -16.5, lng: -64.5, altitude: 1.8,
       creatorIds: [],
-      geoNames: ['Bolivia']
+      geoNames: ['Bolivia'],
+      microhistorias: [
+        {
+          id: 'bo-1', cat: 'Tradición · Deseo',
+          txt: 'En las Alasitas se compran miniaturas de lo que se desea: casa, salud, título. El Ekeko, dios aymara de la abundancia, activa esos deseos a mediodía del 24 de enero.',
+          src: 'UNESCO / Comunidades Aymara de La Paz',
+          href: '#explorar'
+        },
+        {
+          id: 'bo-2', cat: 'Artesanía · Cosmología',
+          txt: 'Los tejidos jalq\'a de Potosí representan el ukhu pacha, el mundo interior poblado de seres caóticos sin forma definida. Su simbología no es decorativa: es una cartografía del cosmos aymara.',
+          src: 'ASUR — Antropólogos del Sur Andino, Sucre',
+          href: '#explorar'
+        },
+        {
+          id: 'bo-3', cat: 'Gastronomía · Ritual Social',
+          txt: 'La salteña boliviana no es una empanada. Su masa dulce y su caldo espeso la hacen única, y morderla sin derramar nada es un arte que define identidad en Bolivia.',
+          src: 'Patrimonio Cultural Inmaterial de Bolivia',
+          href: '#explorar'
+        },
+        {
+          id: 'bo-4', cat: 'Música · Resistencia',
+          txt: 'La saya afraboliviana nació en los Yungas para resistir y celebrar a la vez. Su ritmo, letras y danza son memoria viva de las comunidades afrobolivianas contra el olvido histórico.',
+          src: 'Comunidad Afroboliviana de los Yungas / CADIC',
+          href: '#explorar'
+        },
+        {
+          id: 'bo-5', cat: 'Territorio · Sagrado',
+          txt: 'Para comunidades quechua y aymara, el Salar de Uyuni no es un paisaje turístico: es un espacio sagrado donde el cielo y la tierra se encuentran y se vuelven uno.',
+          src: 'Comunidades Quechua-Aymara de Potosí / CIPCA',
+          href: '#explorar'
+        }
+      ]
     },
     mexico: {
       key: 'mexico', flag: '🇲🇽',
       name: 'México', continent: 'América del Norte',
-      capital: 'Ciudad de México', population: '130 millones',
-      languages: ['Español', 'Náhuatl', 'Maya yucateco', 'Zapoteco', 'Mixteco', '+64 lenguas indígenas'],
-      traditions: ['Día de los Muertos (UNESCO)', 'Guelaguetza de Oaxaca', 'Día de la Virgen de Guadalupe', 'Posadas navideñas'],
-      gastronomy: ['Tacos', 'Mole negro', 'Tamales', 'Pozole', 'Chiles en nogada', 'Mezcal', 'Chocolate'],
-      music: ['Mariachi (Patrimonio UNESCO)', 'Son jarocho', 'Cumbia', 'Corridos', 'Marimba chiapaneca'],
-      celebrations: ['Día de los Muertos (nov)', 'Guelaguetza (julio)', 'Independencia (sept)', 'Día de los Reyes (enero)'],
-      crafts: ['Talavera de Puebla (UNESCO)', 'Alebrijes de Oaxaca', 'Huipil bordado', 'Barro negro de San Bartolo', 'Arte huichol'],
-      curiosities: [
-        'México tiene 35 sitios declarados Patrimonio de la Humanidad por la UNESCO.',
-        'El chocolate, el aguacate, el tomate, el maíz y el cacao son originarios de México.',
-        'La Catrina, símbolo del Día de los Muertos, fue creada por el grabador José Guadalupe Posada.',
-        'Teotihuacán significa «El lugar donde los hombres se convierten en dioses» en náhuatl.'
-      ],
+      languages: ['Español', 'Náhuatl', 'Maya yucateco', 'Zapoteco', '+64 lenguas indígenas'],
       lat: 23.63, lng: -102.55, altitude: 1.8,
       creatorIds: [],
-      geoNames: ['Mexico', 'México']
+      geoNames: ['Mexico', 'México'],
+      microhistorias: [
+        {
+          id: 'mx-1', cat: 'Gastronomía · Origen',
+          txt: 'El chocolate no llegó a Europa desde América: fue al revés. Los mayas preparaban «xocolātl» siglos antes de la conquista —amargo, espumoso, con chile— en rituales, no como postre.',
+          src: 'INAH — Instituto Nacional de Antropología e Historia',
+          href: '#explorar'
+        },
+        {
+          id: 'mx-2', cat: 'Artesanía · Sueño',
+          txt: 'Los alebrijes nacieron en 1936 cuando Pedro Linares, enfermo y febril, soñó con criaturas que mezclaban animales reales. Al despertar los esculpió en papel y los pintó de colores imposibles.',
+          src: 'Museo de Arte Popular de México — Ciudad de México',
+          href: '#explorar'
+        },
+        {
+          id: 'mx-3', cat: 'Tradición · Sincretismo',
+          txt: 'El Día de los Muertos nació de la fusión de rituales nahuas con el catolicismo colonial. Cada ofrenda es un mapa de afectos: quién te amaba, qué comías, cómo eras.',
+          src: 'UNESCO / INAH México',
+          href: '#explorar'
+        },
+        {
+          id: 'mx-4', cat: 'Música · Cuerpo',
+          txt: 'En el son jarocho, la tarima de madera es un instrumento: el zapateado convierte el piso en percusión colectiva. El suelo mismo se vuelve voz de la comunidad veracruzana.',
+          src: 'Casa de la Cultura Jarocha — Veracruz',
+          href: '#explorar'
+        },
+        {
+          id: 'mx-5', cat: 'Lengua · Pensamiento',
+          txt: 'En náhuatl, «tlahtoa» significa hablar, pero también crear mundos. Para muchas comunidades nahuahablantes actuales, nombrar algo es traerlo a la existencia, no solo describirlo.',
+          src: 'Instituto Nacional de Lenguas Indígenas (INALI)',
+          href: '#explorar'
+        }
+      ]
     },
     japan: {
       key: 'japan', flag: '🇯🇵',
       name: 'Japón', continent: 'Asia',
-      capital: 'Tokio', population: '125 millones',
       languages: ['Japonés', 'Ainu (lengua indígena en Hokkaido)'],
-      traditions: ['Hanami (contemplar los cerezos)', 'Matsuri (festivales locales)', 'Obon (festival de ancestros)', 'Shichi-Go-San'],
-      gastronomy: ['Sushi', 'Ramen', 'Tempura', 'Matcha', 'Wagyu', 'Sake', 'Mochi'],
-      music: ['Gagaku (música cortesana imperial)', 'Koto (cítara de 13 cuerdas)', 'Shamisen', 'Taiko (tambor)', 'J-Pop'],
-      celebrations: ['Hanami (marzo-abril)', 'Obon (agosto)', 'Año Nuevo — Oshōgatsu (enero)', 'Hinamatsuri (marzo)'],
-      crafts: ['Kintsugi (cerámica reparada con oro)', 'Origami', 'Ikebana (arreglo floral)', 'Cerámica Raku', 'Kimono'],
-      curiosities: [
-        'El Kintsugi convierte las fracturas en belleza, reparando cerámica rota con polvo de oro: la imperfección como arte.',
-        'Japón tiene 23 sitios UNESCO y es el país con más restaurantes con estrellas Michelin del mundo.',
-        'El haiku captura un momento único en solo 17 sílabas, una de las formas poéticas más precisas de la humanidad.',
-        'La práctica del «Ikigai» (razón de ser) es considerada una de las claves de la longevidad japonesa.'
-      ],
       lat: 36.2, lng: 138.25, altitude: 1.8,
       creatorIds: [],
-      geoNames: ['Japan', 'Japón']
+      geoNames: ['Japan', 'Japón'],
+      microhistorias: [
+        {
+          id: 'jp-1', cat: 'Artesanía · Filosofía',
+          txt: 'El kintsugi no oculta las fracturas: las une con polvo de oro. La historia de cada pieza —sus roturas, sus reparaciones— se convierte en su mayor valor estético.',
+          src: 'Museo Nacional de Kyoto / Tradición de la Escuela Raku',
+          href: '#explorar'
+        },
+        {
+          id: 'jp-2', cat: 'Tradición · Ancestros',
+          txt: 'Durante el Obon, los espíritus de los ancestros regresan al hogar por tres días. Las familias encienden farolillos y bailan el Bon Odori para recibirlos y despedirlos con amor.',
+          src: 'Ministerio de Educación de Japón / Tradición Budista Bon',
+          href: '#explorar'
+        },
+        {
+          id: 'jp-3', cat: 'Gastronomía · Ritual',
+          txt: 'El matcha no es simplemente té molido: su preparación sigue el «Chado», un camino de siglos donde cada gesto, el cuenco, el agua y el silencio tienen un significado preciso.',
+          src: 'Urasenke Tea School — Kyoto / Sen no Rikyū',
+          href: '#explorar'
+        },
+        {
+          id: 'jp-4', cat: 'Lengua · Silencio',
+          txt: 'En japonés, «ma» (間) es el espacio vacío entre dos cosas, pero no es ausencia: es presencia activa. Existe en la música, la arquitectura, las relaciones humanas y la conversación.',
+          src: 'Academia Japonesa / Ensayos de Arata Isozaki',
+          href: '#explorar'
+        },
+        {
+          id: 'jp-5', cat: 'Conocimiento · Territorio',
+          txt: 'El «Satoyama» es el paisaje entre la aldea y la montaña. Comunidades japonesas lo gestionaron en equilibrio durante siglos: ni agricultura invasiva ni abandono. Un modelo vivo de coexistencia.',
+          src: 'United Nations University — Tokyo / RIHN',
+          href: '#explorar'
+        }
+      ]
     }
   };
 
@@ -168,6 +288,17 @@ window.MundoCultural = (() => {
   let _rotating = true;
   let _geoData  = null;
   let _destroyed = false;
+  let _mcIdx    = 0;          // active micro-story index
+  let _mcTimer  = null;       // auto-advance interval
+
+  /* ── LOCAL TOAST ────────────────────────────────────────────── */
+  function _toast(msg) {
+    if (typeof window.showToast === 'function') { window.showToast(msg); return; }
+    const el = Object.assign(document.createElement('div'), { className: 'mc-toast-msg', textContent: msg });
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('visible'));
+    setTimeout(() => { el.classList.remove('visible'); setTimeout(() => el.remove(), 400); }, 2800);
+  }
 
   /* ── WEBGL DETECTION ────────────────────────────────────────── */
   function hasWebGL() {
@@ -307,20 +438,24 @@ window.MundoCultural = (() => {
     if (!_panel) return;
     const data     = CULTURAL_DB[countryKey];
     const creators = getCreatorsForKey(countryKey);
+    const stories  = data.microhistorias || [];
 
-    const section = (label, items) => items.length ? `
-      <div class="card-section">
-        <p class="card-section-label">${label}</p>
-        <div class="card-pills">${items.map(i => `<span class="card-pill">${i}</span>`).join('')}</div>
-      </div>` : '';
+    // Reset carousel state
+    if (_mcTimer) { clearInterval(_mcTimer); _mcTimer = null; }
+    _mcIdx = 0;
+
+    const isFollowing = (() => {
+      try { return JSON.parse(localStorage.getItem('oc-follows-territories') || '[]').includes(countryKey); }
+      catch { return false; }
+    })();
 
     const creatorHtml = creators.length
-      ? `<div class="card-section">
-          <p class="card-section-label">CREADORES CULTURALES</p>
+      ? `<div class="card-section card-section-creators">
+          <p class="card-section-label">CREADORES EN ESTE TERRITORIO</p>
           <div class="card-creators">${creators.slice(0, 6).map(renderCreatorMini).join('')}</div>
         </div>`
-      : `<div class="card-section">
-          <p class="card-section-label">CREADORES CULTURALES</p>
+      : `<div class="card-section card-section-creators">
+          <p class="card-section-label">CREADORES EN ESTE TERRITORIO</p>
           <div class="card-empty-creators">
             <p>Sé el primero en registrarte desde ${data.name}.</p>
             <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
@@ -328,38 +463,80 @@ window.MundoCultural = (() => {
         </div>`;
 
     _panel.innerHTML = `
-      <div class="cultural-card">
+      <div class="cultural-card" id="cultural-card-${countryKey}">
+
+        <!-- HEADER -->
         <div class="card-header">
           <div class="card-flag">${data.flag}</div>
-          <div>
+          <div class="card-header-info">
             <p class="eyebrow">${data.continent}</p>
             <h2 class="card-country-name">${data.name}</h2>
-            <p class="card-meta">${data.capital} · ${data.population}</p>
           </div>
           <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
         </div>
 
-        ${section('LENGUAS', data.languages)}
-        ${section('TRADICIONES', data.traditions)}
-        ${section('GASTRONOMÍA', data.gastronomy)}
-        ${section('MÚSICA', data.music)}
-        ${section('CELEBRACIONES', data.celebrations)}
-        ${section('ARTESANÍA', data.crafts)}
+        <!-- DISCLAIMER: múltiples identidades -->
+        <p class="territory-disclaimer">
+          <span class="td-icon">◈</span>
+          ${data.name} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
+        </p>
 
-        <div class="card-section">
-          <p class="card-section-label">SABÍAS QUE…</p>
-          <ul class="card-curiosities">${data.curiosities.map(c => `<li>${c}</li>`).join('')}</ul>
+        <!-- MICRO-STORY CAROUSEL -->
+        <div class="micro-carousel" id="mc-carousel" data-mckey="${countryKey}">
+          <div class="micro-card" id="mc-card">
+            <!-- Injected by setMicroStory() -->
+          </div>
+          <div class="mc-nav" id="mc-nav" aria-label="Navegar historias">
+            ${stories.map((_, i) =>
+              `<button class="mc-dot${i === 0 ? ' active' : ''}" data-mcdot="${i}" aria-label="Historia ${i + 1}"></button>`
+            ).join('')}
+          </div>
         </div>
 
+        <!-- ACTIONS ROW -->
+        <div class="micro-actions">
+          <button class="mc-action-btn" id="mc-save" data-mckey="${countryKey}" data-mcidx="0" title="Guardar en Pasaporte Cultural">
+            <span class="mca-icon">💾</span><span class="mca-label">Guardar</span>
+          </button>
+          <button class="mc-action-btn" id="mc-share" data-mckey="${countryKey}" title="Compartir esta historia">
+            <span class="mca-icon">↗</span><span class="mca-label">Compartir</span>
+          </button>
+          <button class="mc-action-btn${isFollowing ? ' on' : ''}" id="mc-follow" data-mcfollow="${countryKey}">
+            <span class="mca-icon">${isFollowing ? '✓' : '+'}</span>
+            <span class="mca-label">${isFollowing ? 'Siguiendo' : 'Seguir'}</span>
+          </button>
+          <a href="#explorar" class="mc-action-btn" title="Explorar perfiles culturales">
+            <span class="mca-icon">👥</span><span class="mca-label">Perfiles</span>
+          </a>
+        </div>
+
+        <!-- CREATORS -->
         ${creatorHtml}
 
-        <div class="card-actions">
-          <a href="#explorar" class="btn secondary" style="min-height:40px;padding:0 14px;font-size:11px">Explorar directorio</a>
-          <a href="#feed"     class="btn"           style="min-height:40px;padding:0 14px;font-size:11px">Ver feed</a>
+        <!-- LENGUAS -->
+        <div class="card-section">
+          <p class="card-section-label">LENGUAS DE ESTE TERRITORIO</p>
+          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${l}</span>`).join('')}</div>
         </div>
+
+        <!-- SUGGEST / CORRECTION -->
+        <div class="card-suggest">
+          <a href="#" class="suggest-link" id="mc-suggest" data-mcsuggest="${countryKey}">
+            ¿Tienes datos o encuentras un error? Sugiere o solicita corrección →
+          </a>
+        </div>
+
       </div>`;
 
+    // Render first story
+    setMicroStory(countryKey, 0);
+
+    // Bind all interactions
+    bindPanelButtons();
+    bindCardInteractions(countryKey);
+
     document.getElementById('card-close')?.addEventListener('click', () => {
+      if (_mcTimer) { clearInterval(_mcTimer); _mcTimer = null; }
       _selected = null;
       _panel.innerHTML = welcomeHtml();
       bindPanelButtons();
@@ -367,6 +544,149 @@ window.MundoCultural = (() => {
         _globe.polygonCapColor(capColor);
         _globe.controls().autoRotate = _rotating;
       }
+    });
+  }
+
+  /* Inject one micro-story into the card without re-rendering the whole panel */
+  function setMicroStory(countryKey, idx) {
+    const data = CULTURAL_DB[countryKey];
+    const card = document.getElementById('mc-card');
+    if (!card || !data) return;
+    const h = data.microhistorias?.[idx];
+    if (!h) return;
+
+    card.innerHTML = `
+      <div class="mc-inner">
+        <p class="mc-category">${h.cat}</p>
+        <h3 class="mc-sabias">¿Sabías que…?</h3>
+        <blockquote class="mc-text">${h.txt}</blockquote>
+        <a href="${h.href || '#explorar'}" class="mc-discover-btn">
+          Descubre su origen <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <footer class="mc-footer">
+        <p class="mc-source">Fuente: <em>${h.src}</em></p>
+      </footer>`;
+
+    // Update dots
+    document.querySelectorAll('.mc-dot').forEach((dot, i) =>
+      dot.classList.toggle('active', i === idx));
+
+    // Keep save-btn's idx in sync
+    const saveBtn = document.getElementById('mc-save');
+    if (saveBtn) saveBtn.dataset.mcidx = idx;
+  }
+
+  /* Wire carousel, save, share, follow, suggest */
+  function bindCardInteractions(countryKey) {
+    const data = CULTURAL_DB[countryKey];
+    if (!data) return;
+    const stories = data.microhistorias || [];
+
+    /* ─ auto-advance ─ */
+    function startTimer() {
+      if (_mcTimer) clearInterval(_mcTimer);
+      if (stories.length < 2) return;
+      _mcTimer = setInterval(() => {
+        _mcIdx = (_mcIdx + 1) % stories.length;
+        setMicroStory(countryKey, _mcIdx);
+      }, 8000);
+    }
+    startTimer();
+
+    /* ─ dots ─ */
+    document.querySelectorAll('.mc-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        _mcIdx = parseInt(dot.dataset.mcdot, 10);
+        setMicroStory(countryKey, _mcIdx);
+        startTimer();
+      });
+    });
+
+    /* ─ pause on hover ─ */
+    const carousel = document.getElementById('mc-carousel');
+    carousel?.addEventListener('mouseenter', () => { if (_mcTimer) clearInterval(_mcTimer); });
+    carousel?.addEventListener('mouseleave', startTimer);
+
+    /* ─ save to Pasaporte Cultural ─ */
+    document.getElementById('mc-save')?.addEventListener('click', e => {
+      const btn  = e.currentTarget;
+      const key  = btn.dataset.mckey;
+      const idx  = parseInt(btn.dataset.mcidx || '0', 10);
+      const d    = CULTURAL_DB[key];
+      const h    = d?.microhistorias?.[idx];
+      if (!h) return;
+
+      const passport = (() => { try { return JSON.parse(localStorage.getItem('oc-passport') || '[]'); } catch { return []; } })();
+      const entryId  = `${key}-${h.id}`;
+
+      if (!passport.find(p => p.id === entryId)) {
+        passport.push({
+          id: entryId, type: 'microhistoria',
+          country: d.name, flag: d.flag, continent: d.continent,
+          category: h.cat, text: h.txt, source: h.src,
+          savedAt: Date.now()
+        });
+        localStorage.setItem('oc-passport', JSON.stringify(passport));
+        btn.querySelector('.mca-icon').textContent = '✓';
+        btn.classList.add('on');
+        _toast(`Historia guardada en tu Pasaporte Cultural ✓`);
+        setTimeout(() => {
+          btn.querySelector('.mca-icon').textContent = '💾';
+          btn.classList.remove('on');
+        }, 2800);
+      } else {
+        _toast('Ya guardaste esta historia en tu Pasaporte Cultural.');
+      }
+    });
+
+    /* ─ share ─ */
+    document.getElementById('mc-share')?.addEventListener('click', () => {
+      const h    = stories[_mcIdx];
+      const text = `¿Sabías que…? ${h?.txt || ''}\n\nDescúbrelo en ORIGEN Cultural`;
+      const url  = `${location.origin}${location.pathname}#mundo`;
+      if (navigator.share) {
+        navigator.share({ title: `ORIGEN Cultural — ${data.name}`, text, url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(`${text}\n${url}`).then(() =>
+          _toast('Historia copiada al portapapeles ↗')
+        ).catch(() => _toast('Comparte este enlace: ' + url));
+      }
+    });
+
+    /* ─ follow territory ─ */
+    document.getElementById('mc-follow')?.addEventListener('click', e => {
+      const btn    = e.currentTarget;
+      const key    = btn.dataset.mcfollow;
+      const terrs  = (() => { try { return JSON.parse(localStorage.getItem('oc-follows-territories') || '[]'); } catch { return []; } })();
+      const idx    = terrs.indexOf(key);
+      const icon   = btn.querySelector('.mca-icon');
+      const label  = btn.querySelector('.mca-label');
+      if (idx === -1) {
+        terrs.push(key);
+        icon.textContent  = '✓';
+        label.textContent = 'Siguiendo';
+        btn.classList.add('on');
+        _toast(`Ahora sigues ${data.name} 🌍`);
+      } else {
+        terrs.splice(idx, 1);
+        icon.textContent  = '+';
+        label.textContent = 'Seguir';
+        btn.classList.remove('on');
+      }
+      localStorage.setItem('oc-follows-territories', JSON.stringify(terrs));
+    });
+
+    /* ─ suggest / correction ─ */
+    document.getElementById('mc-suggest')?.addEventListener('click', e => {
+      e.preventDefault();
+      const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      if (!session) {
+        _toast('Inicia sesión para sugerir datos o solicitar correcciones.');
+        setTimeout(() => { window.location.hash = '#login'; }, 1400);
+        return;
+      }
+      _toast('Gracias. Tu sugerencia llegará al equipo de ORIGEN Cultural para revisión.');
     });
   }
 
@@ -486,8 +806,8 @@ window.MundoCultural = (() => {
         _selected = poly;
         _globe.polygonCapColor(capColor);
         const key = matchKey(poly);
-        if (key) { renderCard(key); bindPanelButtons(); }
-        else     { unknownCountryCard(poly.properties?.ADMIN || poly.properties?.name || 'País'); }
+        if (key) renderCard(key);
+        else     unknownCountryCard(poly.properties?.ADMIN || poly.properties?.name || 'País');
         _globe.controls().autoRotate = false;
         _rotating = false;
         updatePauseBtn();
@@ -548,7 +868,7 @@ window.MundoCultural = (() => {
       btn.addEventListener('click', () => {
         el.querySelectorAll('[data-fc]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        if (_panel) { renderCard(btn.dataset.fc); bindPanelButtons(); }
+        if (_panel) renderCard(btn.dataset.fc);
       });
     });
     // Auto-select Ecuador
@@ -578,7 +898,6 @@ window.MundoCultural = (() => {
     const data = CULTURAL_DB[key];
     if (!data) return;
     renderCard(key);
-    bindPanelButtons();
     if (_globe) {
       // Find matching feature
       const feat = _geoData && _geoData.find(f => matchKey(f) === key);

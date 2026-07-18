@@ -1157,6 +1157,188 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
   flex-wrap: wrap;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   MICRO-STORY PANEL — ¿Sabías que…? carousel + actions
+════════════════════════════════════════════════════════════════ */
+
+/* Territory disclaimer */
+.territory-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.35);
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin: 0;
+}
+.td-icon { color: var(--sand); flex-shrink: 0; margin-top: 1px; font-style: normal; }
+
+/* Carousel wrapper */
+.micro-carousel {
+  padding: 20px 20px 8px;
+  position: relative;
+}
+
+/* Story card */
+.micro-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(200,169,126,0.20);
+  border-radius: 6px;
+  padding: 22px 20px 18px;
+  transition: border-color .3s;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.micro-card:hover { border-color: rgba(200,169,126,0.38); }
+
+.mc-inner { display: flex; flex-direction: column; gap: 12px; }
+
+.mc-category {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sand);
+  margin: 0;
+  font-family: var(--sans);
+}
+
+.mc-sabias {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--white);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.mc-text {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.82);
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-style: normal;
+}
+
+.mc-discover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sand);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(200,169,126,0.28);
+  padding-bottom: 2px;
+  transition: all .2s;
+  align-self: flex-start;
+}
+.mc-discover-btn:hover { color: var(--white); border-bottom-color: rgba(255,255,255,0.45); }
+
+.mc-footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+.mc-source {
+  font-size: 10px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.04em;
+  margin: 0;
+  font-style: normal;
+}
+.mc-source em { font-style: italic; color: rgba(255,255,255,0.32); }
+
+/* Carousel dots */
+.mc-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0 6px;
+}
+.mc-dot {
+  width: 6px; height: 6px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all .25s;
+  flex-shrink: 0;
+}
+.mc-dot.active { width: 20px; background: var(--sand); border-radius: 3px; }
+.mc-dot:hover:not(.active) { background: rgba(255,255,255,0.4); }
+
+/* Action row */
+.micro-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 6px 20px 18px;
+}
+.mc-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 11px 4px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.48);
+  cursor: pointer;
+  transition: all .2s;
+  text-decoration: none;
+  font-family: var(--sans);
+}
+.mc-action-btn:hover { border-color: rgba(200,169,126,0.38); color: var(--sand); background: rgba(200,169,126,0.05); }
+.mc-action-btn.on  { border-color: rgba(200,169,126,0.5); color: var(--sand); background: rgba(200,169,126,0.08); }
+.mca-icon  { font-size: 15px; line-height: 1; }
+.mca-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* Suggest / correction */
+.card-suggest {
+  padding: 14px 24px 18px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  margin-top: 4px;
+}
+.suggest-link {
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.28);
+  letter-spacing: 0.03em;
+  transition: color .2s;
+  text-decoration: none;
+  display: block;
+  line-height: 1.6;
+}
+.suggest-link:hover { color: var(--sand); }
+
+/* Inline toast (fallback when app.js showToast unavailable) */
+.mc-toast-msg {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(14px);
+  background: #1a1a1a;
+  color: var(--white);
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 13px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity .25s, transform .25s;
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: var(--sans);
+}
+.mc-toast-msg.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 /* ── FALLBACK MAP (low-perf) ─────────────────────────────────── */
 .fallback-globe {
   height: 100%;
