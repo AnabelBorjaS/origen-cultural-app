@@ -647,5 +647,213 @@ window.MundoCultural = (() => {
     _geoData  = null;
   }
 
-  return { init, destroy, toggleRotation, resetView, zoom, focusContinent, selectCountry };
+  return {
+    init, destroy, toggleRotation, resetView, zoom, focusContinent, selectCountry,
+    /* shared primitives for HeroGlobe */
+    _db: CULTURAL_DB, _matchKey: matchKey,
+    _loadGeo: loadGeo, _loadGlobeGL: loadGlobeGL, _hasWebGL: hasWebGL
+  };
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO GLOBE — versión compacta para el landing
+   Reutiliza GeoJSON y script globe.gl ya cargados por MundoCultural
+═══════════════════════════════════════════════════════════════ */
+window.HeroGlobe = (() => {
+  'use strict';
+
+  const MC         = () => window.MundoCultural;   // lazy ref para evitar orden de carga
+  const matchKey   = feat => MC()._matchKey(feat);
+  const getDB      = ()   => MC()._db;
+  const loadGeo    = ()   => MC()._loadGeo();
+  const loadGlobeGL= ()   => MC()._loadGlobeGL();
+  const canWebGL   = ()   => MC()._hasWebGL();
+
+  let _globe     = null;
+  let _rotating  = true;
+  let _hovered   = null;
+  let _selected  = null;
+  let _destroyed = false;
+  let _geoData   = null;
+  let _popup     = null;
+
+  /* colors */
+  function hCap(feat) {
+    const key = matchKey(feat);
+    if (feat === _selected) return 'rgba(200,169,126,0.95)';
+    if (feat === _hovered)  return 'rgba(200,169,126,0.55)';
+    if (key)                return 'rgba(200,169,126,0.22)';
+    return 'rgba(18,18,18,0.78)';
+  }
+  function hAlt(feat) { return feat === _hovered ? 0.014 : 0.006; }
+
+  /* stats for popup */
+  function stats(key) {
+    const db = getDB()[key];
+    if (!db) return { creators: 0, posts: 0 };
+    const allC     = window.ORIGEN_DATA?.creators || [];
+    const seedC    = allC.filter(c => db.creatorIds.includes(c.id)).length;
+    const users    = (() => { try { return Object.values(JSON.parse(localStorage.getItem('oc-users') || '{}')); } catch { return []; } })();
+    const userC    = users.filter(u => (u.location || '').toLowerCase().includes(db.name.toLowerCase())).length;
+    const seedP    = (window.ORIGEN_DATA?.posts || []).filter(p => db.creatorIds.includes(p.authorId)).length;
+    const userP    = (() => { try { return JSON.parse(localStorage.getItem('oc-posts') || '[]'); } catch { return []; } })().filter(p => db.creatorIds.includes(p.authorId)).length;
+    return { creators: seedC + userC, posts: seedP + userP };
+  }
+
+  /* popup */
+  function showPopup(key) {
+    if (!_popup) return;
+    const db = getDB()[key];
+    if (!db) { hidePopup(); return; }
+    const { creators, posts } = stats(key);
+    _popup.innerHTML = `
+      <button class="hpop-close" id="hpop-close">×</button>
+      <div class="hpop-flag">${db.flag}</div>
+      <h3 class="hpop-name">${db.name}</h3>
+      <p class="hpop-cont">${db.continent}</p>
+      <div class="hpop-stats">
+        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Creadores</span></div>
+        <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
+        <div class="hpop-stat"><strong>${db.traditions.length}</strong><span>Tradiciones</span></div>
+      </div>
+      <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">Explorar cultura →</a>`;
+    _popup.hidden = false;
+    document.getElementById('hpop-close')?.addEventListener('click', () => {
+      hidePopup(); _selected = null;
+      if (_globe) _globe.polygonCapColor(hCap);
+    });
+    _popup.querySelector('[data-hpopkey]')?.addEventListener('click', e => {
+      e.preventDefault();
+      window.location.hash = '#mundo';
+      setTimeout(() => { try { window.MundoCultural.selectCountry(key); } catch {} }, 700);
+    });
+  }
+  function hidePopup() { if (_popup) _popup.hidden = true; }
+
+  /* low-perf fallback */
+  function initFallback(el) {
+    el.innerHTML = `<div class="hero-globe-fallback">
+      <div class="hgf-emoji">🌍</div>
+      <p>Explora el mundo cultural</p>
+      <div class="hgf-countries">
+        ${['🇪🇨 Ecuador','🇦🇺 Australia','🇵🇪 Perú','🇧🇴 Bolivia','🇲🇽 México','🇯🇵 Japón']
+          .map(c => `<span class="hgf-tag">${c}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  /* init */
+  async function init(container, popup) {
+    _destroyed = false; _popup = popup;
+    _selected = null; _hovered = null; _rotating = true;
+    hidePopup();
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const lowPerf = !canWebGL() || (navigator.deviceMemory && navigator.deviceMemory < 2);
+    if (lowPerf) { initFallback(container); return; }
+
+    container.innerHTML = '<div class="hero-globe-loading"><div class="hero-globe-ring"></div></div>';
+    try {
+      const [geo] = await Promise.all([loadGeo(), loadGlobeGL()]);
+      if (_destroyed) return;
+      _geoData = geo;
+      container.innerHTML = '';
+
+      _globe = Globe({ animateIn: true })
+        .width(container.clientWidth  || 640)
+        .height(container.clientHeight || 640)
+        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+        .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .lineHoverPrecision(0)
+        .atmosphereColor('rgba(200,169,126,0.30)')
+        .atmosphereAltitude(0.14)
+        .polygonsData(_geoData)
+        .polygonAltitude(hAlt)
+        .polygonCapColor(hCap)
+        .polygonSideColor(() => 'rgba(200,169,126,0.07)')
+        .polygonStrokeColor(() => '#1f1f1f')
+        .polygonLabel(feat => {
+          const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
+          const key = matchKey(feat);
+          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${n}</div>`;
+        })
+        .onPolygonHover(poly => {
+          if (_destroyed) return;
+          _hovered = poly;
+          _globe.polygonAltitude(hAlt).polygonCapColor(hCap);
+          container.style.cursor = poly ? 'pointer' : 'grab';
+        })
+        .onPolygonClick(poly => {
+          if (_destroyed) return;
+          _selected = poly;
+          _globe.polygonCapColor(hCap);
+          const key = matchKey(poly);
+          const db  = getDB();
+          if (key) {
+            showPopup(key);
+            _globe.pointOfView({ lat: db[key].lat, lng: db[key].lng, altitude: 2.0 }, 700);
+          } else {
+            hidePopup();
+          }
+          _globe.controls().autoRotate = false;
+          _rotating = false;
+          _updatePauseBtn();
+        })
+        (container);
+
+      _globe.controls().autoRotate      = !prefersReduced;
+      _globe.controls().autoRotateSpeed  = 0.30;
+      _globe.controls().enableDamping    = true;
+      _globe.controls().dampingFactor    = 0.08;
+      _globe.controls().minDistance      = 130;
+      _globe.controls().maxDistance      = 460;
+      _rotating = !prefersReduced;
+
+      /* centered to show Americas + Europe nicely */
+      _globe.pointOfView({ lat: 5, lng: -20, altitude: 2.1 }, 0);
+
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => {
+          if (_globe && !_destroyed) _globe.width(container.clientWidth).height(container.clientHeight);
+        });
+        ro.observe(container);
+        _globe._hRo = ro;
+      }
+    } catch(e) {
+      console.warn('HeroGlobe error:', e);
+      container.innerHTML = '';
+      initFallback(container);
+    }
+  }
+
+  function destroy() {
+    _destroyed = true;
+    hidePopup();
+    if (_globe) {
+      if (_globe._hRo) _globe._hRo.disconnect();
+      try { _globe._destructor && _globe._destructor(); } catch {}
+      _globe = null;
+    }
+    _geoData = null; _selected = null; _hovered = null;
+  }
+
+  function toggleRotation() {
+    if (!_globe) return;
+    _rotating = !_rotating;
+    _globe.controls().autoRotate = _rotating;
+    _updatePauseBtn();
+  }
+
+  function zoom(factor) {
+    if (!_globe) return;
+    const pov = _globe.pointOfView();
+    _globe.pointOfView({ ...pov, altitude: Math.max(0.8, Math.min(5, pov.altitude * factor)) }, 400);
+  }
+
+  function _updatePauseBtn() {
+    const btn = document.getElementById('hero-globe-pause');
+    if (btn) btn.textContent = _rotating ? '⏸' : '▶';
+  }
+
+  return { init, destroy, toggleRotation, zoom };
 })();

@@ -471,22 +471,50 @@
   /* ── LANDING ─────────────────────────────────────────────── */
   function landingView() {
     const featured = creators.slice(0, 5);
-    return `<section class="hero">
-      <div class="hero-copy">
+    return `
+    <!-- HERO GLOBE -->
+    <section class="hero-globe-section">
+      <div class="hero-globe-copy">
         <p class="eyebrow">RED SOCIAL CULTURAL GLOBAL</p>
-        <h1>ORIGEN <span>CULTURAL</span></h1>
-        <p class="lead">${t('intro')}</p>
-        <div class="hero-actions">
-          <a class="btn light" href="#registro">Crear perfil cultural</a>
-          <a class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" href="#explorar">Explorar culturas</a>
-          <a href="#login" style="color:var(--sand);font-size:13px;letter-spacing:.06em;padding:14px 0">¿Ya tienes cuenta? Entrar →</a>
+        <div class="hero-wordmark">
+          <span class="hwm-origen">ORIGEN</span>
+          <span class="hwm-cultural">CULTURAL</span>
+        </div>
+        <p class="hero-tagline">Conectando al mundo con sus raíces culturales</p>
+        <p class="hero-desc">${t('intro')}</p>
+        <div class="hero-globe-actions">
+          <a class="btn light hga-primary" href="#mundo">🌍&nbsp; Explorar el mundo cultural</a>
+          <a class="btn hga-outline" href="#registro">Compartir mi cultura</a>
+        </div>
+        <a href="#login" class="hero-login-link">¿Ya tienes cuenta? Entrar →</a>
+        <div class="hero-globe-stats">
+          <div class="hero-gstat"><strong>6</strong><span>Territorios activos</span></div>
+          <div class="hero-gstat-div"></div>
+          <div class="hero-gstat"><strong>5+</strong><span>Creadores culturales</span></div>
+          <div class="hero-gstat-div"></div>
+          <div class="hero-gstat"><strong>8+</strong><span>Publicaciones</span></div>
         </div>
       </div>
-      <div class="hero-media">
-        <img src="assets/images/embroidery.jpg" alt="Mujer bordando una pieza cultural">
-        <div class="hero-caption">${t('pilot')}<br><strong>${t('visible')}</strong></div>
+      <div class="hero-globe-right">
+        <div class="hero-globe-container" id="hero-globe-container"></div>
+        <div class="hero-globe-popup" id="hero-globe-popup" hidden></div>
+        <div class="hero-globe-ui">
+          <div class="hero-globe-ctrl-bar">
+            <button id="hero-globe-pause"    class="hero-ctrl-btn" title="Pausar / Reanudar rotación">⏸</button>
+            <button id="hero-globe-zoom-in"  class="hero-ctrl-btn" title="Acercar">+</button>
+            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="Alejar">−</button>
+          </div>
+          <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
+        </div>
+        <p class="hero-globe-hint">Toca un país para explorar su cultura</p>
+        <div class="hero-globe-territories">
+          ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪','Perú'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽','México'],['japan','🇯🇵','Japón']]
+            .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="Ver ${n}">${f} ${n}</button>`).join('')}
+        </div>
       </div>
     </section>
+
+    <!-- MANIFESTO -->
     <section class="section manifesto">
       <div class="section-inner manifesto-grid">
         <p class="eyebrow">DECLARACIÓN FUNDACIONAL</p>
@@ -496,6 +524,8 @@
         </div>
       </div>
     </section>
+
+    <!-- CURADURÍA -->
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
@@ -505,19 +535,24 @@
         <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${c.image}" alt="${c.name}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${c.category} · ${c.location}</div><h3>${c.name}</h3><p>${c.short}</p></div></a>`).join('')}</div>
       </div>
     </section>
+
+    <!-- CREADORES -->
     <section class="section" style="background:var(--grey-2)">
       <div class="section-inner">
         <div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
         <div class="creator-grid">${creators.slice(0, 3).map(creatorCard).join('')}</div>
       </div>
     </section>
+
+    <!-- IMPACTO -->
     <section class="section impact-band">
       <div class="section-inner">
         <div class="section-head"><div><p class="eyebrow">MVP · PILOTO ECUADOR</p><h2>${t('impactTitle')}</h2></div><p>${t('impactBody')}</p></div>
-        <div class="impact-grid">${impact.map(i => `<div class="impact-item"><strong>${i.value}</strong><span>${i.label}</span></div>`).join('')}
-        </div>
+        <div class="impact-grid">${impact.map(i => `<div class="impact-item"><strong>${i.value}</strong><span>${i.label}</span></div>`).join('')}</div>
       </div>
     </section>
+
+    <!-- CTA -->
     <section class="cta-panel">
       <img src="assets/images/mural.jpg" alt="Mural cultural">
       <div class="cta-content">
@@ -1018,10 +1053,9 @@
     route = route !== undefined ? route : currentRoute();
     refreshSession();
 
-    // Destroy globe when leaving Mundo Cultural
-    if (_prevRoute === 'mundo' && route !== 'mundo' && window.MundoCultural) {
-      window.MundoCultural.destroy();
-    }
+    // Destroy globes when leaving their sections
+    if (_prevRoute === 'mundo'  && route !== 'mundo'  && window.MundoCultural) window.MundoCultural.destroy();
+    if (_prevRoute === 'inicio' && route !== 'inicio' && window.HeroGlobe)     window.HeroGlobe.destroy();
     _prevRoute = route;
 
     let html = '';
@@ -1059,6 +1093,7 @@
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
     if (route === 'mundo')         bindMundo();
+    if (route === 'inicio')        bindLanding();
     bindFollowButtons();
     bindLogoutBtn();
   }
@@ -1112,6 +1147,40 @@
           </aside>
         </div>
       </div>`;
+  }
+
+  /* ── LANDING / HERO GLOBE ───────────────────────────────────── */
+  function bindLanding() {
+    const container = document.getElementById('hero-globe-container');
+    const popup     = document.getElementById('hero-globe-popup');
+    if (!container || typeof HeroGlobe === 'undefined') return;
+
+    HeroGlobe.init(container, popup);
+
+    document.getElementById('hero-globe-pause')?.addEventListener('click',
+      () => HeroGlobe.toggleRotation());
+    document.getElementById('hero-globe-zoom-in')?.addEventListener('click',
+      () => HeroGlobe.zoom(0.7));
+    document.getElementById('hero-globe-zoom-out')?.addEventListener('click',
+      () => HeroGlobe.zoom(1.4));
+
+    /* territory pills */
+    document.querySelectorAll('[data-hgt]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.hgt;
+        const db  = window.MundoCultural?._db?.[key];
+        if (!db || !popup) return;
+        /* reuse HeroGlobe popup logic by dispatching a fake click */
+        /* Actually: navigate to #mundo and select country */
+        window.location.hash = '#mundo';
+        setTimeout(() => { try { window.MundoCultural.selectCountry(key); } catch {} }, 600);
+      });
+    });
+
+    /* scroll to next section on mobile hint tap */
+    document.querySelector('.hero-globe-hint')?.addEventListener('click', () => {
+      document.querySelector('.manifesto')?.scrollIntoView({ behavior: 'smooth' });
+    });
   }
 
   function bindMundo() {
