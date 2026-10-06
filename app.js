@@ -444,7 +444,7 @@
         <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
         <div><h4>Social</h4><div class="footer-links"><a href="https://www.instagram.com/origen.cultural" target="_blank" rel="noreferrer">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></div></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Demo funcional · Versión productiva: Supabase</span></div>
+      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Beta controlada · Datos sincronizados con Supabase</span></div>
     </div></footer>`;
   }
 
@@ -548,7 +548,7 @@
         <div class="hero-globe-stats">
           <div class="hero-gstat"><strong>6</strong><span>Territorios activos</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>5+</strong><span>Creadores culturales</span></div>
+          <div class="hero-gstat"><strong>5+</strong><span>Proveedores culturales</span></div>
           <div class="hero-gstat-div"></div>
           <div class="hero-gstat"><strong>8+</strong><span>Publicaciones</span></div>
         </div>
@@ -639,13 +639,13 @@
         <div id="feed-posts">
           ${posts.length
             ? posts.map(postCard).join('')
-            : `<div class="empty-feed"><p>Sigue creadores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar creadores</a></div>`}
+            : `<div class="empty-feed"><p>Sigue proveedores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar proveedores</a></div>`}
         </div>
       </div>
       <aside class="feed-aside">
         <div class="aside-card">
           <p class="eyebrow">DESCUBRIR</p>
-          <h3>Creadores culturales</h3>
+          <h3>Proveedores culturales</h3>
           ${creators.slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
@@ -661,7 +661,7 @@
           <p class="eyebrow">MI PERFIL</p>
           <div class="aside-row">
             ${avatarEl(user, 'sm')}
-            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}</p></div>
+            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? 'Proveedor Cultural' : 'Explorador Cultural'}</p></div>
           </div>
           <a href="#mi-perfil" class="link-arrow" style="display:block;margin-top:12px;font-size:12px">Ver mi perfil →</a>
         </div>
@@ -786,7 +786,7 @@
       <div class="profile-hero-content">
         ${avatarEl(profile, 'lg')}
         <div class="profile-title">
-          <p class="eyebrow">${profile.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
+          <p class="eyebrow">${profile.accountType === 'creator' ? 'Proveedor Cultural' : 'Explorador Cultural'}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
           <h1>${esc(profile.name)}</h1>
           <p>${follCount} seguidores · ${followCount} siguiendo · ${uPosts.length} publicaciones</p>
         </div>
@@ -800,6 +800,7 @@
     <section class="profile-layout">
       <div>
         ${profile.story ? `<div class="profile-story"><p class="eyebrow">HISTORIA CULTURAL</p><p>${esc(profile.story)}</p></div>` : ''}
+        ${profile.accountType === 'creator' ? `<section class="provider-professional"><div class="provider-prof-head"><div><p class="eyebrow">PERFIL PROFESIONAL CULTURAL</p><h2>${esc(profile.providerHeadline || 'Servicios y conocimiento cultural')}</h2></div>${profile.website ? `<a class="btn secondary" href="${esc(safeExternalUrl(profile.website))}" target="_blank" rel="noopener noreferrer">Visitar sitio web ↗</a>` : ''}</div>${profile.serviceDescription ? `<p class="provider-prof-copy">${esc(profile.serviceDescription)}</p>` : ''}${profile.services && profile.services.length ? `<div class="service-grid">${profile.services.map(service => `<div class="service-chip">${esc(service)}</div>`).join('')}</div>` : `<p class="form-note">Añade tus servicios, talleres, experiencias o conocimientos desde “Editar perfil”.</p>`}<div class="provider-contact-row">${profile.publicEmail ? `<a href="mailto:${esc(profile.publicEmail)}">✉ ${esc(profile.publicEmail)}</a>` : ''}${profile.publicWhatsapp ? `<span>WhatsApp: ${esc(profile.publicWhatsapp)}</span>` : ''}</div></section>` : ''}
         ${profile.categories && profile.categories.length ? `<div class="creator-tags" style="margin:18px 0">${profile.categories.map(cat => `<span>${esc(cat)}</span>`).join('')}</div>` : ''}
         <div style="margin-top:40px">
           <p class="eyebrow">PUBLICACIONES (${uPosts.length})</p>
@@ -814,7 +815,7 @@
       <aside class="profile-aside">
         <p class="eyebrow">PERFIL CULTURAL</p>
         <dl>
-          <div><dt>Tipo</dt><dd>${profile.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}</dd></div>
+          <div><dt>Tipo</dt><dd>${profile.accountType === 'creator' ? 'Proveedor Cultural' : 'Explorador Cultural'}</dd></div>
           ${profile.location ? `<div><dt>Ubicación</dt><dd>${esc(profile.location)}</dd></div>` : ''}
           ${profile.categories && profile.categories.length ? `<div><dt>Categorías</dt><dd>${profile.categories.map(esc).join(', ')}</dd></div>` : ''}
         </dl>
@@ -937,7 +938,8 @@
           <label>Categorías culturales</label>
           <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${userCats.includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
         </div>
-        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES SOCIALES</p>
+        ${user.accountType === 'creator' ? `<p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">PERFIL PROFESIONAL CULTURAL</p><div class="form-field full"><label>Titular profesional</label><input name="providerHeadline" maxlength="180" value="${esc(user.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((user.services || []).join(', '))}" placeholder="Talleres, piezas por encargo, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Explica qué ofreces, para quién y cómo pueden contactarte.">${esc(user.serviceDescription || '')}</textarea></div>` : ''}
+        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES Y CONTACTO</p>
         ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo'],['web','Sitio web']].map(([k, label]) =>
           `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(user.links && user.links[k] ? user.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
         <div class="form-field full">
@@ -972,8 +974,8 @@
       body = `<div class="atype-grid">
         <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
           <span class="atype-icon">◈</span>
-          <h3>Creador Cultural</h3>
-          <p>Persona, comunidad, negocio u organización que preserva, practica o comparte cultura.</p>
+          <h3>Proveedor Cultural</h3>
+          <p>Persona, comunidad, negocio u organización que preserva, enseña, comparte u ofrece servicios vinculados a la cultura.</p>
         </button>
         <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
           <span class="atype-icon">◎</span>
@@ -1008,6 +1010,7 @@
           <label>Categorías culturales</label>
           <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${(d.categories || []).includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
         </div>
+        ${d.accountType === 'creator' ? `<div class="form-field full"><label>¿Qué ofreces como Proveedor Cultural?</label><input name="providerHeadline" maxlength="180" value="${esc(d.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((d.services || []).join(', '))}" placeholder="Talleres, artesanía, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de tus servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Describe cómo aportas valor cultural y cómo pueden conocerte o contratarte.">${esc(d.serviceDescription || '')}</textarea></div>` : ''}
       </form>`;
     } else if (step === 5) {
       body = `<form class="form-grid" id="reg-social">
@@ -1095,14 +1098,14 @@
         <div class="passport-progress">
           <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
           <div class="progress-stat"><strong>${foll.length}</strong><span>Creadores seguidos</span></div>
-          <div class="progress-stat"><strong>${user ? DB.posts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
+          <div class="progress-stat"><strong>${user ? allPosts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
         </div>
       </article>
       <div class="level-section"><p class="eyebrow">NIVEL CULTURAL</p><h2>Semilla · Nivel 1</h2><div class="level-track"><div class="level-fill"></div></div><p>34% para alcanzar el nivel Caminante Cultural.</p>
         <div class="badges">
           <div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div>
           <div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Creadores Culturales para desbloquearla.</p></div>
+          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Proveedores Culturales para desbloquearla.</p></div>
         </div>
       </div>
     </div></section>${footer()}`;
@@ -1112,7 +1115,7 @@
   function impactView() {
     const values = [
       ['Dignidad cultural','La cultura se presenta con respeto, contexto y valor, no como espectáculo vacío.'],
-      ['Autenticidad','La voz y la historia de cada Creador Cultural permanecen como eje central.'],
+      ['Autenticidad','La voz y la historia de cada Proveedor Cultural permanecen como eje central.'],
       ['Autonomía','Cada perfil conserva sus canales, decisiones, historia e identidad.'],
       ['Conexión global','La plataforma conecta culturas con públicos, aliados y oportunidades internacionales.'],
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
@@ -1129,7 +1132,7 @@
       <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Creadores Culturales</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Proveedores Culturales</span></div>
         <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
         <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
       </div>
@@ -1215,7 +1218,7 @@
         <div class="mundo-header">
           <p class="eyebrow">EXPLORACIÓN CULTURAL</p>
           <h1 class="mundo-title">Mundo Cultural</h1>
-          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus creadores.</p>
+          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus proveedores.</p>
         </div>
         <div class="mundo-body">
           <div class="mundo-globe-wrap">
@@ -1239,7 +1242,7 @@
             <div class="panel-welcome">
               <div class="panel-welcome-icon">◎</div>
               <h3>Selecciona un territorio</h3>
-              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los creadores registrados en Origen Cultural.</p>
+              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los proveedores registrados en Origen Cultural.</p>
               <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
               <div class="featured-countries">
                 ${featured.map(f => `<button class="featured-country" data-fc="${f.key}"><span>${f.flag}</span><span>${f.name}</span></button>`).join('')}
@@ -1681,7 +1684,11 @@
         state.regStep++; render('registro', false);
       } else if (step === 4) {
         const form = document.getElementById('reg-story');
-        if (form) { const fd = Object.fromEntries(new FormData(form)); Object.assign(state.regData, fd); }
+        if (form) {
+          const fd = Object.fromEntries(new FormData(form));
+          Object.assign(state.regData, fd);
+          state.regData.services = fd.services ? fd.services.split(',').map(s => s.trim()).filter(Boolean) : [];
+        }
         state.regStep++; render('registro', false);
       } else if (step === 5) {
         const form = document.getElementById('reg-social');
@@ -1866,6 +1873,10 @@
           story: fd.story,
           categories: userCats.list,
           links,
+          accountType: user.accountType,
+          providerHeadline: fd.providerHeadline || '',
+          services: fd.services ? fd.services.split(',').map(s => s.trim()).filter(Boolean) : [],
+          serviceDescription: fd.serviceDescription || '',
           avatar,
           cover
         });
