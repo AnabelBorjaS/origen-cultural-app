@@ -222,12 +222,51 @@
   async function culturalProfileId(ref) {
     const api = window.ORIGEN_API;
     if (!api) return null;
-    let p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref);
+    let p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref || x.owner_id === ref);
     if (!p) {
       await api.listCulturalProfiles();
-      p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref);
+      p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref || x.owner_id === ref);
     }
     return p?.id || null;
+  }
+
+  function normalisePublicProvider(row) {
+    if (!row) return null;
+    const links = row.links || {};
+    return {
+      id: row.id,
+      name: row.display_name || 'Proveedor Cultural',
+      type: 'Proveedor Cultural',
+      accountType: 'creator',
+      category: (row.categories || [])[0] || 'Cultura',
+      categories: row.categories || [],
+      location: row.location || [row.city, row.country].filter(Boolean).join(', '),
+      country: row.country || '',
+      verified: false,
+      profileStatus: 'pending',
+      image: row.avatar_url || '',
+      avatar: row.avatar_url || '',
+      cover: row.cover_url || '',
+      short: links?._provider?.headline || row.bio || 'Perfil cultural en ORIGEN',
+      story: row.story || row.bio || '',
+      tags: row.categories || [],
+      links,
+      providerHeadline: links?._provider?.headline || '',
+      services: links?._provider?.services || [],
+      serviceDescription: links?._provider?.description || '',
+      website: links?.web || '',
+      publicEmail: links?.email || '',
+      publicWhatsapp: links?.whatsapp || '',
+      followers: window.ORIGEN_API?.cache?.culturalProfiles?.find(cp => cp.owner_id === row.id)?.follower_count || 0,
+      posts: [],
+      _kind: 'user'
+    };
+  }
+
+  function directoryProfiles() {
+    const dynamic = (window.ORIGEN_API?.cache?.publicProfiles || []).map(normalisePublicProvider).filter(Boolean);
+    const seen = new Set(dynamic.map(p => p.id));
+    return [...dynamic, ...creators.filter(p => !seen.has(p.id))];
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -237,8 +276,9 @@
     const c = creators.find(x => x.id === id);
     if (c) return { ...c, _kind: 'creator' };
     if (state.user && state.user.id === id) return { ...state.user, _kind: 'user' };
-    const u = DB.users()[id];
-    return u ? { ...u, _kind: 'user' } : null;
+    const publicRow = (window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id);
+    if (publicRow) return normalisePublicProvider(publicRow);
+    return null;
   }
   function avatarEl(profile, sz = 'md') {
     if (!profile) return `<div class="ava ava-${sz} ava-init">OC</div>`;
