@@ -193,6 +193,29 @@
 
   function refreshSession() {}
 
+  function remoteFollowRefs() {
+    const api = window.ORIGEN_API;
+    if (!api || !state.user) return [];
+    return (api.cache.follows || []).map(id => api.cache.culturalProfiles.find(p => p.id === id)?.slug || id);
+  }
+
+  function remoteFavoriteRefs() {
+    const api = window.ORIGEN_API;
+    if (!api || !state.user) return [];
+    return (api.cache.favorites || []).map(id => api.cache.culturalProfiles.find(p => p.id === id)?.slug || id);
+  }
+
+  async function culturalProfileId(ref) {
+    const api = window.ORIGEN_API;
+    if (!api) return null;
+    let p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref);
+    if (!p) {
+      await api.listCulturalProfiles();
+      p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref);
+    }
+    return p?.id || null;
+  }
+
   /* ═══════════════════════════════════════════════════════════
      PROFILES
   ═══════════════════════════════════════════════════════════ */
@@ -222,7 +245,7 @@
     const user    = me();
     const all     = allPosts();
     if (!user) return all.slice(0, 10);
-    const follows = DB.follows()[user.id] || [];
+    const follows = remoteFollowRefs();
     const mine    = all.filter(p => p.authorId === user.id || follows.includes(p.authorId));
     const disc    = all.filter(p => p.authorId !== user.id && !follows.includes(p.authorId));
     return [...mine, ...disc];
@@ -353,7 +376,7 @@
   ═══════════════════════════════════════════════════════════ */
   function storiesRow() {
     const user     = me();
-    const myFollow = user ? (DB.follows()[user.id] || []) : [];
+    const myFollow = user ? remoteFollowRefs() : [];
     const all      = [...creators, ...Object.values(DB.users())].slice(0, 14);
     return `<div class="stories-row"><div class="stories-scroll">
       ${user ? `<a class="story-item" href="#mi-perfil">
@@ -376,7 +399,7 @@
      CREATOR CARD (directory)
   ═══════════════════════════════════════════════════════════ */
   function creatorCard(c) {
-    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const favs  = remoteFavoriteRefs();
     const saved = favs.includes(c.id);
     return `<article class="creator-card">
       <div class="creator-card-image">
@@ -588,7 +611,7 @@
     if (!isAuth()) return loginView();
     const posts = feedPosts();
     const user  = me();
-    const myFollows = DB.follows()[user.id] || [];
+    const myFollows = remoteFollowRefs();
     return `<div class="feed-layout">
       ${storiesRow()}
       <div class="feed-col">
@@ -670,7 +693,7 @@
   function creatorProfileView(id) {
     const c = creators.find(x => x.id === id) || creators[0];
     const user = me();
-    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const myFollows = user ? remoteFollowRefs() : [];
     const isFollowing = myFollows.includes(c.id);
     const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
     const isSaved = favs.includes(c.id);
@@ -724,7 +747,7 @@
     const user    = me();
     const profile = DB.users()[id];
     if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
-    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const myFollows = user ? remoteFollowRefs() : [];
     const isMe      = !!(user && user.id === id);
     const following = myFollows.includes(id);
     const followsMap = DB.follows();
@@ -1035,8 +1058,8 @@
   /* ── PASSPORT ────────────────────────────────────────────── */
   function passportView() {
     const user = me();
-    const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
-    const foll = JSON.parse(localStorage.getItem('origen-following') || '[]');
+    const favs = remoteFavoriteRefs();
+    const foll = remoteFollowRefs();
     const name = user ? user.name : 'Anabel Borja';
     const init = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     return `<section class="passport-page"><div class="passport-shell">
@@ -1401,15 +1424,26 @@
   /* Favorites (directory profiles) */
   function bindFavorites() {
     document.querySelectorAll('[data-favorite]').forEach(btn => {
-      btn.addEventListener('click', e => {
+      btn.addEventListener('click', async e => {
         e.preventDefault(); e.stopPropagation();
-        const id   = btn.dataset.favorite;
-        const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
-        const idx  = favs.indexOf(id);
-        if (idx === -1) { favs.push(id); showToast('Perfil guardado en tu Pasaporte Cultural.'); }
-        else            { favs.splice(idx, 1); showToast('Perfil eliminado de guardados.'); }
-        localStorage.setItem('origen-favorites', JSON.stringify(favs));
-        render(currentRoute(), false);
+        if (!isAuth()) { showToast('Inicia sesión para guardar perfiles.'); go('login'); return; }
+        const ref = btn.dataset.favorite;
+        try {
+          const id = await culturalProfileId(ref);
+          if (!id) throw new Error('Perfil cultural no encontrado.');
+          const exists = window.ORIGEN_API.cache.favorites.includes(id);
+          const uid = me().id;
+          const query = exists
+            ? window.ORIGEN_API.client.from('favorites').delete().eq('user_id', uid).eq('cultural_profile_id', id)
+            : window.ORIGEN_API.client.from('favorites').insert({ user_id: uid, cultural_profile_id: id });
+          const { error } = await query;
+          if (error) throw error;
+          await window.ORIGEN_API.myFavorites();
+          showToast(exists ? 'Perfil eliminado de guardados.' : 'Perfil guardado en tu Pasaporte Cultural.');
+          render(currentRoute(), false);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar tus guardados.');
+        }
       });
     });
   }
@@ -1417,29 +1451,29 @@
   /* Follow buttons (user or creator) */
   function bindFollowButtons() {
     document.querySelectorAll('[data-fuser]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para seguir.'); go('login'); return; }
-        const targetId = btn.dataset.fuser;
-        const user     = me();
-        const follows  = DB.follows();
-        if (!follows[user.id]) follows[user.id] = [];
-        const idx = follows[user.id].indexOf(targetId);
-        if (idx === -1) {
-          follows[user.id].push(targetId);
-          btn.textContent = 'Siguiendo'; btn.classList.add('on');
-          showToast('¡Ahora sigues este perfil cultural!');
-        } else {
-          follows[user.id].splice(idx, 1);
-          btn.textContent = '+ Seguir'; btn.classList.remove('on');
-          showToast('Dejaste de seguir este perfil.');
+        const ref = btn.dataset.fuser;
+        try {
+          const id = await culturalProfileId(ref);
+          if (!id) {
+            showToast('Este seguimiento todavía no está disponible para este tipo de perfil.');
+            return;
+          }
+          const exists = window.ORIGEN_API.cache.follows.includes(id);
+          const uid = me().id;
+          const query = exists
+            ? window.ORIGEN_API.client.from('follows').delete().eq('user_id', uid).eq('cultural_profile_id', id)
+            : window.ORIGEN_API.client.from('follows').insert({ user_id: uid, cultural_profile_id: id });
+          const { error } = await query;
+          if (error) throw error;
+          await window.ORIGEN_API.myFollows();
+          btn.textContent = exists ? '+ Seguir' : 'Siguiendo';
+          btn.classList.toggle('on', !exists);
+          showToast(exists ? 'Dejaste de seguir este perfil.' : '¡Ahora sigues este perfil cultural!');
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar el seguimiento.');
         }
-        DB.setFollows(follows);
-        // Also sync with legacy localStorage
-        const legFoll = JSON.parse(localStorage.getItem('origen-following') || '[]');
-        const legIdx  = legFoll.indexOf(targetId);
-        if (idx === -1 && legIdx === -1) legFoll.push(targetId);
-        else if (idx !== -1 && legIdx !== -1) legFoll.splice(legIdx, 1);
-        localStorage.setItem('origen-following', JSON.stringify(legFoll));
       });
     });
   }
