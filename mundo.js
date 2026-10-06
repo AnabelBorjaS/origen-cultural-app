@@ -780,8 +780,8 @@ window.MundoCultural = (() => {
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
-      .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
       .lineHoverPrecision(0)
       .atmosphereColor('rgba(200,169,126,0.25)')
       .atmosphereAltitude(0.15)
@@ -1081,8 +1081,8 @@ window.HeroGlobe = (() => {
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
-        .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
         .lineHoverPrecision(0)
         .atmosphereColor('rgba(200,169,126,0.30)')
         .atmosphereAltitude(0.14)
@@ -1127,6 +1127,7 @@ window.HeroGlobe = (() => {
       _globe.controls().minDistance      = 130;
       _globe.controls().maxDistance      = 460;
       _rotating = !prefersReduced;
+      _updatePauseBtn();
 
       /* centered to show Americas + Europe nicely */
       _globe.pointOfView({ lat: 5, lng: -20, altitude: 2.1 }, 0);
