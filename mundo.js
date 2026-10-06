@@ -249,7 +249,7 @@ window.MundoCultural = (() => {
     }
   };
 
-  // Coordenadas de países para puntos de creadores
+  // Coordenadas de países para puntos de agentes
   const COUNTRY_COORDS = {
     ecuador:   { lat: -1.83,  lng: -78.18 },
     australia: { lat: -25.27, lng: 133.77 },
@@ -395,7 +395,7 @@ window.MundoCultural = (() => {
     if (feat === _selected) return 'rgba(200,169,126,0.92)';
     if (feat === _hovered)  return 'rgba(200,169,126,0.58)';
     if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(18,18,18,0.72)';
+    return 'rgba(7,10,13,0.30)';
   }
   function altitude(feat) {
     return feat === _hovered ? 0.016 : 0.006;
@@ -433,6 +433,15 @@ window.MundoCultural = (() => {
     }).filter(Boolean);
   }
 
+  function getTerritoryLabels() {
+    return Object.values(CULTURAL_DB).map(d => ({
+      lat: d.lat,
+      lng: d.lng,
+      text: `${d.flag} ${d.name}`,
+      countryKey: d.key
+    }));
+  }
+
   /* ── CARD RENDERING ─────────────────────────────────────────── */
   function renderCard(countryKey) {
     if (!_panel) return;
@@ -451,11 +460,11 @@ window.MundoCultural = (() => {
 
     const creatorHtml = creators.length
       ? `<div class="card-section card-section-creators">
-          <p class="card-section-label">CREADORES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
           <div class="card-creators">${creators.slice(0, 6).map(renderCreatorMini).join('')}</div>
         </div>`
       : `<div class="card-section card-section-creators">
-          <p class="card-section-label">CREADORES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
           <div class="card-empty-creators">
             <p>Sé el primero en registrarte desde ${data.name}.</p>
             <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
@@ -719,7 +728,7 @@ window.MundoCultural = (() => {
     return `<div class="panel-welcome">
       <div class="panel-welcome-icon">◎</div>
       <h3>Selecciona un territorio</h3>
-      <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los creadores registrados en Origen Cultural.</p>
+      <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes registrados en Origen Cultural.</p>
       <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
       <div class="featured-countries">
         ${highlighted.map((n, i) => `
@@ -780,11 +789,11 @@ window.MundoCultural = (() => {
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
       .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
       .lineHoverPrecision(0)
-      .atmosphereColor('rgba(200,169,126,0.25)')
-      .atmosphereAltitude(0.15)
+      .atmosphereColor('rgba(200,169,126,0.58)')
+      .atmosphereAltitude(0.20)
       .polygonsData(_geoData)
       .polygonAltitude(altitude)
       .polygonCapColor(capColor)
@@ -821,6 +830,18 @@ window.MundoCultural = (() => {
       .pointColor('color')
       .pointLabel(d => `<div class="globe-tooltip">🏛 ${d.label}</div>`)
       .onPointClick(d => {
+        if (d.countryKey) selectCountry(d.countryKey);
+      })
+      .labelsData(getTerritoryLabels())
+      .labelLat('lat')
+      .labelLng('lng')
+      .labelText('text')
+      .labelColor(() => '#F3E4CF')
+      .labelSize(0.72)
+      .labelDotRadius(0.18)
+      .labelDotOrientation(() => 'bottom')
+      .labelAltitude(0.035)
+      .onLabelClick(d => {
         if (d.countryKey) selectCountry(d.countryKey);
       })
       (el);
@@ -1002,7 +1023,7 @@ window.HeroGlobe = (() => {
     if (feat === _selected) return 'rgba(200,169,126,0.95)';
     if (feat === _hovered)  return 'rgba(200,169,126,0.55)';
     if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(18,18,18,0.78)';
+    return 'rgba(7,10,13,0.30)';
   }
   function hAlt(feat) { return feat === _hovered ? 0.014 : 0.006; }
 
@@ -1031,9 +1052,9 @@ window.HeroGlobe = (() => {
       <h3 class="hpop-name">${db.name}</h3>
       <p class="hpop-cont">${db.continent}</p>
       <div class="hpop-stats">
-        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Creadores</span></div>
+        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Agentes</span></div>
         <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
-        <div class="hpop-stat"><strong>${db.traditions.length}</strong><span>Tradiciones</span></div>
+        <div class="hpop-stat"><strong>${db.microhistorias?.length || 0}</strong><span>Historias</span></div>
       </div>
       <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">Explorar cultura →</a>`;
     _popup.hidden = false;
@@ -1081,11 +1102,11 @@ window.HeroGlobe = (() => {
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
         .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
         .lineHoverPrecision(0)
-        .atmosphereColor('rgba(200,169,126,0.30)')
-        .atmosphereAltitude(0.14)
+        .atmosphereColor('rgba(200,169,126,0.58)')
+        .atmosphereAltitude(0.20)
         .polygonsData(_geoData)
         .polygonAltitude(hAlt)
         .polygonCapColor(hCap)
@@ -1114,6 +1135,30 @@ window.HeroGlobe = (() => {
           } else {
             hidePopup();
           }
+          _globe.controls().autoRotate = false;
+          _rotating = false;
+          _updatePauseBtn();
+        })
+        .labelsData(Object.values(getDB()).map(d => ({
+          lat: d.lat,
+          lng: d.lng,
+          text: `${d.flag} ${d.name}`,
+          countryKey: d.key
+        })))
+        .labelLat('lat')
+        .labelLng('lng')
+        .labelText('text')
+        .labelColor(() => '#F3E4CF')
+        .labelSize(0.66)
+        .labelDotRadius(0.16)
+        .labelDotOrientation(() => 'bottom')
+        .labelAltitude(0.035)
+        .onLabelClick(d => {
+          const db = getDB();
+          if (!d.countryKey || !db[d.countryKey]) return;
+          _selected = null;
+          showPopup(d.countryKey);
+          _globe.pointOfView({ lat: db[d.countryKey].lat, lng: db[d.countryKey].lng, altitude: 2.0 }, 700);
           _globe.controls().autoRotate = false;
           _rotating = false;
           _updatePauseBtn();
