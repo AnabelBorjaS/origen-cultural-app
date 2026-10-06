@@ -1452,3 +1452,22 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
   .provider-prof-head { flex-direction: column; }
   .provider-prof-head .btn { width: 100%; text-align: center; }
 }
+
+
+/* ── INFINITE CULTURAL FEED / DIGITAL WELLBEING ──────────── */
+.feed-sentinel { min-height: 72px; display: grid; place-items: center; color: var(--ink-soft); font-size: 12px; letter-spacing: .08em; }
+.feed-sentinel::after { content: "Cargando más cultura…"; }
+.feed-sentinel.done::after { content: "Estás al día con este feed."; }
+.post-media video { width: 100%; display: block; max-height: 72vh; background: var(--black); object-fit: contain; }
+.wellbeing-modal { border: 0; padding: 0; max-width: min(92vw, 620px); background: transparent; }
+.wellbeing-modal::backdrop { background: rgba(0,0,0,.58); backdrop-filter: blur(5px); }
+.wellbeing-card { background: var(--white); padding: clamp(28px, 5vw, 46px); border-top: 4px solid var(--sand); }
+.wellbeing-card h2 { font-size: clamp(30px, 5vw, 46px); }
+.wellbeing-card > p:not(.eyebrow) { color: var(--ink-soft); line-height: 1.7; }
+.wellbeing-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.wellbeing-actions .text-button { width: auto; padding: 0 12px; }
+.wellbeing-note { margin: 18px 0 0; font-size: 12px; }
+@media (max-width: 600px) {
+  .wellbeing-actions { flex-direction: column; }
+  .wellbeing-actions .btn, .wellbeing-actions .text-button { width: 100%; }
+}
