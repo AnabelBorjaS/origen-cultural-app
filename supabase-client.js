@@ -27,6 +27,8 @@
     follows: [],
     favorites: [],
     posts: [],
+    postsExhausted: false,
+    postPageSize: 12,
     likes: [],
     saves: [],
     comments: []
@@ -272,13 +274,8 @@
   }
 
 
-  async function listPosts() {
-    const { data, error } = await client.from('cultural_posts')
-      .select('*')
-      .eq('is_published', true)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    cache.posts = (data || []).map(p => ({
+  function mapPostRow(p) {
+    return {
       id: p.id,
       authorId: p.author_id,
       culturalProfileId: p.cultural_profile_id,
@@ -295,8 +292,27 @@
       isEditorial: !!p.is_editorial,
       sourceLabel: p.source_label || '',
       sourceUrl: p.source_url || ''
-    }));
+    };
+  }
+
+  async function listPosts(reset = true) {
+    const from = reset ? 0 : cache.posts.length;
+    const to = from + cache.postPageSize - 1;
+    const { data, error } = await client.from('cultural_posts')
+      .select('*')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (error) throw error;
+    const mapped = (data || []).map(mapPostRow);
+    cache.posts = reset ? mapped : [...cache.posts, ...mapped.filter(p => !cache.posts.some(x => x.id === p.id))];
+    cache.postsExhausted = mapped.length < cache.postPageSize;
     return cache.posts;
+  }
+
+  async function loadMorePosts() {
+    if (cache.postsExhausted) return cache.posts;
+    return listPosts(false);
   }
 
   async function createPost(payload) {
@@ -457,7 +473,7 @@
     listPublicProfiles, ensureCreatorCulturalProfile,
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
-    listPosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
+    listPosts, loadMorePosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
     submitClaim, report, upload, normaliseUser
   };
 })();
