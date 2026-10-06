@@ -70,6 +70,20 @@
     </form>
   </dialog>
 
+  <dialog id="wellbeing-dialog" class="modal wellbeing-modal" aria-labelledby="wellbeing-title">
+    <div class="modal-card wellbeing-card">
+      <p class="eyebrow">BIENESTAR DIGITAL</p>
+      <h2 id="wellbeing-title">Una pausa también es parte del viaje.</h2>
+      <p>Has estado explorando cultura durante un rato. Puedes descansar unos minutos, seguir un poco más o ajustar este recordatorio.</p>
+      <div class="wellbeing-actions">
+        <button class="btn" type="button" data-wellbeing="break">Pausar 5 minutos</button>
+        <button class="btn secondary" type="button" data-wellbeing="snooze">Seguir 10 minutos</button>
+        <button class="text-button" type="button" data-wellbeing="off">Desactivar recordatorios</button>
+      </div>
+      <p class="wellbeing-note">ORIGEN no usa rachas ni recompensas por permanecer conectado.</p>
+    </div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
