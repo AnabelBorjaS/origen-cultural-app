@@ -30,16 +30,20 @@ La versión de lanzamiento debe operar como una única plataforma:
 - futuras apps Android/iOS sobre el mismo backend.
 
 ## Prioridad P0 actual
-1. Sincronizar en GitHub la versión más reciente de la Web App.
-2. Reemplazar cuentas/contraseñas locales por Supabase Auth.
-3. Conectar perfiles, publicaciones, follows, favoritos y claims a Supabase.
-4. Eliminar persistencia sensible en localStorage.
-5. Probar registro, verificación de email, login/logout, password reset y sesión entre dispositivos.
-6. Probar propiedad y permisos con RLS.
-7. Revisar contenido de referencia para no atribuir seguidores, publicaciones o declaraciones ficticias a entidades reales.
-8. QA móvil/desktop.
-9. Publicar beta controlada.
-10. Migrar `origencultural.com` a la plataforma cuando el release gate esté aprobado.
+Estado al 6 Oct 2026:
+- ✅ Rama segura de lanzamiento y backup creados en GitHub.
+- ✅ Supabase Auth conectado en la rama de lanzamiento; ya no se utiliza la contraseña demo de localStorage para iniciar sesión/registrarse.
+- ✅ Recuperación/cambio de contraseña conectado al flujo de Supabase.
+- ✅ Follows y favoritos de perfiles culturales conectados a Supabase.
+- ✅ Aceptación legal v1.2 registrada desde el alta mediante trigger seguro.
+- ✅ Perfiles piloto ajustados a referencias no reclamadas, sin verificación ni métricas ficticias.
+- ✅ Security Advisor de Supabase: 0 lints de seguridad activos.
+- ⏳ Conectar publicaciones, comentarios, likes, guardados y media a Supabase.
+- ⏳ Completar flujo de reclamación dentro de la Web App.
+- ⏳ Configurar/validar URLs de Auth para dominio final.
+- ⏳ QA registro, email, login/logout, reset y sesión entre dispositivos.
+- ⏳ QA móvil/desktop y accesibilidad.
+- ⏳ Publicar beta controlada y, tras Go, mover `origencultural.com`.
 
 ## Estado de lanzamiento
 **NO-GO público todavía.**
