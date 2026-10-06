@@ -785,12 +785,15 @@ window.MundoCultural = (() => {
     _geoData = geo;
 
     const points = getCreatorPoints();
+    const territoryLabels = Object.values(CULTURAL_DB).map(d => ({
+      lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, key: d.key
+    }));
 
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-      .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
       .lineHoverPrecision(0)
       .atmosphereColor('rgba(200,169,126,0.58)')
       .atmosphereAltitude(0.20)
@@ -798,7 +801,16 @@ window.MundoCultural = (() => {
       .polygonAltitude(altitude)
       .polygonCapColor(capColor)
       .polygonSideColor(() => 'rgba(200,169,126,0.08)')
-      .polygonStrokeColor(() => '#2a2a2a')
+      .polygonStrokeColor(() => 'rgba(255,255,255,0.18)')
+      .labelsData(territoryLabels)
+      .labelLat('lat')
+      .labelLng('lng')
+      .labelText('text')
+      .labelSize(1.15)
+      .labelDotRadius(0.28)
+      .labelColor(() => 'rgba(255,255,255,0.96)')
+      .labelAltitude(0.022)
+      .labelResolution(3)
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
@@ -1098,12 +1110,15 @@ window.HeroGlobe = (() => {
       if (_destroyed) return;
       _geoData = geo;
       container.innerHTML = '';
+      const territoryLabels = Object.values(getDB()).map(d => ({
+        lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, key: d.key
+      }));
 
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
         .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-        .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
         .lineHoverPrecision(0)
         .atmosphereColor('rgba(200,169,126,0.58)')
         .atmosphereAltitude(0.20)
@@ -1111,7 +1126,16 @@ window.HeroGlobe = (() => {
         .polygonAltitude(hAlt)
         .polygonCapColor(hCap)
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
-        .polygonStrokeColor(() => '#1f1f1f')
+        .polygonStrokeColor(() => 'rgba(255,255,255,0.16)')
+        .labelsData(territoryLabels)
+        .labelLat('lat')
+        .labelLng('lng')
+        .labelText('text')
+        .labelSize(1.05)
+        .labelDotRadius(0.24)
+        .labelColor(() => 'rgba(255,255,255,0.98)')
+        .labelAltitude(0.022)
+        .labelResolution(3)
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
