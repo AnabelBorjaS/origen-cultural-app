@@ -73,7 +73,7 @@
       impactTitle: 'Construyendo una infraestructura cultural global',
       impactBody: 'El piloto valida perfiles, descubrimiento y contacto directo antes de escalar funcionalidades sociales y monetización ética.',
       follow: 'Seguir', following: 'Siguiendo', save: 'Guardar', saved: 'Guardado', profile: 'Ver perfil',
-      searchPlaceholder: 'Busca por cultura, tradición, territorio o creador',
+      searchPlaceholder: 'Busca por cultura, tradición, territorio o agente cultural',
       noResults: 'No encontramos perfiles con esos criterios.',
       discover: 'Descubre culturas vivas',
       discoverSub: 'Busca por país, ciudad, categoría, tradición, oficio u oferta cultural.',
@@ -96,7 +96,7 @@
       impactTitle: 'Building global cultural infrastructure',
       impactBody: 'The pilot validates profiles, discovery and direct contact before scaling social features and ethical monetisation.',
       follow: 'Follow', following: 'Following', save: 'Save', saved: 'Saved', profile: 'View profile',
-      searchPlaceholder: 'Search culture, tradition, territory or creator',
+      searchPlaceholder: 'Search culture, tradition, territory or cultural agent',
       noResults: 'No profiles match those criteria.',
       discover: 'Discover living cultures',
       discoverSub: 'Search by country, city, category, tradition, craft or cultural offering.',
@@ -507,7 +507,8 @@
           <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
         </div>
         <p class="hero-globe-hint">Toca un país para explorar su cultura</p>
-        <div class="hero-globe-territories" aria-label="Territorios activos">\n          <span class="hgt-title">Territorios activos</span>
+        <div class="hero-globe-territories" aria-label="Territorios activos">
+          <span class="hgt-title">Territorios activos</span>
           ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪','Perú'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽','México'],['japan','🇯🇵','Japón']]
             .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="Ver ${n}">${f} ${n}</button>`).join('')}
         </div>
@@ -695,7 +696,7 @@
           <div><dt>Verificación</dt><dd>${c.verified ? 'Verificado manualmente' : 'En proceso'}</dd></div>
         </dl>
         ${socialLinksHtml(c)}
-        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del creador.</p>
+        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del agente cultural.</p>
       </aside>
     </section>
     ${footer()}`;
@@ -996,7 +997,7 @@
       <div class="section-head"><div><p class="eyebrow">TRAYECTORIA INTERCULTURAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${t('passportSub')}</p></div>
       <article class="passport-card">
         <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>OC-EC-0001</div></div>
-        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'CREADOR CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
+        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'AGENTE CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
         <div class="passport-progress">
           <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
           <div class="progress-stat"><strong>${foll.length}</strong><span>Agentes seguidos</span></div>
@@ -1021,7 +1022,7 @@
       ['Autonomía','Cada perfil conserva sus canales, decisiones, historia e identidad.'],
       ['Conexión global','La plataforma conecta culturas con públicos, aliados y oportunidades internacionales.'],
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
-      ['Soberanía narrativa','Cada creador decide qué mostrar, qué reservar y cómo ser contactado.']
+      ['Soberanía narrativa','Cada agente cultural decide qué mostrar, qué reservar y cómo ser contactado.']
     ];
     return `<section class="page-hero" style="background:var(--black);color:var(--white)">
       <div class="section-inner"><p class="eyebrow">PROPÓSITO · ÉTICA · ESCALA</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div>
