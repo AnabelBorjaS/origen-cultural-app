@@ -1471,3 +1471,16 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
   .wellbeing-actions { flex-direction: column; }
   .wellbeing-actions .btn, .wellbeing-actions .text-button { width: 100%; }
 }
+
+
+/* ── CULTURAL PASSPORT COLLECTION GAME ───────────────────── */
+.collection-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:28px 0; }
+.collection-strip > div { padding:18px; border:1px solid var(--grey); background:var(--white); }
+.collection-strip strong { display:block; font-family:var(--serif); font-size:30px; }
+.collection-strip span { display:block; margin-top:4px; color:var(--ink-soft); font-size:12px; }
+.passport-stamps { margin:28px 0; }
+.badge.locked { opacity:.48; filter:grayscale(1); }
+.badge.unlocked .badge-mark { border-color:var(--sand); background:var(--sand-soft); }
+.passport-philosophy { margin-top:28px; padding:20px; border-left:3px solid var(--sand); background:var(--grey-2); }
+.passport-philosophy p:last-child { margin-bottom:0; color:var(--ink-soft); line-height:1.65; }
+@media (max-width:640px){ .collection-strip{grid-template-columns:1fr;} }
