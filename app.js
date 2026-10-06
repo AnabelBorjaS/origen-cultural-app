@@ -33,9 +33,10 @@
     user: null,
     authReady: false,
     feedLoading: false,
-    wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 30),
+    wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 120),
     wellbeingElapsedMs: 0,
     wellbeingLastTick: Date.now(),
+    wellbeingNextPromptMs: null,
   };
 
   /* ═══════════════════════════════════════════════════════════
@@ -1137,24 +1138,68 @@
     const user = me();
     const favs = remoteFavoriteRefs();
     const foll = remoteFollowRefs();
-    const name = user ? user.name : 'Anabel Borja';
+    const name = user ? user.name : 'Explorador Cultural';
     const init = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    const collectedRefs = new Set([...favs, ...foll]);
+    const collected = directoryProfiles().filter(p => collectedRefs.has(p.id) || collectedRefs.has(p.slug));
+    const countries = [...new Set(collected.map(p => p.country || (p.location || '').split(',').pop()?.trim()).filter(Boolean))];
+    const cultures = [...new Set(collected.flatMap(p => p.categories || [p.category]).filter(Boolean))];
+
+    const score = collected.length + (countries.length * 2) + cultures.length;
+    const levels = [
+      { name:'Semilla', min:0, next:3 },
+      { name:'Caminante Cultural', min:3, next:7 },
+      { name:'Cartógrafo Cultural', min:7, next:12 },
+      { name:'Explorador Global', min:12, next:20 },
+      { name:'Conector Cultural', min:20, next:null }
+    ];
+    const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
+    const progress = level.next ? Math.max(0, Math.min(100, Math.round(((score - level.min) / (level.next - level.min)) * 100))) : 100;
+
+    const badge = (unlocked, mark, title, body) => `
+      <div class="badge${unlocked ? ' unlocked' : ' locked'}">
+        <div class="badge-mark"><span>${unlocked ? mark : '○'}</span></div>
+        <h3>${title}</h3>
+        <p>${body}</p>
+      </div>`;
+
     return `<section class="passport-page"><div class="passport-shell">
-      <div class="section-head"><div><p class="eyebrow">TRAYECTORIA INTERCULTURAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${t('passportSub')}</p></div>
+      <div class="section-head"><div><p class="eyebrow">COLECCIÓN CULTURAL GLOBAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>Tu Pasaporte Cultural crece cuando descubres, guardas y sigues cultura viva. El progreso premia aprendizaje y diversidad, no tiempo de pantalla.</p></div>
+
       <article class="passport-card">
-        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>OC-EC-0001</div></div>
-        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'CREADOR CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
+        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>COLECCIÓN PERSONAL</div></div>
+        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'PROVEEDOR CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Explorando cultura viva alrededor del mundo'}</p></div></div>
         <div class="passport-progress">
-          <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
-          <div class="progress-stat"><strong>${foll.length}</strong><span>Creadores seguidos</span></div>
-          <div class="progress-stat"><strong>${user ? allPosts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
+          <div class="progress-stat"><strong>${collected.length}</strong><span>Perfiles en tu colección</span></div>
+          <div class="progress-stat"><strong>${countries.length}</strong><span>Países descubiertos</span></div>
+          <div class="progress-stat"><strong>${cultures.length}</strong><span>Categorías culturales</span></div>
         </div>
       </article>
-      <div class="level-section"><p class="eyebrow">NIVEL CULTURAL</p><h2>Semilla · Nivel 1</h2><div class="level-track"><div class="level-fill"></div></div><p>34% para alcanzar el nivel Caminante Cultural.</p>
+
+      <div class="level-section">
+        <p class="eyebrow">NIVEL DE EXPLORACIÓN</p>
+        <h2>${level.name}</h2>
+        <div class="level-track"><div class="level-fill" style="width:${progress}%"></div></div>
+        <p>${level.next ? `${progress}% hacia el siguiente nivel. Cada nueva cultura, territorio o categoría suma a tu recorrido.` : 'Has alcanzado el nivel más alto de esta primera colección.'}</p>
+
+        <div class="collection-strip">
+          <div><strong>${countries.length || 0}</strong><span>Sellos de país</span></div>
+          <div><strong>${cultures.length || 0}</strong><span>Colecciones temáticas</span></div>
+          <div><strong>${favs.length}</strong><span>Memorias guardadas</span></div>
+        </div>
+
+        ${countries.length ? `<div class="passport-stamps"><p class="eyebrow">MIS SELLOS</p><div class="creator-tags">${countries.map(country => `<span>⌖ ${esc(country)}</span>`).join('')}</div></div>` : ''}
+
         <div class="badges">
-          <div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Proveedores Culturales para desbloquearla.</p></div>
+          ${badge(collected.length >= 1, '⌖', 'Primer descubrimiento', collected.length >= 1 ? 'Guardaste o seguiste tu primer perfil cultural.' : 'Descubre y guarda tu primer perfil cultural.')}
+          ${badge(collected.length >= 3, '◇', 'Coleccionista curioso', collected.length >= 3 ? 'Ya reuniste tres perfiles culturales.' : 'Reúne tres perfiles culturales en tu Pasaporte.')}
+          ${badge(countries.length >= 2, '◎', 'Cruce de fronteras', countries.length >= 2 ? 'Tu colección ya conecta al menos dos países.' : 'Descubre cultura de al menos dos países.')}
+        </div>
+
+        <div class="passport-philosophy">
+          <p class="eyebrow">JUGAR SIN PERDER EL EQUILIBRIO</p>
+          <p>ORIGEN puede usar colecciones, niveles, sellos y retos culturales. No premiamos permanecer conectado más tiempo y evitamos castigar al usuario por tomarse días de descanso.</p>
         </div>
       </div>
     </div></section>${footer()}`;
@@ -2012,24 +2057,61 @@
     state.lang = state.lang === 'es' ? 'en' : 'es';
     localStorage.setItem('origen-lang', state.lang);
     document.getElementById('language-toggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
-    function initDigitalWellbeing() {
+    document.documentElement.lang = state.lang;
+    render(currentRoute(), false);
+    showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
+  });
+
+  function initDigitalWellbeing() {
     const dialog = document.getElementById('wellbeing-dialog');
     if (!dialog) return;
 
+    // Migrate the earlier 30-minute experimental default to the new 120-minute daily target.
+    const stored = Number(localStorage.getItem('origen-wellbeing-minutes'));
+    if (!stored || stored === 30) {
+      state.wellbeingMinutes = 120;
+      localStorage.setItem('origen-wellbeing-minutes', '120');
+    }
+
     const pauseAllVideos = () => document.querySelectorAll('video').forEach(v => v.pause());
+    const todayKey = () => new Date().toISOString().slice(0, 10);
+
+    const readDaily = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('origen-wellbeing-daily') || '{}');
+        if (saved.date !== todayKey()) return { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+        return {
+          date: saved.date,
+          activeMs: Math.max(0, Number(saved.activeMs) || 0),
+          nextPromptMs: Math.max(Number(saved.nextPromptMs) || 0, state.wellbeingMinutes * 60 * 1000)
+        };
+      } catch {
+        return { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+      }
+    };
+
+    const writeDaily = daily => {
+      localStorage.setItem('origen-wellbeing-daily', JSON.stringify(daily));
+    };
+
+    let daily = readDaily();
+    state.wellbeingNextPromptMs = daily.nextPromptMs;
+    state.wellbeingLastTick = Date.now();
 
     dialog.querySelector('[data-wellbeing="break"]')?.addEventListener('click', () => {
       pauseAllVideos();
       dialog.close();
-      state.wellbeingElapsedMs = 0;
-      state.wellbeingLastTick = Date.now();
+      daily.nextPromptMs = daily.activeMs + 30 * 60 * 1000;
+      state.wellbeingNextPromptMs = daily.nextPromptMs;
+      writeDaily(daily);
       showToast('Contenido en pausa. Vuelve cuando quieras.');
     });
 
     dialog.querySelector('[data-wellbeing="snooze"]')?.addEventListener('click', () => {
       dialog.close();
-      state.wellbeingElapsedMs = Math.max(0, (state.wellbeingMinutes - 10) * 60 * 1000);
-      state.wellbeingLastTick = Date.now();
+      daily.nextPromptMs = daily.activeMs + 15 * 60 * 1000;
+      state.wellbeingNextPromptMs = daily.nextPromptMs;
+      writeDaily(daily);
     });
 
     dialog.querySelector('[data-wellbeing="off"]')?.addEventListener('click', () => {
@@ -2041,22 +2123,23 @@
 
     setInterval(() => {
       const now = Date.now();
-      if (document.visibilityState === 'visible' && !dialog.open && state.wellbeingMinutes > 0) {
-        state.wellbeingElapsedMs += Math.max(0, now - state.wellbeingLastTick);
-        if (state.wellbeingElapsedMs >= state.wellbeingMinutes * 60 * 1000) {
+
+      if (daily.date !== todayKey()) {
+        daily = { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+      }
+
+      if (document.visibilityState === 'visible' && state.wellbeingMinutes > 0) {
+        daily.activeMs += Math.max(0, Math.min(now - state.wellbeingLastTick, 60000));
+        if (!dialog.open && daily.activeMs >= daily.nextPromptMs) {
           pauseAllVideos();
           dialog.showModal();
-          state.wellbeingElapsedMs = 0;
         }
+        writeDaily(daily);
       }
+
       state.wellbeingLastTick = now;
     }, 30000);
   }
-
-  document.documentElement.lang = state.lang;
-    render(currentRoute(), false);
-    showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
-  });
 
   /* Global search */
   const globalSearch = document.getElementById('global-search');
