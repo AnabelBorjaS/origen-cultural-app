@@ -507,7 +507,7 @@
           <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
         </div>
         <p class="hero-globe-hint">Toca un país para explorar su cultura</p>
-        <div class="hero-globe-territories">
+        <div class="hero-globe-territories" aria-label="Territorios activos">\n          <span class="hgt-title">Territorios activos</span>
           ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪','Perú'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽','México'],['japan','🇯🇵','Japón']]
             .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="Ver ${n}">${f} ${n}</button>`).join('')}
         </div>
@@ -581,7 +581,7 @@
         <div id="feed-posts">
           ${posts.length
             ? posts.map(postCard).join('')
-            : `<div class="empty-feed"><p>Sigue creadores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar creadores</a></div>`}
+            : `<div class="empty-feed"><p>Sigue agentes culturales para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar agentes culturales</a></div>`}
         </div>
       </div>
       <aside class="feed-aside">
@@ -999,7 +999,7 @@
         <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'CREADOR CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
         <div class="passport-progress">
           <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
-          <div class="progress-stat"><strong>${foll.length}</strong><span>Creadores seguidos</span></div>
+          <div class="progress-stat"><strong>${foll.length}</strong><span>Agentes seguidos</span></div>
           <div class="progress-stat"><strong>${user ? DB.posts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
         </div>
       </article>
@@ -1138,7 +1138,7 @@
             <div class="panel-welcome">
               <div class="panel-welcome-icon">◎</div>
               <h3>Selecciona un territorio</h3>
-              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los creadores registrados en Origen Cultural.</p>
+              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.</p>
               <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
               <div class="featured-countries">
                 ${featured.map(f => `<button class="featured-country" data-fc="${f.key}"><span>${f.flag}</span><span>${f.name}</span></button>`).join('')}
