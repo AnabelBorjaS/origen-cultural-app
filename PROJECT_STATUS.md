@@ -6,45 +6,61 @@
 **GitHub es la fuente oficial del código.**
 Repositorio: `AnabelBorjaS/origen-cultural-app`
 
-Replit deja de ser la fuente principal y solo podrá utilizarse como herramienta auxiliar si se decide expresamente.
+Replit no es la fuente principal.
 
 ## Infraestructura completada
 - Organización Supabase: ORIGEN Cultural.
 - Proyecto: ORIGEN Cultural Production.
 - Plan: Free.
-- Costo confirmado al crear el proyecto: $0/mes.
 - Región: ap-southeast-2 (Sydney, Australia).
-- Estado del proyecto Supabase: ACTIVE_HEALTHY.
-- Esquema inicial de producción aplicado.
-- RLS habilitado en todas las tablas públicas.
-- Revisión de seguridad de Supabase: sin advertencias activas tras el hardening inicial.
-- Storage preparado para avatars, covers y post-media.
-- Perfiles de referencia iniciales cargados sin propietario.
+- Supabase Auth integrado.
+- RLS habilitado en las tablas públicas.
+- Storage para avatars, covers y post-media.
+- Publicaciones, comentarios, likes y guardados conectados a Supabase.
+- Follows y favoritos de perfiles culturales conectados a Supabase.
+- Recuperación/cambio de contraseña integrado.
+- Aceptación legal v1.2 registrada desde el alta.
+- Flujo de reclamación de perfiles conectado a Supabase.
+- Perfiles piloto tratados como referencias no reclamadas.
+- Límites anti-spam y límites de contenido añadidos.
+- Content Security Policy y validación de enlaces externos añadidas.
+- Security Advisor de Supabase: 0 lints de seguridad activos tras el último hardening.
 
-## Producto preparado
-La versión de lanzamiento debe operar como una única plataforma:
+## Producto actual
+La beta está diseñada como una única plataforma:
 - web pública + web app;
 - una sola cuenta ORIGEN;
-- datos sincronizados entre dispositivos;
+- datos persistentes/sincronizados mediante Supabase;
 - futura PWA;
 - futuras apps Android/iOS sobre el mismo backend.
 
-## Prioridad P0 actual
-Estado al 6 Oct 2026:
-- ✅ Rama segura de lanzamiento y backup creados en GitHub.
-- ✅ Supabase Auth conectado en la rama de lanzamiento; ya no se utiliza la contraseña demo de localStorage para iniciar sesión/registrarse.
-- ✅ Recuperación/cambio de contraseña conectado al flujo de Supabase.
-- ✅ Follows y favoritos de perfiles culturales conectados a Supabase.
-- ✅ Aceptación legal v1.2 registrada desde el alta mediante trigger seguro.
-- ✅ Perfiles piloto ajustados a referencias no reclamadas, sin verificación ni métricas ficticias.
-- ✅ Security Advisor de Supabase: 0 lints de seguridad activos.
-- ⏳ Conectar publicaciones, comentarios, likes, guardados y media a Supabase.
-- ⏳ Completar flujo de reclamación dentro de la Web App.
-- ⏳ Configurar/validar URLs de Auth para dominio final.
-- ⏳ QA registro, email, login/logout, reset y sesión entre dispositivos.
-- ⏳ QA móvil/desktop y accesibilidad.
-- ⏳ Publicar beta controlada y, tras Go, mover `origencultural.com`.
+## Modelo aprobado
+### Cultural Providers
+El perfil público debe permitir identidad, territorio, historia cultural, servicios/oferta, web/contacto, redes sociales y feed cultural/educativo con fotos y videos.
+
+### Explorers
+Descubren, siguen, guardan, aprenden y contactan a Cultural Providers.
+
+### Partners / Academia ORIGEN
+Arquitectura futura documentada. Partners tendrán perfil institucional, feed, follows, programas, solicitudes, enrolments, credenciales/badges verificables y métricas de impacto. No es requisito construir toda Academia para la primera beta pública, pero debe comunicarse como roadmap y no prometer funciones todavía inactivas.
+
+## Bloqueadores actuales de Public Beta
+1. Completar el perfil de Cultural Provider con servicios/oferta, website/contacto y redes como campos/producto de primera clase.
+2. Confirmar y probar Auth real: email confirmation, login/logout, password reset y sesión entre dispositivos.
+3. Configurar únicamente URLs/redirecciones aprobadas para el dominio de ORIGEN.
+4. Activar y probar protección anti-bot/CAPTCHA para registro, login y recuperación.
+5. Probar RLS con al menos dos cuentas separadas y verificar que una cuenta no pueda editar/leer información privada de otra.
+6. Probar uploads válidos y maliciosos, límites de tamaño/MIME, ownership y borrado.
+7. Probar anti-spam, reportes y reclamación de perfil de principio a fin.
+8. Actualizar Trust Center/Privacy/Cookies para reflejar Supabase, Storage y el inventario técnico real.
+9. Confirmar que no se cargan analytics/ads opcionales antes de consentimiento.
+10. QA móvil/desktop, accesibilidad, ES/EN, enlaces, errores/empty/loading states y navegadores principales.
+11. Añadir un CI/check automático mínimo en GitHub; actualmente el PR no tiene checks automáticos asociados.
+12. Desplegar una beta/staging de la rama de lanzamiento y validar CSP, Auth redirects y flujos reales.
+13. Resolver bugs Critical/High.
+14. Hacer revisión final de Trust/legal proporcional al mercado inicial.
+15. Solo después: merge a `main` y migración intencional de `origencultural.com`.
 
 ## Estado de lanzamiento
 **NO-GO público todavía.**
-El backend ya existe y está protegido, pero la Web App aún debe terminar su integración real con Supabase y pasar QA antes de abrir registro público.
+El PR de lanzamiento está abierto, en borrador y es mergeable. La base funcional está avanzada, pero falta QA real, hardening operativo, Trust actualizado, el perfil de Cultural Provider como producto completo y un despliegue de staging verificado antes de abrir registro público.
