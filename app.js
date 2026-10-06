@@ -32,6 +32,10 @@
     editCover: null,
     user: null,
     authReady: false,
+    feedLoading: false,
+    wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 30),
+    wellbeingElapsedMs: 0,
+    wellbeingLastTick: Date.now(),
   };
 
   /* ═══════════════════════════════════════════════════════════
@@ -362,7 +366,7 @@
         ` : ''}
       </div>`;
     } else if (post.type === 'video' && post.media && post.media.length) {
-      media = `<div class="post-media"><video controls preload="metadata" src="${post.media[0]}" style="width:100%;display:block;max-height:480px"></video></div>`;
+      media = `<div class="post-media"><video controls muted playsinline preload="metadata" src="${post.media[0]}" aria-label="${esc(post.title || 'Video cultural')}"></video></div>`;
     }
 
     const authorHref = author._kind === 'creator' ? `#perfil/${author.id}` : `#usuario/${author.id}`;
@@ -684,6 +688,7 @@
           ${posts.length
             ? posts.map(postCard).join('')
             : `<div class="empty-feed"><p>Sigue proveedores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar proveedores</a></div>`}
+          ${posts.length ? `<div id="feed-sentinel" class="feed-sentinel${window.ORIGEN_API?.cache?.postsExhausted ? ' done' : ''}" aria-live="polite"></div>` : ''}
         </div>
       </div>
       <aside class="feed-aside">
@@ -1232,6 +1237,7 @@
   function bindAll(route) {
     bindPostInteractions();
     bindFavorites();
+    if (document.getElementById('feed-posts')) bindFeedExperience();
     if (route === 'explorar')      bindExplore();
     if (route.startsWith('reclamar/')) bindClaimProfile();
     if (route === 'registro')      bindRegister();
@@ -1476,6 +1482,59 @@
         if (!isAuth()) { e.stopPropagation(); showToast('Inicia sesión para interactuar.'); go('login'); }
       }, true);
     });
+  }
+
+  function bindFeedExperience() {
+    bindFeedVideos();
+
+    const sentinel = document.getElementById('feed-sentinel');
+    if (!sentinel || window.ORIGEN_API?.cache?.postsExhausted) return;
+
+    const observer = new IntersectionObserver(async entries => {
+      if (!entries.some(entry => entry.isIntersecting) || state.feedLoading) return;
+      state.feedLoading = true;
+      sentinel.setAttribute('aria-busy', 'true');
+      const y = window.scrollY;
+      try {
+        await window.ORIGEN_API.loadMorePosts();
+        render(currentRoute(), false);
+        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
+      } catch (error) {
+        showToast(error.message || 'No pudimos cargar más publicaciones.');
+      } finally {
+        state.feedLoading = false;
+      }
+    }, { rootMargin: '500px 0px', threshold: 0.01 });
+
+    observer.observe(sentinel);
+  }
+
+  function bindFeedVideos() {
+    const videos = [...document.querySelectorAll('.post-media video')];
+    if (!videos.length) return;
+
+    const pauseOthers = active => {
+      videos.forEach(video => { if (video !== active && !video.paused) video.pause(); });
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+          pauseOthers(video);
+          video.muted = true;
+          const playPromise = video.play();
+          if (playPromise?.catch) playPromise.catch(() => {});
+        } else if (!video.paused) {
+          video.pause();
+        }
+      });
+    }, { threshold: [0, .3, .7, 1] });
+
+    videos.forEach(video => observer.observe(video));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) videos.forEach(video => video.pause());
+    }, { once: true });
   }
 
   /* Re-render a single post card in place */
@@ -1953,7 +2012,48 @@
     state.lang = state.lang === 'es' ? 'en' : 'es';
     localStorage.setItem('origen-lang', state.lang);
     document.getElementById('language-toggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
-    document.documentElement.lang = state.lang;
+    function initDigitalWellbeing() {
+    const dialog = document.getElementById('wellbeing-dialog');
+    if (!dialog) return;
+
+    const pauseAllVideos = () => document.querySelectorAll('video').forEach(v => v.pause());
+
+    dialog.querySelector('[data-wellbeing="break"]')?.addEventListener('click', () => {
+      pauseAllVideos();
+      dialog.close();
+      state.wellbeingElapsedMs = 0;
+      state.wellbeingLastTick = Date.now();
+      showToast('Contenido en pausa. Vuelve cuando quieras.');
+    });
+
+    dialog.querySelector('[data-wellbeing="snooze"]')?.addEventListener('click', () => {
+      dialog.close();
+      state.wellbeingElapsedMs = Math.max(0, (state.wellbeingMinutes - 10) * 60 * 1000);
+      state.wellbeingLastTick = Date.now();
+    });
+
+    dialog.querySelector('[data-wellbeing="off"]')?.addEventListener('click', () => {
+      state.wellbeingMinutes = 0;
+      localStorage.setItem('origen-wellbeing-minutes', '0');
+      dialog.close();
+      showToast('Recordatorios de bienestar desactivados.');
+    });
+
+    setInterval(() => {
+      const now = Date.now();
+      if (document.visibilityState === 'visible' && !dialog.open && state.wellbeingMinutes > 0) {
+        state.wellbeingElapsedMs += Math.max(0, now - state.wellbeingLastTick);
+        if (state.wellbeingElapsedMs >= state.wellbeingMinutes * 60 * 1000) {
+          pauseAllVideos();
+          dialog.showModal();
+          state.wellbeingElapsedMs = 0;
+        }
+      }
+      state.wellbeingLastTick = now;
+    }, 30000);
+  }
+
+  document.documentElement.lang = state.lang;
     render(currentRoute(), false);
     showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
   });
@@ -2039,6 +2139,7 @@
     }
   });
 
+  initDigitalWellbeing();
   initApp();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
