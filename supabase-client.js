@@ -23,6 +23,7 @@
     session: null,
     profile: null,
     culturalProfiles: [],
+    publicProfiles: [],
     follows: [],
     favorites: [],
     posts: [],
@@ -161,6 +162,53 @@
     if (error) throw error;
     cache.profile = data;
     return normaliseUser(cache.session?.user || (await client.auth.getUser()).data.user, data);
+  }
+
+  async function listPublicProfiles() {
+    const { data, error } = await client.from('profiles')
+      .select('id,role,display_name,avatar_url,cover_url,country,city,bio,location,story,categories,links,created_at')
+      .eq('role', 'creator')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    cache.publicProfiles = data || [];
+    return cache.publicProfiles;
+  }
+
+  async function ensureCreatorCulturalProfile() {
+    const uid = cache.session?.user?.id;
+    if (!uid || cache.profile?.role !== 'creator') return null;
+
+    const { data: existing, error: readError } = await client.from('cultural_profiles')
+      .select('*')
+      .eq('owner_id', uid)
+      .maybeSingle();
+    if (readError) throw readError;
+    if (existing) return existing;
+
+    const displayName = cache.profile?.display_name || cache.session.user.email?.split('@')[0] || 'Proveedor Cultural';
+    const slugBase = displayName.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 40) || 'proveedor';
+    const row = {
+      owner_id: uid,
+      slug: `${slugBase}-${uid.slice(0,8)}`,
+      name: displayName,
+      creator_type: 'Proveedor Cultural',
+      category: (cache.profile?.categories || [])[0] || 'Cultura',
+      story: cache.profile?.story || cache.profile?.bio || null,
+      location: cache.profile?.location || [cache.profile?.city, cache.profile?.country].filter(Boolean).join(', ') || null,
+      cover_url: cache.profile?.cover_url || null,
+      avatar_url: cache.profile?.avatar_url || null,
+      website_url: cache.profile?.links?.web || null,
+      status: 'pending',
+      is_published: true
+    };
+    const { data, error } = await client.from('cultural_profiles').insert(row).select('*').single();
+    if (error) throw error;
+    cache.culturalProfiles.push(data);
+    return data;
   }
 
   async function listCulturalProfiles() {
@@ -406,6 +454,7 @@
   window.ORIGEN_API = {
     client, cache, restoreSession, signIn, signUp, signOut,
     resetPassword, updatePassword, updateMyProfile,
+    listPublicProfiles, ensureCreatorCulturalProfile,
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
     listPosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
