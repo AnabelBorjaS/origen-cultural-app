@@ -203,6 +203,131 @@
     return !exists;
   }
 
+
+  async function listPosts() {
+    const { data, error } = await client.from('cultural_posts')
+      .select('*')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    cache.posts = (data || []).map(p => ({
+      id: p.id,
+      authorId: p.author_id,
+      culturalProfileId: p.cultural_profile_id,
+      type: p.post_type || 'text',
+      media: p.media_urls || (p.image_url ? [p.image_url] : []),
+      title: p.title || '',
+      description: p.body || '',
+      category: p.category || '',
+      territory: p.territory || '',
+      tags: p.tags || [],
+      timestamp: p.created_at,
+      likes: p.like_count || 0,
+      commentsCount: p.comment_count || 0,
+      isEditorial: !!p.is_editorial,
+      sourceLabel: p.source_label || '',
+      sourceUrl: p.source_url || ''
+    }));
+    return cache.posts;
+  }
+
+  async function createPost(payload) {
+    const uid = cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+    const row = {
+      cultural_profile_id: payload.cultural_profile_id || null,
+      author_id: uid,
+      title: payload.title || null,
+      body: payload.description || '',
+      image_url: payload.media?.[0] || null,
+      post_type: payload.type || 'text',
+      media_urls: payload.media || [],
+      category: payload.category || null,
+      territory: payload.territory || null,
+      tags: payload.tags || [],
+      is_published: true
+    };
+    const { data, error } = await client.from('cultural_posts').insert(row).select('*').single();
+    if (error) throw error;
+    await listPosts();
+    return data;
+  }
+
+  async function deletePost(postId) {
+    const { error } = await client.from('cultural_posts').delete().eq('id', postId);
+    if (error) throw error;
+    await listPosts();
+  }
+
+  async function loadPostInteractions() {
+    const uid = cache.session?.user?.id;
+    if (!uid) {
+      cache.likes = [];
+      cache.saves = [];
+      cache.comments = [];
+      return;
+    }
+    const [{ data: likes, error: lErr }, { data: saves, error: sErr }] = await Promise.all([
+      client.from('post_likes').select('post_id').eq('user_id', uid),
+      client.from('post_saves').select('post_id').eq('user_id', uid)
+    ]);
+    if (lErr) throw lErr;
+    if (sErr) throw sErr;
+    cache.likes = (likes || []).map(x => x.post_id);
+    cache.saves = (saves || []).map(x => x.post_id);
+  }
+
+  async function toggleLike(postId) {
+    const uid = cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+    const exists = cache.likes.includes(postId);
+    const query = exists
+      ? client.from('post_likes').delete().eq('user_id', uid).eq('post_id', postId)
+      : client.from('post_likes').insert({ user_id: uid, post_id: postId });
+    const { error } = await query;
+    if (error) throw error;
+    await loadPostInteractions();
+    await listPosts();
+    return !exists;
+  }
+
+  async function toggleSavePost(postId) {
+    const uid = cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+    const exists = cache.saves.includes(postId);
+    const query = exists
+      ? client.from('post_saves').delete().eq('user_id', uid).eq('post_id', postId)
+      : client.from('post_saves').insert({ user_id: uid, post_id: postId });
+    const { error } = await query;
+    if (error) throw error;
+    await loadPostInteractions();
+    return !exists;
+  }
+
+  async function listComments(postId) {
+    const { data, error } = await client.from('post_comments')
+      .select('*')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    cache.comments = cache.comments.filter(c => c.post_id !== postId).concat(data || []);
+    return data || [];
+  }
+
+  async function addComment(postId, body) {
+    const uid = cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+    const { data, error } = await client.from('post_comments')
+      .insert({ user_id: uid, post_id: postId, body })
+      .select('*')
+      .single();
+    if (error) throw error;
+    await listComments(postId);
+    await listPosts();
+    return data;
+  }
+
+
   async function submitClaim(payload) {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión para reclamar un perfil.');
@@ -263,6 +388,7 @@
     resetPassword, updatePassword, updateMyProfile,
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
+    listPosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
     submitClaim, report, upload, normaliseUser
   };
 })();
