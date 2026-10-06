@@ -1,30 +1,46 @@
-# Estado del proyecto
+# Estado del proyecto — ORIGEN Cultural
 
-## Entregado en este MVP
+Última actualización: 6 de octubre de 2026
 
-- Sistema visual aplicado a interfaz web y móvil.
-- Isotipo oficial vectorizado desde el archivo de marca, integrado como SVG transparente y aplicado al logotipo horizontal, favicon e iconos PWA.
-- Home, Explorar, Perfil Cultural, Pasaporte Cultural, Impacto y Registro.
-- Datos piloto de cinco perfiles culturales.
-- Búsqueda, filtros, favoritos, seguimiento e idioma ES/EN.
-- Persistencia de demostración en el navegador.
-- PWA, GitHub Pages y esquema inicial de Supabase.
+## Fuente de trabajo actual
+**GitHub es la fuente oficial del código.**
+Repositorio: `AnabelBorjaS/origen-cultural-app`
 
-## Funciones de demostración
+Replit deja de ser la fuente principal y solo podrá utilizarse como herramienta auxiliar si se decide expresamente.
 
-Estas funciones trabajan en el navegador y todavía no usan una base de datos compartida:
+## Infraestructura completada
+- Organización Supabase: ORIGEN Cultural.
+- Proyecto: ORIGEN Cultural Production.
+- Plan: Free.
+- Costo confirmado al crear el proyecto: $0/mes.
+- Región: ap-southeast-2 (Sydney, Australia).
+- Estado del proyecto Supabase: ACTIVE_HEALTHY.
+- Esquema inicial de producción aplicado.
+- RLS habilitado en todas las tablas públicas.
+- Revisión de seguridad de Supabase: sin advertencias activas tras el hardening inicial.
+- Storage preparado para avatars, covers y post-media.
+- Perfiles de referencia iniciales cargados sin propietario.
 
-- Favoritos y seguimiento.
-- Pasaporte Cultural.
-- Formulario de solicitud de perfil.
-- Perfil de usuario.
+## Producto preparado
+La versión de lanzamiento debe operar como una única plataforma:
+- web pública + web app;
+- una sola cuenta ORIGEN;
+- datos sincronizados entre dispositivos;
+- futura PWA;
+- futuras apps Android/iOS sobre el mismo backend.
 
-## Pendiente para una versión pública real
+## Prioridad P0 actual
+1. Sincronizar en GitHub la versión más reciente de la Web App.
+2. Reemplazar cuentas/contraseñas locales por Supabase Auth.
+3. Conectar perfiles, publicaciones, follows, favoritos y claims a Supabase.
+4. Eliminar persistencia sensible en localStorage.
+5. Probar registro, verificación de email, login/logout, password reset y sesión entre dispositivos.
+6. Probar propiedad y permisos con RLS.
+7. Revisar contenido de referencia para no atribuir seguidores, publicaciones o declaraciones ficticias a entidades reales.
+8. QA móvil/desktop.
+9. Publicar beta controlada.
+10. Migrar `origencultural.com` a la plataforma cuando el release gate esté aprobado.
 
-- Conectar dominio y repositorio oficial.
-- Supabase Auth, base de datos y almacenamiento.
-- Panel de administración y verificación manual.
-- Consentimiento de imágenes y documentos legales actualizados.
-- Analítica, moderación, reportes y notificaciones.
-- Contenido real aprobado por cada Creador Cultural.
-- Pruebas con usuarios del piloto Ecuador.
+## Estado de lanzamiento
+**NO-GO público todavía.**
+El backend ya existe y está protegido, pero la Web App aún debe terminar su integración real con Supabase y pasar QA antes de abrir registro público.
