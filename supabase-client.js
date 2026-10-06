@@ -47,6 +47,12 @@
       story: p.story || p.bio || '',
       categories: p.categories || [],
       links: p.links || {},
+      providerHeadline: p.links?._provider?.headline || '',
+      services: p.links?._provider?.services || [],
+      serviceDescription: p.links?._provider?.description || '',
+      website: p.links?.web || '',
+      publicEmail: p.links?.email || '',
+      publicWhatsapp: p.links?.whatsapp || '',
       createdAt: p.created_at || authUser.created_at
     };
   };
@@ -81,7 +87,14 @@
       location: payload.location || '',
       story: payload.story || '',
       categories: payload.categories || [],
-      links: payload.links || {},
+      links: {
+        ...(payload.links || {}),
+        _provider: payload.accountType === 'creator' ? {
+          headline: payload.providerHeadline || '',
+          services: payload.services || [],
+          description: payload.serviceDescription || ''
+        } : undefined
+      },
       accepted_legal: true,
       terms_version: 'v1.2',
       privacy_version: 'v1.2',
@@ -133,7 +146,14 @@
       location: changes.location,
       story: changes.story,
       categories: changes.categories || [],
-      links: changes.links || {},
+      links: {
+        ...(changes.links || {}),
+        _provider: changes.accountType === 'creator' ? {
+          headline: changes.providerHeadline || '',
+          services: changes.services || [],
+          description: changes.serviceDescription || ''
+        } : (changes.links?._provider || undefined)
+      },
       updated_at: new Date().toISOString()
     };
     Object.keys(safe).forEach(k => safe[k] === undefined && delete safe[k]);
