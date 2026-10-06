@@ -25,7 +25,7 @@
     query: '',
     regStep: 1,
     regData: {},
-    createData: { type: 'photo', media: [], tags: [] },
+    createData: { type: 'photo', media: [], files: [], tags: [] },
     openComments: new Set(),
     carIdx: {},
     editAvatar: null,
@@ -175,7 +175,9 @@
         await Promise.allSettled([
           window.ORIGEN_API.listCulturalProfiles(),
           window.ORIGEN_API.myFollows(),
-          window.ORIGEN_API.myFavorites()
+          window.ORIGEN_API.myFavorites(),
+          window.ORIGEN_API.listPosts(),
+          window.ORIGEN_API.loadPostInteractions()
         ]);
       }
       return { ok: true, ...result };
@@ -1284,41 +1286,44 @@
   function bindPostInteractions() {
     /* likes */
     document.querySelectorAll('[data-like]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para dar me gusta.'); go('login'); return; }
-        const pid  = btn.dataset.like;
-        const user = me();
-        const lks  = DB.likes();
-        if (!lks[pid]) lks[pid] = [];
-        const idx = lks[pid].indexOf(user.id);
-        if (idx === -1) lks[pid].push(user.id); else lks[pid].splice(idx, 1);
-        DB.setLikes(lks);
-        rerenderPost(pid);
+        const pid = btn.dataset.like;
+        try {
+          await window.ORIGEN_API.toggleLike(pid);
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar el me gusta.');
+        }
       });
     });
 
     /* toggle comments */
     document.querySelectorAll('[data-tcoms]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const pid = btn.dataset.tcoms;
-        state.openComments.has(pid) ? state.openComments.delete(pid) : state.openComments.add(pid);
+        if (state.openComments.has(pid)) {
+          state.openComments.delete(pid);
+        } else {
+          state.openComments.add(pid);
+          try { await window.ORIGEN_API.listComments(pid); } catch (_) {}
+        }
         rerenderPost(pid);
       });
     });
 
     /* saves */
     document.querySelectorAll('[data-save]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para guardar publicaciones.'); go('login'); return; }
-        const pid  = btn.dataset.save;
-        const user = me();
-        const svs  = DB.saves();
-        if (!svs[user.id]) svs[user.id] = [];
-        const idx = svs[user.id].indexOf(pid);
-        if (idx === -1) { svs[user.id].push(pid); showToast('Publicación guardada.'); }
-        else            { svs[user.id].splice(idx, 1); showToast('Publicación eliminada de guardados.'); }
-        DB.setSaves(svs);
-        rerenderPost(pid);
+        const pid = btn.dataset.save;
+        try {
+          const added = await window.ORIGEN_API.toggleSavePost(pid);
+          showToast(added ? 'Publicación guardada.' : 'Publicación eliminada de guardados.');
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar tus guardados.');
+        }
       });
     });
 
@@ -1341,13 +1346,12 @@
       btn.addEventListener('click', () => {
         const pid  = btn.dataset.pmore;
         const user = me();
-        const post = DB.posts().find(p => p.id === pid);
+        const post = allPosts().find(p => p.id === pid);
         if (user && post && post.authorId === user.id) {
           if (confirm('¿Eliminar esta publicación?')) {
-            const updated = DB.posts().filter(p => p.id !== pid);
-            DB.setPosts(updated);
-            showToast('Publicación eliminada.');
-            render(currentRoute(), false);
+            window.ORIGEN_API.deletePost(pid)
+              .then(() => { showToast('Publicación eliminada.'); render(currentRoute(), false); })
+              .catch(error => showToast(error.message || 'No pudimos eliminar la publicación.'));
           }
         } else {
           showToast('Reportar o guardar este perfil para no ver más contenido similar.');
@@ -1378,17 +1382,17 @@
 
     /* comment forms */
     document.querySelectorAll('[data-cf]').forEach(form => {
-      form.addEventListener('submit', e => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
-        const pid  = form.dataset.cf;
+        const pid = form.dataset.cf;
         const text = new FormData(form).get('text').trim();
         if (!text || !isAuth()) return;
-        const user = me();
-        const coms = DB.comments();
-        if (!coms[pid]) coms[pid] = [];
-        coms[pid].push({ id: uid(), authorId: user.id, text, ts: new Date().toISOString() });
-        DB.setComments(coms);
-        rerenderPost(pid);
+        try {
+          await window.ORIGEN_API.addComment(pid, text);
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos publicar el comentario.');
+        }
       });
     });
 
@@ -1681,12 +1685,16 @@
       });
       mediaInput.addEventListener('change', async e => {
         const files = Array.from(e.target.files || []);
+        if (!files.length) return;
         if (state.createData.type === 'video') {
+          state.createData.files = [files[0]];
           state.createData.media = [URL.createObjectURL(files[0])];
+        } else if (state.createData.type === 'carousel') {
+          state.createData.files = [...(state.createData.files || []), ...files];
+          state.createData.media = [...(state.createData.media || []), ...files.map(file => URL.createObjectURL(file))];
         } else {
-          const resized = await Promise.all(files.map(f => resizeImg(f, 900)));
-          if (state.createData.type === 'carousel') state.createData.media = [...(state.createData.media || []), ...resized];
-          else state.createData.media = resized;
+          state.createData.files = [files[0]];
+          state.createData.media = [URL.createObjectURL(files[0])];
         }
         render('crear', false);
       });
@@ -1702,6 +1710,7 @@
         e.stopPropagation();
         const idx = parseInt(btn.dataset.rmidx, 10);
         state.createData.media.splice(idx, 1);
+        if (state.createData.files) state.createData.files.splice(idx, 1);
         render('crear', false);
       });
     });
@@ -1722,32 +1731,36 @@
     });
 
     /* submit */
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const user = me(); if (!user) return;
       const fd = Object.fromEntries(new FormData(form));
-      if (state.createData.type !== 'text' && (!state.createData.media || !state.createData.media.length)) {
+      if (state.createData.type !== 'text' && (!state.createData.files || !state.createData.files.length)) {
         showToast('Por favor sube al menos una imagen o video.'); return;
       }
-      const post = {
-        id:          uid(),
-        authorId:    user.id,
-        type:        state.createData.type,
-        media:       state.createData.media || [],
-        title:       fd.title,
-        description: fd.description,
-        category:    fd.category,
-        territory:   fd.territory,
-        tags:        fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
-        timestamp:   new Date().toISOString(),
-        likes:       0,
-      };
-      const posts = DB.posts();
-      posts.unshift(post);
-      DB.setPosts(posts);
-      state.createData = { type: 'photo', media: [], tags: [] };
-      showToast('¡Publicación creada!');
-      go('feed');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
+      try {
+        const uploaded = [];
+        for (let i = 0; i < (state.createData.files || []).length; i++) {
+          uploaded.push(await window.ORIGEN_API.upload('post-media', state.createData.files[i], `post-${i+1}`));
+        }
+        await window.ORIGEN_API.createPost({
+          type: state.createData.type,
+          media: uploaded,
+          title: fd.title,
+          description: fd.description,
+          category: fd.category,
+          territory: fd.territory,
+          tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
+        });
+        state.createData = { type: 'photo', media: [], files: [], tags: [] };
+        showToast('¡Publicación creada!');
+        go('feed');
+      } catch (error) {
+        showToast(error.message || 'No pudimos crear la publicación.');
+        if (submit) { submit.disabled = false; submit.textContent = 'Publicar →'; }
+      }
     });
   }
 
