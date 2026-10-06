@@ -436,7 +436,7 @@
   function storiesRow() {
     const user     = me();
     const myFollow = user ? remoteFollowRefs() : [];
-    const all      = [...creators, ...Object.values(DB.users())].slice(0, 14);
+    const all      = directoryProfiles().slice(0, 14);
     return `<div class="stories-row"><div class="stories-scroll">
       ${user ? `<a class="story-item" href="#mi-perfil">
         <div class="story-ring own">${avatarEl(user, 'story')}</div>
@@ -570,7 +570,7 @@
 
   /* ── LANDING ─────────────────────────────────────────────── */
   function landingView() {
-    const featured = creators.slice(0, 5);
+    const featured = directoryProfiles().slice(0, 5);
     return `
     <!-- HERO GLOBE -->
     <section class="hero-globe-section">
@@ -640,7 +640,7 @@
     <section class="section" style="background:var(--grey-2)">
       <div class="section-inner">
         <div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
-        <div class="creator-grid">${creators.slice(0, 3).map(creatorCard).join('')}</div>
+        <div class="creator-grid">${directoryProfiles().slice(0, 3).map(creatorCard).join('')}</div>
       </div>
     </section>
 
@@ -688,7 +688,7 @@
         <div class="aside-card">
           <p class="eyebrow">DESCUBRIR</p>
           <h3>Proveedores culturales</h3>
-          ${creators.slice(0, 4).map(c => `<div class="aside-row">
+          ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
             <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? 'Siguiendo' : '+ Seguir'}</button>
@@ -737,7 +737,7 @@
   function renderExploreGrid() {
     const grid = document.getElementById('explore-grid'); if (!grid) return;
     const q = state.query.toLowerCase().trim();
-    const filtered = creators.filter(c => {
+    const filtered = directoryProfiles().filter(c => {
       const catOk = state.activeCategory === 'Todos' || c.category.toLowerCase().includes(state.activeCategory.toLowerCase()) || c.tags.some(tg => tg.toLowerCase().includes(state.activeCategory.toLowerCase()));
       const qOk   = !q || [c.name, c.type, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
       return catOk && qOk;
@@ -812,14 +812,14 @@
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
     const user    = me();
-    const profile = (user && user.id === id) ? user : null;
+    const profile = (user && user.id === id) ? user : normalisePublicProvider((window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id));
     if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
     const myFollows = user ? remoteFollowRefs() : [];
     const isMe      = !!(user && user.id === id);
     const following = myFollows.includes(id);
-    const followsMap = DB.follows();
-    const follCount  = Object.values(followsMap).filter(list => list.includes(id)).length;
-    const followCount = (followsMap[id] || []).length;
+    const ownedCultural = (window.ORIGEN_API?.cache?.culturalProfiles || []).find(cp => cp.owner_id === id);
+    const follCount = ownedCultural?.follower_count || 0;
+    const followCount = isMe ? remoteFollowRefs().length : 0;
     const uPosts = allPosts().filter(p => p.authorId === id);
     return `<section class="profile-hero">
       ${profile.cover
