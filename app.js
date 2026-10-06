@@ -239,7 +239,8 @@
      POSTS
   ═══════════════════════════════════════════════════════════ */
   function allPosts() {
-    return [...DB.posts(), ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const remote = window.ORIGEN_API?.cache?.posts || [];
+    return [...remote, ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
   function feedPosts() {
     const user    = me();
@@ -270,19 +271,16 @@
     const author = getProfile(post.authorId);
     if (!author) return '';
 
-    const likes      = DB.likes();
-    const postLikes  = likes[post.id] || [];
-    const totalLikes = postLikes.length + (postLikes.length === 0 ? (post.likes || 0) : 0);
-    const liked      = !!(user && postLikes.includes(user.id));
+    const liked      = !!(user && (window.ORIGEN_API?.cache?.likes || []).includes(post.id));
+    const totalLikes = post.likes || 0;
 
-    const allComs = DB.comments();
-    const coms    = allComs[post.id] || [];
+    const coms = (window.ORIGEN_API?.cache?.comments || [])
+      .filter(x => x.post_id === post.id)
+      .map(x => ({ id:x.id, authorId:x.user_id, text:x.body, ts:x.created_at }));
 
-    const savesMap  = DB.saves();
-    const saved     = !!(user && (savesMap[user.id] || []).includes(post.id));
+    const saved = !!(user && (window.ORIGEN_API?.cache?.saves || []).includes(post.id));
 
-    const followsMap = DB.follows();
-    const myFollows  = user ? (followsMap[user.id] || []) : [];
+    const myFollows  = user ? remoteFollowRefs() : [];
     const following  = myFollows.includes(post.authorId);
     const isOwn      = !!(user && user.id === post.authorId);
 
@@ -695,7 +693,7 @@
     const user = me();
     const myFollows = user ? remoteFollowRefs() : [];
     const isFollowing = myFollows.includes(c.id);
-    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const favs  = remoteFavoriteRefs();
     const isSaved = favs.includes(c.id);
     const cPosts = allPosts().filter(p => p.authorId === c.id);
     return `<section class="profile-hero">
@@ -745,7 +743,7 @@
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
     const user    = me();
-    const profile = DB.users()[id];
+    const profile = (user && user.id === id) ? user : null;
     if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
     const myFollows = user ? remoteFollowRefs() : [];
     const isMe      = !!(user && user.id === id);
@@ -810,7 +808,7 @@
   function savedView() {
     const user = me();
     if (!user) { go('login'); return ''; }
-    const saves = DB.saves()[user.id] || [];
+    const saves = window.ORIGEN_API?.cache?.saves || [];
     const saved = allPosts().filter(p => saves.includes(p.id));
     return `<section class="page-hero">
       <div class="section-inner">
@@ -1590,7 +1588,8 @@
     if (regAvatarInput) {
       regAvatarInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
-        state.regData.avatar = await resizeImg(file, 400);
+        state.regData.avatarFile = file;
+        state.regData.avatar = URL.createObjectURL(file);
         render('registro', false);
       });
     }
@@ -1598,7 +1597,8 @@
     if (regCoverInput) {
       regCoverInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
-        state.regData.cover = await resizeImg(file, 1200);
+        state.regData.coverFile = file;
+        state.regData.cover = URL.createObjectURL(file);
         render('registro', false);
       });
     }
@@ -1768,46 +1768,52 @@
     const avaInput = document.getElementById('edit-avatar-input');
     if (avaInput) avaInput.addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
-      state.editAvatar = await resizeImg(file, 400);
+      state.editAvatar = file;
+      const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-avatar-zone');
-      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${state.editAvatar}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/*" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
+      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/*" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
     });
 
     /* cover upload */
     const covInput = document.getElementById('edit-cover-input');
     if (covInput) covInput.addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
-      state.editCover = await resizeImg(file, 1200);
+      state.editCover = file;
+      const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-cover-zone');
-      if (zone) zone.innerHTML = `<img src="${state.editCover}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/*" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
+      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/*" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
     });
 
     /* form submit */
     const form = document.getElementById('edit-form');
     if (!form) return;
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const user = me(); if (!user) return;
       const fd   = Object.fromEntries(new FormData(form));
       const links = {};
       ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-      const updated = {
-        ...user,
-        name:       fd.name || user.name,
-        location:   fd.location,
-        story:      fd.story,
-        categories: userCats.list,
-        links,
-        avatar:     state.editAvatar || user.avatar,
-        cover:      state.editCover  || user.cover,
-      };
-      const users = DB.users();
-      users[user.id] = updated;
-      DB.setUsers(users);
-      DB.setSession(updated);
-      state.editAvatar = null; state.editCover = null;
-      showToast('¡Perfil actualizado!');
-      go('mi-perfil');
+      try {
+        let avatar = user.avatar;
+        let cover = user.cover;
+        if (state.editAvatar instanceof File) avatar = await window.ORIGEN_API.upload('avatars', state.editAvatar, 'avatar');
+        if (state.editCover instanceof File) cover = await window.ORIGEN_API.upload('covers', state.editCover, 'cover');
+        const updated = await window.ORIGEN_API.updateMyProfile({
+          name: fd.name || user.name,
+          location: fd.location,
+          story: fd.story,
+          categories: userCats.list,
+          links,
+          avatar,
+          cover
+        });
+        state.user = updated;
+        state.editAvatar = null; state.editCover = null;
+        showToast('¡Perfil actualizado!');
+        go('mi-perfil');
+      } catch (error) {
+        showToast(error.message || 'No pudimos actualizar tu perfil.');
+      }
     });
   }
 
