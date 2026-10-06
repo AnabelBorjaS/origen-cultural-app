@@ -45,7 +45,7 @@ Descubren, siguen, guardan, aprenden y contactan a Cultural Providers.
 Arquitectura futura documentada. Partners tendrán perfil institucional, feed, follows, programas, solicitudes, enrolments, credenciales/badges verificables y métricas de impacto. No es requisito construir toda Academia para la primera beta pública, pero debe comunicarse como roadmap y no prometer funciones todavía inactivas.
 
 ## Bloqueadores actuales de Public Beta
-1. Completar el perfil de Cultural Provider con servicios/oferta, website/contacto y redes como campos/producto de primera clase.
+1. ✅ Perfil profesional de Proveedor Cultural incorporado en la Web App: historia, servicios/oferta, web/contacto, redes y feed cultural. Los datos profesionales se guardan en el perfil y las cuentas de Proveedor se preparan para ser públicas/descubribles.
 2. Confirmar y probar Auth real: email confirmation, login/logout, password reset y sesión entre dispositivos.
 3. Configurar únicamente URLs/redirecciones aprobadas para el dominio de ORIGEN.
 4. Activar y probar protección anti-bot/CAPTCHA para registro, login y recuperación.
@@ -55,7 +55,7 @@ Arquitectura futura documentada. Partners tendrán perfil institucional, feed, f
 8. Actualizar Trust Center/Privacy/Cookies para reflejar Supabase, Storage y el inventario técnico real.
 9. Confirmar que no se cargan analytics/ads opcionales antes de consentimiento.
 10. QA móvil/desktop, accesibilidad, ES/EN, enlaces, errores/empty/loading states y navegadores principales.
-11. Añadir un CI/check automático mínimo en GitHub; actualmente el PR no tiene checks automáticos asociados.
+11. ✅ CI/check automático mínimo activo en GitHub y passing.
 12. Desplegar una beta/staging de la rama de lanzamiento y validar CSP, Auth redirects y flujos reales.
 13. Resolver bugs Critical/High.
 14. Hacer revisión final de Trust/legal proporcional al mercado inicial.
