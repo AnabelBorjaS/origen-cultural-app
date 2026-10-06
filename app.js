@@ -30,6 +30,8 @@
     carIdx: {},
     editAvatar: null,
     editCover: null,
+    user: null,
+    authReady: false,
   };
 
   /* ═══════════════════════════════════════════════════════════
@@ -149,32 +151,47 @@
   /* ═══════════════════════════════════════════════════════════
      AUTH
   ═══════════════════════════════════════════════════════════ */
-  const me     = () => DB.session();
+  const me     = () => state.user;
   const isAuth = () => !!me();
 
-  function doLogin(email, pw) {
-    const users = DB.users();
-    const user  = Object.values(users).find(u => u.email === email && u.password === pw);
-    if (!user) return false;
-    DB.setSession(user);
-    return true;
+  async function doLogin(email, pw) {
+    if (!window.ORIGEN_API) throw new Error('Servicio de autenticación no disponible.');
+    const user = await window.ORIGEN_API.signIn(email, pw);
+    state.user = user;
+    await Promise.allSettled([
+      window.ORIGEN_API.listCulturalProfiles(),
+      window.ORIGEN_API.myFollows(),
+      window.ORIGEN_API.myFavorites()
+    ]);
+    return user;
   }
-  function doRegister(data) {
-    const users = DB.users();
-    if (Object.values(users).find(u => u.email === data.email))
-      return { ok: false, error: 'Este correo ya está registrado.' };
-    const user = { ...data, id: uid(), createdAt: new Date().toISOString() };
-    users[user.id] = user;
-    DB.setUsers(users);
-    DB.setSession(user);
-    return { ok: true, user };
+
+  async function doRegister(data) {
+    if (!window.ORIGEN_API) return { ok: false, error: 'Servicio de autenticación no disponible.' };
+    try {
+      const result = await window.ORIGEN_API.signUp(data);
+      if (result.session) {
+        state.user = await window.ORIGEN_API.restoreSession();
+        await Promise.allSettled([
+          window.ORIGEN_API.listCulturalProfiles(),
+          window.ORIGEN_API.myFollows(),
+          window.ORIGEN_API.myFavorites()
+        ]);
+      }
+      return { ok: true, ...result };
+    } catch (error) {
+      return { ok: false, error: error.message || 'No pudimos crear tu cuenta.' };
+    }
   }
-  function doLogout() { DB.clearSess(); updateShell(); go('inicio'); }
-  function refreshSession() {
-    const u = me(); if (!u) return;
-    const users = DB.users();
-    if (users[u.id]) DB.setSession(users[u.id]);
+
+  async function doLogout() {
+    try { await window.ORIGEN_API?.signOut(); } catch (_) {}
+    state.user = null;
+    updateShell();
+    go('inicio');
   }
+
+  function refreshSession() {}
 
   /* ═══════════════════════════════════════════════════════════
      PROFILES
@@ -182,6 +199,7 @@
   function getProfile(id) {
     const c = creators.find(x => x.id === id);
     if (c) return { ...c, _kind: 'creator' };
+    if (state.user && state.user.id === id) return { ...state.user, _kind: 'user' };
     const u = DB.users()[id];
     return u ? { ...u, _kind: 'user' } : null;
   }
@@ -979,10 +997,39 @@
           <div id="login-error" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">Correo o contraseña incorrectos.</p></div>
           <div class="form-field full"><button class="btn" type="submit" style="width:100%">Entrar</button></div>
         </form>
+        <p class="auth-alt"><a href="#recuperar">¿Olvidaste tu contraseña?</a></p>
         <p class="auth-alt">¿No tienes cuenta? <a href="#registro">Crear perfil cultural</a></p>
         <p class="auth-alt"><a href="#explorar" style="color:#888">Explorar sin cuenta →</a></p>
       </div>
     </div>`;
+  }
+
+
+  function recoverPasswordView() {
+    return `<div class="auth-page"><div class="auth-card">
+      <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+      <h2>Recuperar contraseña</h2>
+      <p class="auth-sub">Te enviaremos un enlace seguro para restablecerla.</p>
+      <form class="form-grid" id="recover-form">
+        <div class="form-field full"><label>Correo electrónico</label><input type="email" name="email" required autocomplete="email"></div>
+        <div id="recover-status" class="form-field full" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">Enviar enlace</button></div>
+      </form>
+      <p class="auth-alt"><a href="#login">← Volver a iniciar sesión</a></p>
+    </div></div>`;
+  }
+
+  function resetPasswordView() {
+    return `<div class="auth-page"><div class="auth-card">
+      <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+      <h2>Nueva contraseña</h2>
+      <p class="auth-sub">Crea una contraseña nueva para tu cuenta ORIGEN.</p>
+      <form class="form-grid" id="reset-password-form">
+        <div class="form-field full"><label>Nueva contraseña</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+        <div id="reset-status" class="form-field full" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">Guardar nueva contraseña</button></div>
+      </form>
+    </div></div>`;
   }
 
   /* ── PASSPORT ────────────────────────────────────────────── */
@@ -1071,6 +1118,8 @@
     else if (route === 'crear')                   html = createPostView();
     else if (route === 'registro')                html = registerView();
     else if (route === 'login')                   html = loginView();
+    else if (route === 'recuperar')               html = recoverPasswordView();
+    else if (route === 'restablecer')             html = resetPasswordView();
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
     else                                          html = isAuth() ? feedView() : landingView();
@@ -1090,6 +1139,8 @@
     if (route === 'explorar')      bindExplore();
     if (route === 'registro')      bindRegister();
     if (route === 'login')         bindLogin();
+    if (route === 'recuperar')     bindRecoverPassword();
+    if (route === 'restablecer')   bindResetPassword();
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
     if (route === 'mundo')         bindMundo();
@@ -1421,12 +1472,59 @@
   function bindLogin() {
     const form = document.getElementById('login-form');
     if (!form) return;
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const { email, password } = Object.fromEntries(new FormData(form));
-      const ok = doLogin(email, password);
-      if (ok) { updateShell(); go('feed'); }
-      else    { const err = document.getElementById('login-error'); if (err) err.style.display = 'block'; }
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Entrando…'; }
+      try {
+        await doLogin(email, password);
+        updateShell();
+        go('feed');
+      } catch (error) {
+        const err = document.getElementById('login-error');
+        if (err) {
+          err.style.display = 'block';
+          const p = err.querySelector('p');
+          if (p) p.textContent = error.message || 'No pudimos iniciar sesión.';
+        }
+      } finally {
+        if (submit) { submit.disabled = false; submit.textContent = 'Entrar'; }
+      }
+    });
+  }
+
+
+  function bindRecoverPassword() {
+    const form = document.getElementById('recover-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = new FormData(form).get('email');
+      const status = document.getElementById('recover-status');
+      try {
+        await window.ORIGEN_API.resetPassword(email);
+        if (status) status.textContent = 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.';
+      } catch (error) {
+        if (status) status.textContent = error.message || 'No pudimos enviar el enlace.';
+      }
+    });
+  }
+
+  function bindResetPassword() {
+    const form = document.getElementById('reset-password-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const password = new FormData(form).get('password');
+      const status = document.getElementById('reset-status');
+      try {
+        await window.ORIGEN_API.updatePassword(password);
+        if (status) status.textContent = 'Contraseña actualizada. Ya puedes continuar.';
+        setTimeout(() => go('feed'), 900);
+      } catch (error) {
+        if (status) status.textContent = error.message || 'No pudimos actualizar la contraseña.';
+      }
     });
   }
 
@@ -1478,7 +1576,7 @@
     /* next / submit */
     const nextBtn = document.getElementById('reg-next');
     if (!nextBtn) return;
-    nextBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', async () => {
       const step = state.regStep;
       const errEl = document.getElementById('reg-error');
 
@@ -1506,13 +1604,23 @@
           ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
           state.regData.links = links;
         }
-        const result = doRegister(state.regData);
+        nextBtn.disabled = true;
+        nextBtn.textContent = 'Creando cuenta…';
+        const result = await doRegister(state.regData);
         if (result.ok) {
+          const requiresConfirmation = result.requiresEmailConfirmation;
           state.regStep = 1; state.regData = {};
-          showToast('¡Bienvenida/o a Origen Cultural!');
-          updateShell(); go('feed');
+          if (requiresConfirmation) {
+            showToast('Revisa tu correo para confirmar tu cuenta.');
+            go('login');
+          } else {
+            showToast('¡Bienvenida/o a ORIGEN Cultural!');
+            updateShell(); go('feed');
+          }
         } else {
           if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
+          nextBtn.disabled = false;
+          nextBtn.textContent = 'Crear mi perfil';
         }
       }
     });
