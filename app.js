@@ -235,7 +235,10 @@
     if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
     return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" onerror="this.parentElement.classList.add('ava-init');this.parentElement.textContent='${init}';"></div>`;
   }
-  function verBadge(p) { return p && p.verified ? '<span class="verified" title="Verificación Cultural">✓</span>' : ''; }
+  function verBadge(p) {
+    const verified = p && (p.profileStatus === 'verified' || (p.verified && !p.referenceProfile));
+    return verified ? '<span class="verified" title="Perfil verificado">✓</span>' : '';
+  }
 
   /* ═══════════════════════════════════════════════════════════
      POSTS
@@ -715,6 +718,7 @@
     </section>
     <section class="profile-layout">
       <div>
+        
         <div class="profile-story">
           <p class="eyebrow">SU HISTORIA CULTURAL</p>
           <h2>Una puerta directa a su identidad</h2>
@@ -742,6 +746,13 @@
     ${footer()}`;
   }
 
+  function claimProfileView(id) {
+    const c = creators.find(x => x.id === id);
+    if (!c) return '<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a href="#explorar" class="btn">Volver</a></div></section>';
+    const user = me();
+    if (!user) return `<div class="auth-page"><div class="auth-card"><a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a><h2>Reclamar ${esc(c.name)}</h2><p class="auth-sub">Para proteger a las comunidades y evitar suplantaciones, primero debes iniciar sesión.</p><a class="btn" href="#login" style="width:100%;text-align:center">Iniciar sesión</a><p class="auth-alt"><a href="#registro">Crear cuenta ORIGEN</a></p></div></div>`;
+    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">RECLAMACIÓN DE PERFIL</p><h1>¿Representas a ${esc(c.name)}?</h1><p class="lead">La gestión no se transfiere automáticamente. ORIGEN revisará que tengas autoridad para representar a esta persona, comunidad, negocio u organización.</p></div></section><section class="section"><div class="section-inner" style="max-width:820px"><form id="claim-form" class="form-grid" data-profile-ref="${c.id}"><div class="form-field"><label>Tu nombre completo *</label><input name="claimant_name" value="${esc(user.name || '')}" required></div><div class="form-field"><label>Cargo o relación *</label><input name="relationship_role" required placeholder="Fundadora, gerente, representante autorizado…"></div><div class="form-field"><label>Correo oficial *</label><input type="email" name="official_email" value="${esc(user.email || '')}" required></div><div class="form-field"><label>Web o red social oficial</label><input name="official_url" placeholder="https://"></div><div class="form-field full"><label>¿Cómo podemos verificar tu autoridad? *</label><textarea name="explanation" rows="4" required></textarea></div><div class="form-field full"><label><input type="checkbox" name="authority" required> Declaro que estoy autorizado/a para solicitar la gestión de este perfil.</label></div><div id="claim-status" class="form-field full" aria-live="polite"></div><div class="form-field full"><button class="btn" type="submit" style="width:100%">Enviar solicitud para revisión</button></div></form></div></section>${footer()}`;
+  }
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
     const user    = me();
@@ -1134,6 +1145,7 @@
     else if (route === 'explorar')                html = exploreView();
     else if (route === 'mundo')                   html = mundoView();
     else if (route.startsWith('perfil/'))         html = creatorProfileView(route.split('/')[1]);
+    else if (route.startsWith('reclamar/'))        html = claimProfileView(route.split('/')[1]);
     else if (route.startsWith('usuario/'))        html = userProfileView(route.split('/')[1]);
     else if (route === 'mi-perfil')               html = myProfileView();
     else if (route === 'editar-perfil')           html = editProfileView();
@@ -1160,6 +1172,7 @@
     bindPostInteractions();
     bindFavorites();
     if (route === 'explorar')      bindExplore();
+    if (route.startsWith('reclamar/')) bindClaimProfile();
     if (route === 'registro')      bindRegister();
     if (route === 'login')         bindLogin();
     if (route === 'recuperar')     bindRecoverPassword();
@@ -1504,6 +1517,28 @@
     if (clearBtn) clearBtn.addEventListener('click', () => { state.query = ''; state.activeCategory = 'Todos'; render('explorar', false); });
   }
 
+  function bindClaimProfile() {
+    const form = document.getElementById('claim-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const status = document.getElementById('claim-status');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Enviando…'; }
+      try {
+        const profileId = await culturalProfileId(form.dataset.profileRef);
+        if (!profileId) throw new Error('No encontramos el perfil de referencia en la base de datos.');
+        const fd = Object.fromEntries(new FormData(form));
+        await window.ORIGEN_API.submitClaim({ cultural_profile_id: profileId, claimant_name: fd.claimant_name, relationship_role: fd.relationship_role, official_email: fd.official_email, official_url: fd.official_url, explanation: fd.explanation });
+        if (status) status.textContent = 'Solicitud recibida. Estado: pendiente de revisión.';
+        if (submit) submit.textContent = 'Solicitud enviada';
+        showToast('Solicitud de reclamación enviada.');
+      } catch (error) {
+        if (status) status.textContent = error.message || 'No pudimos enviar la solicitud.';
+        if (submit) { submit.disabled = false; submit.textContent = 'Enviar solicitud para revisión'; }
+      }
+    });
+  }
   /* Login */
   function bindLogin() {
     const form = document.getElementById('login-form');
