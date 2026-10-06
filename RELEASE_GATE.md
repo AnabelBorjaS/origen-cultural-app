@@ -40,3 +40,26 @@ No incluye:
 - payouts;
 - marketplace;
 - verificación automática.
+
+
+## Security & abuse
+Public beta remains NO-GO until:
+- Supabase Security Advisor has no unresolved security lints.
+- CAPTCHA/bot protection is enabled for sign-up, sign-in and password recovery.
+- Email confirmation is enabled and redirect URLs are limited to approved ORIGEN domains.
+- Auth rate limits are reviewed for the beta.
+- RLS is tested with two separate accounts to confirm cross-user isolation.
+- Spam limits for posts, comments, reports and profile claims are tested.
+- Upload type/size restrictions and ownership policies are tested.
+- External URLs reject unsafe schemes such as javascript:.
+- Content Security Policy is validated in the deployed environment.
+- GitHub and Supabase administrator accounts use MFA/2FA.
+- No service-role key, database password or private secret exists in frontend code or repository history.
+- A basic incident-response and recovery procedure exists before public launch.
+
+## Cookies, storage & privacy
+- The beta must not load optional analytics, advertising or cross-site tracking before consent where consent is required.
+- Maintain a real technical inventory of cookies, browser storage, SDKs and external providers from the deployed product.
+- Current app preference storage and Supabase authentication storage must be documented accurately.
+- When optional cookies/analytics are enabled, provide equivalent Accept, Reject and Configure choices before those technologies run.
+- Re-run the cookie/storage inventory after every material analytics, authentication or advertising change.
