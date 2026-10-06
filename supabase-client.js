@@ -81,7 +81,12 @@
       location: payload.location || '',
       story: payload.story || '',
       categories: payload.categories || [],
-      links: payload.links || {}
+      links: payload.links || {},
+      accepted_legal: true,
+      terms_version: 'v1.2',
+      privacy_version: 'v1.2',
+      community_guidelines_version: 'v1.2',
+      cultural_rights_version: 'v1.2'
     };
     const redirectTo = window.location.origin + window.location.pathname + '#login';
     const { data, error } = await client.auth.signUp({
@@ -91,20 +96,7 @@
     });
     if (error) throw error;
 
-    if (data.user) {
-      // Trigger-created profile may take a moment to become visible.
-      await new Promise(resolve => setTimeout(resolve, 250));
-      const { error: legalError } = await client.from('legal_acceptances').insert({
-        user_id: data.user.id,
-        terms_version: 'v1.2',
-        privacy_version: 'v1.2',
-        community_guidelines_version: 'v1.2',
-        cultural_rights_version: 'v1.2'
-      });
-      if (legalError && !String(legalError.message || '').includes('row-level')) {
-        console.warn('[ORIGEN] Legal acceptance write:', legalError.message);
-      }
-    }
+
 
     return {
       user: data.user,
