@@ -490,7 +490,7 @@
         <div class="hero-globe-stats">
           <div class="hero-gstat"><strong>6</strong><span>Territorios activos</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>5+</strong><span>Creadores culturales</span></div>
+          <div class="hero-gstat"><strong>5+</strong><span>Agentes culturales</span></div>
           <div class="hero-gstat-div"></div>
           <div class="hero-gstat"><strong>8+</strong><span>Publicaciones</span></div>
         </div>
@@ -556,7 +556,7 @@
     <section class="cta-panel">
       <img src="assets/images/mural.jpg" alt="Mural cultural">
       <div class="cta-content">
-        <p class="eyebrow">CREADORES CULTURALES</p>
+        <p class="eyebrow">AGENTES CULTURALES</p>
         <h2>Tu historia cultural merece ser encontrada.</h2>
         <p>Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.</p>
         <a class="btn light" href="#registro">Empezar ahora</a>
@@ -587,7 +587,7 @@
       <aside class="feed-aside">
         <div class="aside-card">
           <p class="eyebrow">DESCUBRIR</p>
-          <h3>Creadores culturales</h3>
+          <h3>Agentes culturales</h3>
           ${creators.slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
@@ -603,7 +603,7 @@
           <p class="eyebrow">MI PERFIL</p>
           <div class="aside-row">
             ${avatarEl(user, 'sm')}
-            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}</p></div>
+            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? 'Agente Cultural' : 'Explorador Cultural'}</p></div>
           </div>
           <a href="#mi-perfil" class="link-arrow" style="display:block;margin-top:12px;font-size:12px">Ver mi perfil →</a>
         </div>
@@ -720,7 +720,7 @@
       <div class="profile-hero-content">
         ${avatarEl(profile, 'lg')}
         <div class="profile-title">
-          <p class="eyebrow">${profile.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
+          <p class="eyebrow">${profile.accountType === 'creator' ? 'Agente Cultural' : 'Explorador Cultural'}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
           <h1>${esc(profile.name)}</h1>
           <p>${follCount} seguidores · ${followCount} siguiendo · ${uPosts.length} publicaciones</p>
         </div>
@@ -748,7 +748,7 @@
       <aside class="profile-aside">
         <p class="eyebrow">PERFIL CULTURAL</p>
         <dl>
-          <div><dt>Tipo</dt><dd>${profile.accountType === 'creator' ? 'Creador Cultural' : 'Explorador Cultural'}</dd></div>
+          <div><dt>Tipo</dt><dd>${profile.accountType === 'creator' ? 'Agente Cultural' : 'Explorador Cultural'}</dd></div>
           ${profile.location ? `<div><dt>Ubicación</dt><dd>${esc(profile.location)}</dd></div>` : ''}
           ${profile.categories && profile.categories.length ? `<div><dt>Categorías</dt><dd>${profile.categories.map(esc).join(', ')}</dd></div>` : ''}
         </dl>
@@ -906,7 +906,7 @@
       body = `<div class="atype-grid">
         <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
           <span class="atype-icon">◈</span>
-          <h3>Creador Cultural</h3>
+          <h3>Agente Cultural</h3>
           <p>Persona, comunidad, negocio u organización que preserva, practica o comparte cultura.</p>
         </button>
         <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
@@ -1007,7 +1007,7 @@
         <div class="badges">
           <div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div>
           <div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Creadores Culturales para desbloquearla.</p></div>
+          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Agentes Culturales para desbloquearla.</p></div>
         </div>
       </div>
     </div></section>${footer()}`;
@@ -1017,7 +1017,7 @@
   function impactView() {
     const values = [
       ['Dignidad cultural','La cultura se presenta con respeto, contexto y valor, no como espectáculo vacío.'],
-      ['Autenticidad','La voz y la historia de cada Creador Cultural permanecen como eje central.'],
+      ['Autenticidad','La voz y la historia de cada Agente Cultural permanecen como eje central.'],
       ['Autonomía','Cada perfil conserva sus canales, decisiones, historia e identidad.'],
       ['Conexión global','La plataforma conecta culturas con públicos, aliados y oportunidades internacionales.'],
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
@@ -1034,7 +1034,7 @@
       <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Creadores Culturales</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Agentes Culturales</span></div>
         <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
         <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
       </div>
@@ -1114,7 +1114,7 @@
         <div class="mundo-header">
           <p class="eyebrow">EXPLORACIÓN CULTURAL</p>
           <h1 class="mundo-title">Mundo Cultural</h1>
-          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus creadores.</p>
+          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus agentes culturales.</p>
         </div>
         <div class="mundo-body">
           <div class="mundo-globe-wrap">
