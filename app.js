@@ -275,7 +275,9 @@
   function socialLinksHtml(profile) {
     if (!profile.links || !Object.keys(profile.links).length) return '';
     const icons = { instagram:'IG', facebook:'FB', tiktok:'TK', youtube:'YT', linkedin:'LI', whatsapp:'WA', email:'✉', web:'↗' };
+    const allowed = new Set(['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web']);
     const entries = Object.entries(profile.links)
+      .filter(([k]) => allowed.has(k))
       .map(([k, v]) => [k, safeExternalUrl(v)])
       .filter(([, v]) => !!v);
     if (!entries.length) return '';
