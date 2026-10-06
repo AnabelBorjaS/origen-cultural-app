@@ -433,15 +433,6 @@ window.MundoCultural = (() => {
     }).filter(Boolean);
   }
 
-  function getTerritoryLabels() {
-    return Object.values(CULTURAL_DB).map(d => ({
-      lat: d.lat,
-      lng: d.lng,
-      text: `${d.flag} ${d.name}`,
-      countryKey: d.key
-    }));
-  }
-
   /* ── CARD RENDERING ─────────────────────────────────────────── */
   function renderCard(countryKey) {
     if (!_panel) return;
@@ -786,7 +777,7 @@ window.MundoCultural = (() => {
 
     const points = getCreatorPoints();
     const territoryLabels = Object.values(CULTURAL_DB).map(d => ({
-      lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, key: d.key
+      lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
     }));
 
     _globe = Globe({ animateIn: true })
@@ -802,15 +793,6 @@ window.MundoCultural = (() => {
       .polygonCapColor(capColor)
       .polygonSideColor(() => 'rgba(200,169,126,0.08)')
       .polygonStrokeColor(() => 'rgba(255,255,255,0.18)')
-      .labelsData(territoryLabels)
-      .labelLat('lat')
-      .labelLng('lng')
-      .labelText('text')
-      .labelSize(1.15)
-      .labelDotRadius(0.28)
-      .labelColor(() => 'rgba(255,255,255,0.96)')
-      .labelAltitude(0.022)
-      .labelResolution(3)
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
@@ -844,7 +826,7 @@ window.MundoCultural = (() => {
       .onPointClick(d => {
         if (d.countryKey) selectCountry(d.countryKey);
       })
-      .labelsData(getTerritoryLabels())
+      .labelsData(territoryLabels)
       .labelLat('lat')
       .labelLng('lng')
       .labelText('text')
@@ -1111,7 +1093,7 @@ window.HeroGlobe = (() => {
       _geoData = geo;
       container.innerHTML = '';
       const territoryLabels = Object.values(getDB()).map(d => ({
-        lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, key: d.key
+        lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
       }));
 
       _globe = Globe({ animateIn: true })
@@ -1127,15 +1109,6 @@ window.HeroGlobe = (() => {
         .polygonCapColor(hCap)
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
         .polygonStrokeColor(() => 'rgba(255,255,255,0.16)')
-        .labelsData(territoryLabels)
-        .labelLat('lat')
-        .labelLng('lng')
-        .labelText('text')
-        .labelSize(1.05)
-        .labelDotRadius(0.24)
-        .labelColor(() => 'rgba(255,255,255,0.98)')
-        .labelAltitude(0.022)
-        .labelResolution(3)
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
@@ -1163,12 +1136,7 @@ window.HeroGlobe = (() => {
           _rotating = false;
           _updatePauseBtn();
         })
-        .labelsData(Object.values(getDB()).map(d => ({
-          lat: d.lat,
-          lng: d.lng,
-          text: `${d.flag} ${d.name}`,
-          countryKey: d.key
-        })))
+        .labelsData(territoryLabels)
         .labelLat('lat')
         .labelLng('lng')
         .labelText('text')
