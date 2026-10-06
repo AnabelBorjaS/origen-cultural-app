@@ -121,6 +121,18 @@
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function esc(s) { const d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+  function safeExternalUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^mailto:/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.origin);
+      if (!['http:','https:'].includes(u.protocol)) return '';
+      return u.href;
+    } catch {
+      return '';
+    }
+  }
   function timeAgo(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
     if (s < 60)     return 'ahora';
@@ -263,9 +275,11 @@
   function socialLinksHtml(profile) {
     if (!profile.links || !Object.keys(profile.links).length) return '';
     const icons = { instagram:'IG', facebook:'FB', tiktok:'TK', youtube:'YT', linkedin:'LI', whatsapp:'WA', email:'✉', web:'↗' };
-    const entries = Object.entries(profile.links).filter(([, v]) => v && v.trim());
+    const entries = Object.entries(profile.links)
+      .map(([k, v]) => [k, safeExternalUrl(v)])
+      .filter(([, v]) => !!v);
     if (!entries.length) return '';
-    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
+    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noopener noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
   }
 
   /* ═══════════════════════════════════════════════════════════
