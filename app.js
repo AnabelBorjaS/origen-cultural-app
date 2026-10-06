@@ -460,17 +460,19 @@
   function creatorCard(c) {
     const favs  = remoteFavoriteRefs();
     const saved = favs.includes(c.id);
+    const href  = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`;
+    const image = c.image || c.avatar || 'assets/logo-mark.svg';
     return `<article class="creator-card">
       <div class="creator-card-image">
-        <a href="#perfil/${c.id}" aria-label="${t('profile')}: ${c.name}"><img src="${c.image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
+        <a href="${href}" aria-label="${t('profile')}: ${c.name}"><img src="${image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
         <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
       </div>
       <div class="creator-card-body">
         <div class="creator-meta"><span>${c.type}</span><span>${verBadge(c)} ${c.location}</span></div>
-        <h3><a href="#perfil/${c.id}">${c.name}</a></h3>
+        <h3><a href="${href}">${c.name}</a></h3>
         <p>${c.short}</p>
-        <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers)} seguidores</span><a class="link-arrow" href="#perfil/${c.id}">${t('profile')}</a></div>
+        <div class="creator-tags">${(c.tags || []).map(tg => `<span>${tg}</span>`).join('')}</div>
+        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers || 0)} seguidores</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
       </div>
     </article>`;
   }
@@ -1968,12 +1970,12 @@
   }
   function populateSearch(query) {
     const q = query.toLowerCase().trim();
-    const results = creators.filter(c => !q || [c.name, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q));
+    const results = directoryProfiles().filter(c => !q || [c.name, c.category, c.location, c.short, ...(c.tags || [])].join(' ').toLowerCase().includes(q));
     const resPosts = allPosts().filter(p => q && [p.title, p.description, ...(p.tags || [])].join(' ').toLowerCase().includes(q)).slice(0, 4);
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => `<a class="search-result" href="#perfil/${c.id}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`),
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image || c.avatar || 'assets/logo-mark.svg'}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`; }),
       ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" onclick="document.getElementById('search-dialog').close();state.openComments.clear()"><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
@@ -1990,7 +1992,55 @@
      INIT
   ═══════════════════════════════════════════════════════════ */
   document.documentElement.lang = state.lang;
-  render(currentRoute());
+
+  async function initApp() {
+    try {
+      state.user = await window.ORIGEN_API?.restoreSession() || null;
+      const tasks = [
+        window.ORIGEN_API?.listCulturalProfiles(),
+        window.ORIGEN_API?.listPublicProfiles(),
+        window.ORIGEN_API?.listPosts()
+      ];
+      if (state.user) {
+        tasks.push(
+          window.ORIGEN_API?.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API?.myFollows(),
+          window.ORIGEN_API?.myFavorites(),
+          window.ORIGEN_API?.loadPostInteractions()
+        );
+      }
+      await Promise.allSettled(tasks);
+    } catch (error) {
+      console.error('[ORIGEN] Startup error:', error);
+      state.user = null;
+    } finally {
+      state.authReady = true;
+      render(currentRoute());
+    }
+  }
+
+  window.addEventListener('origen-auth-change', async () => {
+    try {
+      state.user = await window.ORIGEN_API?.restoreSession() || null;
+      if (state.user) {
+        await Promise.allSettled([
+          window.ORIGEN_API?.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API?.listCulturalProfiles(),
+          window.ORIGEN_API?.listPublicProfiles(),
+          window.ORIGEN_API?.myFollows(),
+          window.ORIGEN_API?.myFavorites(),
+          window.ORIGEN_API?.listPosts(),
+          window.ORIGEN_API?.loadPostInteractions()
+        ]);
+      }
+      updateShell();
+    } catch (error) {
+      console.error('[ORIGEN] Auth refresh error:', error);
+    }
+  });
+
+  initApp();
+
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
   }
