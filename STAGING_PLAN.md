@@ -41,6 +41,11 @@ Static build configuration:
 - Production DNS: **do not connect `origencultural.com`**
 - Use the generated `*.pages.dev` URL for controlled testing.
 
+Turnstile public build variable (add **only after** creating the staging widget):
+- `ORIGEN_TURNSTILE_SITE_KEY=<staging public Site Key>`
+- This is a public identifier and is written into `dist/runtime-config.js`.
+- **Never** add the Turnstile Secret Key to Cloudflare Pages build variables, GitHub, or browser runtime. The Secret Key belongs only in Supabase Auth CAPTCHA configuration.
+
 Cloudflare Pages provides preview URLs for branches and pull requests when Git integration is enabled.
 
 ## Supabase Auth integration after staging URL exists
@@ -52,7 +57,7 @@ Once the actual HTTPS staging URL is generated:
 3. Keep production Site URL decision separate from staging.
 4. Test email confirmation on staging.
 5. Test password recovery on staging.
-6. Implement CAPTCHA frontend token handling.
+6. Confirm the prepared Turnstile frontend renders and produces tokens with the staging Site Key.
 7. Enable CAPTCHA server-side only after the frontend flow is verified.
 8. Run `RELEASE_QA_RUNBOOK.md` with two real accounts.
 9. Remove any obsolete staging redirect when staging is retired.
