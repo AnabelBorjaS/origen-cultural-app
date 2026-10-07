@@ -1240,6 +1240,26 @@
     </div></section>${footer()}`;
   }
 
+  /* ── TRUST CENTER ───────────────────────────────────────── */
+  function trustCenterView() {
+    const trust = window.ORIGEN_TRUST;
+    if (!trust) return `<section class="section"><div class="section-inner"><h2>Centro de confianza no disponible</h2></div></section>`;
+    return `<section class="page-hero trust-hero"><div class="section-inner">
+      <p class="eyebrow">CONFIANZA · PRIVACIDAD · CULTURA</p>
+      <h1>Centro de confianza</h1>
+      <p class="lead">Lo esencial para entender cómo ORIGEN cuida tu cuenta, tus datos, el contenido cultural y la comunidad.</p>
+      <div class="trust-meta"><span>${esc(trust.version)}</span><span>${esc(trust.updated)}</span></div>
+    </div></section>
+    <section class="section trust-section"><div class="section-inner trust-layout">
+      <aside class="trust-nav">${trust.sections.map(s => `<a href="#trust-${s.id}">${esc(s.title)}</a>`).join('')}</aside>
+      <div class="trust-content">
+        <div class="trust-status"><strong>Estado beta</strong><p>${esc(trust.status)}</p></div>
+        ${trust.sections.map(s => `<article class="trust-card" id="trust-${s.id}"><p class="eyebrow">${esc(s.title)}</p>${s.body.map(p => `<p>${esc(p)}</p>`).join('')}</article>`).join('')}
+        <article class="trust-card trust-contact"><p class="eyebrow">CONTACTO</p><h2>Ayuda, reportes y solicitudes</h2><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
+      </div>
+    </div></section>${footer()}`;
+  }
+
   /* ═══════════════════════════════════════════════════════════
      ROUTER
   ═══════════════════════════════════════════════════════════ */
@@ -1275,6 +1295,7 @@
     else if (route === 'restablecer')             html = resetPasswordView();
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
+    else if (route === 'confianza')                html = trustCenterView();
     else                                          html = isAuth() ? feedView() : landingView();
 
     $app.innerHTML = html;
