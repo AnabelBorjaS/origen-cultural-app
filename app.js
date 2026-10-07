@@ -1052,7 +1052,7 @@
         ${d.type !== 'text' ? `
           <div class="upload-zone wide" id="post-media-zone">
             ${hasMedia
-              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${src}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${esc(safeMediaUrl(src))}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
             <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
@@ -1094,13 +1094,13 @@
     <div class="edit-wrap">
       <div class="upload-section">
         <div class="upload-zone" id="edit-avatar-zone">
-          ${user.avatar ? `<img src="${user.avatar}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
+          ${user.avatar ? `<img src="${esc(safeMediaUrl(user.avatar))}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
           <input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>
         </div>
         <div class="upload-zone wide" id="edit-cover-zone">
           ${user.cover
-            ? `<img src="${user.cover}" class="edit-cover-preview" alt="Portada">`
+            ? `<img src="${esc(safeMediaUrl(user.cover))}" class="edit-cover-preview" alt="Portada">`
             : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
           <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>
@@ -1187,12 +1187,12 @@
     } else if (step === 3) {
       body = `<div class="upload-section">
         <div class="upload-zone" id="reg-avatar-zone">
-          ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="${L('Foto de perfil','Profile photo')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de perfil','Profile photo')}</p><small>${L('Opcional','Optional')}</small></div>`}
+          ${d.avatar ? `<img src="${esc(safeMediaUrl(d.avatar))}" class="edit-avatar-preview" alt="${L('Foto de perfil','Profile photo')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de perfil','Profile photo')}</p><small>${L('Opcional','Optional')}</small></div>`}
           <input type="file" id="reg-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn" type="button" data-file-trigger="reg-avatar-input">${L('Subir foto de perfil','Upload profile photo')}</button>
         </div>
         <div class="upload-zone wide" id="reg-cover-zone">
-          ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="${L('Portada','Cover image')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de portada','Cover image')}</p><small>${L('Opcional','Optional')}</small></div>`}
+          ${d.cover ? `<img src="${esc(safeMediaUrl(d.cover))}" class="edit-cover-preview" alt="${L('Portada','Cover image')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de portada','Cover image')}</p><small>${L('Opcional','Optional')}</small></div>`}
           <input type="file" id="reg-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn secondary" type="button" data-file-trigger="reg-cover-input">${L('Subir portada','Upload cover')}</button>
         </div>
@@ -2203,7 +2203,7 @@
       const file = e.target.files?.[0]; if (!file) return;
       state.editAvatar = file;
       const preview = URL.createObjectURL(file);
-      avaZone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`;
+      avaZone.innerHTML = `<img src="${esc(safeMediaUrl(preview))}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`;
     });
 
     const covZone = document.getElementById('edit-cover-zone');
@@ -2212,7 +2212,7 @@
       const file = e.target.files?.[0]; if (!file) return;
       state.editCover = file;
       const preview = URL.createObjectURL(file);
-      covZone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
+      covZone.innerHTML = `<img src="${esc(safeMediaUrl(preview))}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
     });
 
     /* form submit */
