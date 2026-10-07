@@ -490,7 +490,7 @@
       <div class="footer-top">
         <div class="footer-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"><p>${t('tagline')}<br><br>Una red social cultural para descubrir, seguir y valorar culturas vivas.</p></div>
         <div><h4>Explorar</h4><div class="footer-links"><a href="#explorar">Perfiles culturales</a><a href="#feed">Feed cultural</a><a href="#pasaporte">Pasaporte Cultural</a></div></div>
-        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
+        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#confianza">Centro de confianza</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
         <div><h4>Social</h4><div class="footer-links"><a href="https://www.instagram.com/origen.cultural" target="_blank" rel="noreferrer">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></div></div>
       </div>
       <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Beta controlada · Datos sincronizados con Supabase</span></div>
@@ -663,7 +663,7 @@
     <section class="cta-panel">
       <img src="assets/images/mural.jpg" alt="Mural cultural">
       <div class="cta-content">
-        <p class="eyebrow">CREADORES CULTURALES</p>
+        <p class="eyebrow">PROVEEDORES CULTURALES</p>
         <h2>Tu historia cultural merece ser encontrada.</h2>
         <p>Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.</p>
         <a class="btn light" href="#registro">Empezar ahora</a>
@@ -1037,7 +1037,7 @@
       body = `<form class="form-grid" id="reg-basic">
         <div class="form-field"><label>Nombre completo *</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
         <div class="form-field"><label>Correo electrónico *</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
-        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="6"></div>
+        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
         <div class="form-field"><label>País y ciudad *</label><input name="location" required placeholder="Quito, Ecuador" value="${esc(d.location || '')}"></div>
       </form>`;
     } else if (step === 3) {
