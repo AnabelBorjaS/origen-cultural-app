@@ -53,7 +53,7 @@ const checks = [
   ['Registration flow includes ES/EN copy', app.includes('Cultural Agent') && app.includes('Cultural Explorer') && app.includes('Create my profile') && app.includes('Already have an account?')],
   ['Registration preserves canonical category values', app.includes("['Artesanía y tradición','Crafts and tradition']") && app.includes('data-cat=')],
   ['Legal consent is translated without changing version', app.includes('Community Guidelines and Cultural Rights v1.2') && app.includes('Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2')],
-  ['Account and category selectors expose pressed state', app.includes('aria-pressed=') && app.includes("setAttribute('aria-pressed'"))
+  ['Account and category selectors expose pressed state', app.includes('aria-pressed=') && app.includes("setAttribute('aria-pressed'")]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
