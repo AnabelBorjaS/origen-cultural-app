@@ -57,7 +57,7 @@ No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN u
 - Test malicious/oversized uploads and unsupported MIME types.
 - Test XSS payloads in profile names, bios, posts, comments and links.
 - Validate CSP after deployment.
-- Establish incident-response contacts, account-lock/recovery process and backup/recovery expectations.
+- Incident-response/recovery runbook exists (`INCIDENT_RECOVERY_RUNBOOK.md`). Before Public Beta, create and verify an off-repository logical database backup and confirm account-recovery/admin contacts.
 
 ## Cookies and browser storage
 ORIGEN should use the minimum browser storage required for core operation. Optional analytics, advertising and cross-site tracking must remain off until they are deliberately approved, documented and consented to where required.
@@ -83,3 +83,12 @@ For suspected compromise:
 
 ## Review cadence
 Re-run security checks before each public release and after changes to Auth, RLS, Storage, analytics, payments, messaging, third-party SDKs or mobile clients.
+
+
+## Recovery baseline
+- Operational incident/rollback procedure: **documented**.
+- Code rollback source: last-known-good GitHub commit/build.
+- Database recovery principle: contain first; prefer reviewed forward-fix migrations.
+- Current Supabase Free plan: do not assume PITR/dashboard restore availability; maintain an independent logical backup.
+- Storage objects require a separate recovery/retention strategy because database backups do not restore deleted physical Storage objects.
+- Actual pre-beta backup export/validation: **pending release evidence**.
