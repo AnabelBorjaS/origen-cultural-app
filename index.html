@@ -70,6 +70,37 @@
     </form>
   </dialog>
 
+  <dialog id="report-dialog" class="modal" aria-labelledby="report-title">
+    <form id="report-form" class="modal-card">
+      <div class="modal-header">
+        <div><p class="eyebrow" id="report-eyebrow">SEGURIDAD Y COMUNIDAD</p><h2 id="report-title">Reportar contenido</h2></div>
+        <button class="icon-button" id="report-close" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <p id="report-copy">Cuéntanos qué ocurre. ORIGEN revisará el reporte sin transferir automáticamente ninguna sanción.</p>
+      <div class="form-field full" style="margin-top:18px">
+        <label for="report-reason" id="report-reason-label">Motivo *</label>
+        <select id="report-reason" name="reason" required>
+          <option value="">Selecciona un motivo</option>
+          <option value="cultural_rights">Derechos culturales / conocimiento sensible</option>
+          <option value="harassment">Acoso, odio o amenazas</option>
+          <option value="impersonation">Suplantación o identidad falsa</option>
+          <option value="spam">Spam, fraude o contenido engañoso</option>
+          <option value="copyright">Copyright / propiedad intelectual</option>
+          <option value="other">Otro</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label for="report-details" id="report-details-label">Contexto adicional (opcional)</label>
+        <textarea id="report-details" name="details" rows="4" maxlength="6000"></textarea>
+      </div>
+      <div id="report-status" role="status" aria-live="polite"></div>
+      <div class="modal-actions" style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+        <button class="btn secondary" id="report-cancel" type="button">Cancelar</button>
+        <button class="btn" id="report-submit" type="submit">Enviar reporte</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="wellbeing-dialog" class="modal wellbeing-modal" aria-labelledby="wellbeing-title">
     <div class="modal-card wellbeing-card">
       <p class="eyebrow" id="wellbeing-eyebrow">BIENESTAR DIGITAL</p>
