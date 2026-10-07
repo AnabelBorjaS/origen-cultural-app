@@ -1,6 +1,6 @@
-const CACHE = 'origen-cultural-v5';
+const CACHE = 'origen-cultural-v6';
 const ASSETS = [
-  './','./index.html','./styles.css','./app.js','./supabase-client.js','./data.js','./mundo.js',
+  './','./index.html','./styles.css','./app.js','./supabase-client.js','./data.js','./trust.js','./mundo.js',
   './manifest.webmanifest','./assets/logo-mark.svg','./assets/logo-lockup.svg',
   './assets/images/embroidery.jpg','./assets/images/mural.jpg','./assets/images/territory.jpg',
   './assets/images/caves.jpg','./assets/images/chawar.jpg','./assets/images/gastronomy.jpg',
