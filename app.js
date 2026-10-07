@@ -1165,48 +1165,50 @@
 
   /* ── LOGIN ───────────────────────────────────────────────── */
   function loginView() {
+    const es = state.lang === 'es';
     return `<div class="auth-page">
       <div class="auth-card">
         <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
-        <h2>Bienvenida de vuelta</h2>
-        <p class="auth-sub">Inicia sesión en tu cuenta de Origen Cultural</p>
+        <h2>${es ? 'Bienvenida de vuelta' : 'Welcome back'}</h2>
+        <p class="auth-sub">${es ? 'Inicia sesión en tu cuenta de Origen Cultural' : 'Sign in to your Origen Cultural account'}</p>
         <form class="form-grid" id="login-form">
-          <div class="form-field full"><label>Correo electrónico</label><input type="email" name="email" required autocomplete="email"></div>
-          <div class="form-field full"><label>Contraseña</label><input type="password" name="password" required autocomplete="current-password"></div>
-          <div id="login-error" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">Correo o contraseña incorrectos.</p></div>
-          <div class="form-field full"><button class="btn" type="submit" style="width:100%">Entrar</button></div>
+          <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
+          <div class="form-field full"><label>${es ? 'Contraseña' : 'Password'}</label><input type="password" name="password" required autocomplete="current-password"></div>
+          <div id="login-error" role="alert" aria-live="assertive" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">${es ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'}</p></div>
+          <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Entrar' : 'Sign in'}</button></div>
         </form>
-        <p class="auth-alt"><a href="#recuperar">¿Olvidaste tu contraseña?</a></p>
-        <p class="auth-alt">¿No tienes cuenta? <a href="#registro">Crear perfil cultural</a></p>
-        <p class="auth-alt"><a href="#explorar" style="color:#888">Explorar sin cuenta →</a></p>
+        <p class="auth-alt"><a href="#recuperar">${es ? '¿Olvidaste tu contraseña?' : 'Forgot your password?'}</a></p>
+        <p class="auth-alt">${es ? '¿No tienes cuenta?' : "Don't have an account?"} <a href="#registro">${es ? 'Crear perfil cultural' : 'Create cultural profile'}</a></p>
+        <p class="auth-alt"><a href="#explorar" style="color:#888">${es ? 'Explorar sin cuenta' : 'Explore without an account'} →</a></p>
       </div>
     </div>`;
   }
 
-
   function recoverPasswordView() {
+    const es = state.lang === 'es';
     return `<div class="auth-page"><div class="auth-card">
       <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
-      <h2>Recuperar contraseña</h2>
-      <p class="auth-sub">Te enviaremos un enlace seguro para restablecerla.</p>
+      <h2>${es ? 'Recuperar contraseña' : 'Reset your password'}</h2>
+      <p class="auth-sub">${es ? 'Te enviaremos un enlace seguro para restablecerla.' : 'We will send you a secure password-reset link.'}</p>
       <form class="form-grid" id="recover-form">
-        <div class="form-field full"><label>Correo electrónico</label><input type="email" name="email" required autocomplete="email"></div>
-        <div id="recover-status" class="form-field full" aria-live="polite"></div>
-        <div class="form-field full"><button class="btn" type="submit" style="width:100%">Enviar enlace</button></div>
+        <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
+        <div id="recover-status" class="form-field full" role="status" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Enviar enlace' : 'Send reset link'}</button></div>
       </form>
-      <p class="auth-alt"><a href="#login">← Volver a iniciar sesión</a></p>
+      <p class="auth-alt"><a href="#login">← ${es ? 'Volver a iniciar sesión' : 'Back to sign in'}</a></p>
     </div></div>`;
   }
 
   function resetPasswordView() {
+    const es = state.lang === 'es';
     return `<div class="auth-page"><div class="auth-card">
       <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
-      <h2>Nueva contraseña</h2>
-      <p class="auth-sub">Crea una contraseña nueva para tu cuenta ORIGEN.</p>
+      <h2>${es ? 'Nueva contraseña' : 'New password'}</h2>
+      <p class="auth-sub">${es ? 'Crea una contraseña nueva para tu cuenta ORIGEN.' : 'Create a new password for your ORIGEN account.'}</p>
       <form class="form-grid" id="reset-password-form">
-        <div class="form-field full"><label>Nueva contraseña</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
-        <div id="reset-status" class="form-field full" aria-live="polite"></div>
-        <div class="form-field full"><button class="btn" type="submit" style="width:100%">Guardar nueva contraseña</button></div>
+        <div class="form-field full"><label>${es ? 'Nueva contraseña' : 'New password'}</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+        <div id="reset-status" class="form-field full" role="status" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Guardar nueva contraseña' : 'Save new password'}</button></div>
       </form>
     </div></div>`;
   }
@@ -1832,7 +1834,7 @@
       e.preventDefault();
       const { email, password } = Object.fromEntries(new FormData(form));
       const submit = form.querySelector('button[type="submit"]');
-      if (submit) { submit.disabled = true; submit.textContent = 'Entrando…'; }
+      if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Entrando…' : 'Signing in…'; }
       try {
         await doLogin(email, password);
         updateShell();
@@ -1842,10 +1844,10 @@
         if (err) {
           err.style.display = 'block';
           const p = err.querySelector('p');
-          if (p) p.textContent = error.message || 'No pudimos iniciar sesión.';
+          if (p) p.textContent = error.message || (state.lang === 'es' ? 'No pudimos iniciar sesión.' : 'We could not sign you in.');
         }
       } finally {
-        if (submit) { submit.disabled = false; submit.textContent = 'Entrar'; }
+        if (submit) { submit.disabled = false; submit.textContent = state.lang === 'es' ? 'Entrar' : 'Sign in'; }
       }
     });
   }
@@ -1860,9 +1862,9 @@
       const status = document.getElementById('recover-status');
       try {
         await window.ORIGEN_API.resetPassword(email);
-        if (status) status.textContent = 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.';
+        if (status) status.textContent = state.lang === 'es' ? 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.' : 'Check your email. If an account exists, you will receive a recovery link.';
       } catch (error) {
-        if (status) status.textContent = error.message || 'No pudimos enviar el enlace.';
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos enviar el enlace.' : 'We could not send the recovery link.');
       }
     });
   }
@@ -1876,10 +1878,10 @@
       const status = document.getElementById('reset-status');
       try {
         await window.ORIGEN_API.updatePassword(password);
-        if (status) status.textContent = 'Contraseña actualizada. Ya puedes continuar.';
+        if (status) status.textContent = state.lang === 'es' ? 'Contraseña actualizada. Ya puedes continuar.' : 'Password updated. You can continue now.';
         setTimeout(() => go('feed'), 900);
       } catch (error) {
-        if (status) status.textContent = error.message || 'No pudimos actualizar la contraseña.';
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos actualizar la contraseña.' : 'We could not update the password.');
       }
     });
   }
