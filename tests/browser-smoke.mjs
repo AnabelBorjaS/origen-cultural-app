@@ -37,6 +37,37 @@ async function desktopChecks() {
   check((await page.locator('#language-toggle').innerText()).trim() === 'ES', 'Language toggle should offer ES after switching to English');
 
   check(await page.evaluate(() => localStorage.getItem('origen-lang')) === 'en', 'English preference should persist in localStorage');
+  await page.waitForFunction(async () => {
+    if (!('serviceWorker' in navigator)) return false;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      return !!registration.active;
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 15000 });
+
+  const cacheAudit = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    const names = await caches.keys();
+    const entries = [];
+    for (const name of names) {
+      const cache = await caches.open(name);
+      const requests = await cache.keys();
+      for (const request of requests) entries.push({ cache: name, url: request.url });
+    }
+    return {
+      scope: registration.scope,
+      names,
+      entries,
+      origin: location.origin
+    };
+  });
+
+  check(cacheAudit.names.includes('origen-cultural-v7'), 'Service worker should create origen-cultural-v7 cache');
+  check(cacheAudit.entries.length > 0, 'Service worker cache should contain public static assets');
+  check(cacheAudit.entries.every(entry => new URL(entry.url).origin === cacheAudit.origin), 'Service worker cache must contain same-origin URLs only');
+  check(cacheAudit.entries.every(entry => !/supabase\.co|cdn\.jsdelivr\.net|\/auth\//i.test(entry.url)), 'Service worker cache must not contain Supabase/CDN/Auth responses');
   await page.evaluate(() => { location.hash = '#login'; });
   await page.waitForSelector('#login-form');
   await page.waitForFunction(() => (document.querySelector('#login-form')?.innerText || '').includes('Email address'));
