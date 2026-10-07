@@ -7,6 +7,10 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Runtime JavaScript does not rely on inline event attributes, inline script blocks, `eval`, `new Function` or `javascript:` URLs; this remains compatible with the strict script CSP.
+- User-editable profile text is HTML-escaped in dynamic directory/search/Mundo surfaces.
+- Dynamic persisted media URLs are protocol-allow-listed before being inserted into image/video attributes.
+
 - Legacy local auth/session and profile-follow state has been removed from Mundo Cultural; account state comes from Supabase/ORIGEN_API.
 - Static hosting security headers are defined in `_headers` for Cloudflare Pages, including anti-framing, MIME sniffing protection, referrer policy, permissions policy and CSP.
 - Auth redirect construction requires HTTPS outside localhost and strips query parameters before email-confirmation/password-recovery redirects.
