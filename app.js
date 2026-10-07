@@ -166,8 +166,29 @@
       const result = await window.ORIGEN_API.signUp(data);
       if (result.session) {
         state.user = await window.ORIGEN_API.restoreSession();
+        let avatar = state.user?.avatar || '';
+        let cover = state.user?.cover || '';
+        if (data.avatarFile instanceof File) avatar = await window.ORIGEN_API.upload('avatars', data.avatarFile, 'avatar');
+        if (data.coverFile instanceof File) cover = await window.ORIGEN_API.upload('covers', data.coverFile, 'cover');
+        if (avatar || cover) {
+          state.user = await window.ORIGEN_API.updateMyProfile({
+            name: state.user?.name || data.name,
+            location: data.location || state.user?.location,
+            story: data.story || state.user?.story,
+            categories: data.categories || state.user?.categories || [],
+            links: data.links || state.user?.links || {},
+            accountType: data.accountType,
+            providerHeadline: data.providerHeadline || '',
+            services: data.services || [],
+            serviceDescription: data.serviceDescription || '',
+            avatar,
+            cover
+          });
+        }
         await Promise.allSettled([
           window.ORIGEN_API.listCulturalProfiles(),
+          window.ORIGEN_API.listPublicProfiles(),
+          window.ORIGEN_API.ensureCreatorCulturalProfile(),
           window.ORIGEN_API.myFollows(),
           window.ORIGEN_API.myFavorites(),
           window.ORIGEN_API.listPosts(),
@@ -1036,6 +1057,7 @@
           <input type="file" id="reg-cover-input" accept="image/*" style="display:none">
           <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">Subir portada</button>
         </div>
+        <p class="form-note" style="width:100%;max-width:760px">Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.</p>
       </div>`;
     } else if (step === 4) {
       body = `<form class="form-grid" id="reg-story">
