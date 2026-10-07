@@ -39,7 +39,14 @@ const checks = [
   ['Trust disclosure includes Cache Storage', trust.includes('Cache Storage')],
   ['Hosting headers prevent framing', headers.includes('X-Frame-Options: DENY') && headers.includes("frame-ancestors 'none'")],
   ['Hosting headers disable MIME sniffing', headers.includes('X-Content-Type-Options: nosniff')],
-  ['Hosting headers restrict sensitive browser capabilities', headers.includes('Permissions-Policy:') && headers.includes('camera=()') && headers.includes('microphone=()')]
+  ['Hosting headers restrict sensitive browser capabilities', headers.includes('Permissions-Policy:') && headers.includes('camera=()') && headers.includes('microphone=()')],
+  ['Navigation exposes current page to assistive tech', app.includes("setAttribute('aria-current', 'page')") && app.includes("removeAttribute('aria-current')")],
+  ['Rendered forms receive programmatic label associations', app.includes('function enhanceAccessibility()') && app.includes("label.setAttribute('for', control.id)")],
+  ['Global search has an accessible name', index.includes('aria-label="Buscar cultura viva"')],
+  ['Globe icon controls have accessible names', app.includes('aria-label="Acercar globo"') && app.includes('aria-label="Alejar globo"') && app.includes('aria-label="Restablecer vista del globo"')],
+  ['Cultural story close control has accessible name', mundo.includes('aria-label="Cerrar historia"')],
+  ['Keyboard focus is visibly styled', styles.includes(':focus-visible') && styles.includes('outline: 3px solid var(--sand)')],
+  ['Reduced motion preference is respected', styles.includes('@media (prefers-reduced-motion: reduce)')]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
