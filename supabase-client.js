@@ -445,13 +445,50 @@
     return data;
   }
 
+  const UPLOAD_RULES = {
+    avatars: {
+      maxBytes: 5 * 1024 * 1024,
+      mime: ['image/jpeg','image/png','image/webp']
+    },
+    covers: {
+      maxBytes: 8 * 1024 * 1024,
+      mime: ['image/jpeg','image/png','image/webp']
+    },
+    'post-media': {
+      maxBytes: 50 * 1024 * 1024,
+      mime: ['image/jpeg','image/png','image/webp','video/mp4','video/webm','video/quicktime']
+    }
+  };
+
+  function validateUpload(bucket, file) {
+    const rules = UPLOAD_RULES[bucket];
+    if (!rules) throw new Error('Destino de archivo no permitido.');
+    if (!(file instanceof File)) throw new Error('Selecciona un archivo válido.');
+    if (!rules.mime.includes(file.type)) {
+      throw new Error('Formato no permitido. Usa JPG, PNG, WEBP, MP4, WEBM o MOV según el tipo de contenido.');
+    }
+    if (file.size <= 0 || file.size > rules.maxBytes) {
+      const mb = Math.round(rules.maxBytes / 1024 / 1024);
+      throw new Error(`El archivo supera el límite permitido de ${mb} MB.`);
+    }
+  }
+
   async function upload(bucket, file, nameHint='media') {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión.');
-    const ext = (file.name?.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi,'').toLowerCase();
+    validateUpload(bucket, file);
+    const extByMime = {
+      'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp',
+      'video/mp4':'mp4', 'video/webm':'webm', 'video/quicktime':'mov'
+    };
+    const ext = extByMime[file.type];
     const safe = nameHint.replace(/[^a-z0-9-_]/gi,'-').toLowerCase();
     const path = `${uid}/${Date.now()}-${safe}.${ext}`;
-    const { error } = await client.storage.from(bucket).upload(path, file, { upsert: false });
+    const { error } = await client.storage.from(bucket).upload(path, file, {
+      upsert: false,
+      contentType: file.type,
+      cacheControl: '3600'
+    });
     if (error) throw error;
     const { data } = client.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
@@ -477,6 +514,6 @@
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
     listPosts, loadMorePosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
-    submitClaim, report, upload, normaliseUser
+    submitClaim, report, upload, validateUpload, normaliseUser
   };
 })();
