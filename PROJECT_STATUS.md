@@ -136,9 +136,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Release build now uses explicit runtime whitelist via `npm run build:static`.
 - ✅ `dist/` excludes Markdown, SQL, GitHub/agent/Replit development files.
 - ✅ Release build rejects any `service_role` reference in deployable runtime text.
-- ✅ GitHub Quality Gate #154 passed with the current deployable runtime + deterministic release evidence artifacts.
-- ✅ Artifacts `origen-static-154` and `origen-release-evidence-154` generated: 25 public runtime files, 6.65 MB.
-- ✅ Deterministic runtime content digest: `sha256:07c669ffa2f24065d718ca6926c238ad096787ab8033297381a1efa1a681bdcc`.
+- ✅ GitHub Quality Gate #189 passed on the current deployable runtime + deterministic release evidence artifacts.
+- ✅ Artifacts `origen-static-189` and `origen-release-evidence-189` generated: 26 public runtime files, 6.66 MB.
+- ✅ Deterministic runtime content digest: `sha256:c30d180a021a99bc088d9fe0e915b4cb05be99e2ac594721d5832a5963f20adc`.
 - ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
 - ⛔ No custom domain changes and no merge to `main` yet.
 
@@ -234,3 +234,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Privacy-request/account-deletion baseline: Trust Center + own-profile contact route + `PRIVACY_REQUEST_RUNBOOK.md` are in place.
 - ✅ Account deletion process accounts for Storage-owner cleanup first, Auth JWT/session caveat, database cascades and separate Cultural Agent profile review.
 - ⏳ One full staging test-account deletion lifecycle remains required before Public Beta.
+
+- ✅ Browser QA #54 passed on runtime head `19fd47a0712f4450602bc40f1e46b87688a210cb`, matching Quality Gate #189.
+- ✅ Current release runtime includes Turnstile-ready public config, privacy/account-deletion request pathway and all prior accessibility/PWA/XSS hardening.
+- ⚠️ GitHub branch-protection details and Security/Dependabot alert endpoints are not readable through the current integration; verify them manually before GO. Repository code search found no obvious service-role/secret/JWT/database-URL patterns on `main`.
