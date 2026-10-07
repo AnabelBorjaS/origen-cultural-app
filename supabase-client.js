@@ -205,7 +205,7 @@
     if (readError) throw readError;
     if (existing) return existing;
 
-    const displayName = cache.profile?.display_name || cache.session.user.email?.split('@')[0] || 'Proveedor Cultural';
+    const displayName = cache.profile?.display_name || cache.session.user.email?.split('@')[0] || 'Agente Cultural';
     const slugBase = displayName.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
@@ -215,7 +215,7 @@
       owner_id: uid,
       slug: `${slugBase}-${uid.slice(0,8)}`,
       name: displayName,
-      creator_type: 'Proveedor Cultural',
+      creator_type: 'Agente Cultural',
       category: (cache.profile?.categories || [])[0] || 'Cultura',
       story: cache.profile?.story || cache.profile?.bio || null,
       location: cache.profile?.location || [cache.profile?.city, cache.profile?.country].filter(Boolean).join(', ') || null,
