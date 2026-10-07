@@ -2263,6 +2263,8 @@
         let cover = user.cover;
         if (state.editAvatar instanceof File) avatar = await window.ORIGEN_API.upload('avatars', state.editAvatar, 'avatar');
         if (state.editCover instanceof File) cover = await window.ORIGEN_API.upload('covers', state.editCover, 'cover');
+        const previousAvatar = user.avatar;
+        const previousCover = user.cover;
         const updated = await window.ORIGEN_API.updateMyProfile({
           name: fd.name || user.name,
           location: fd.location,
@@ -2277,6 +2279,22 @@
           cover
         });
         state.user = updated;
+
+        const cleanup = [];
+        if (state.editAvatar instanceof File && previousAvatar && previousAvatar !== avatar) {
+          cleanup.push(window.ORIGEN_API.removeOwnMedia(previousAvatar));
+        }
+        if (state.editCover instanceof File && previousCover && previousCover !== cover) {
+          cleanup.push(window.ORIGEN_API.removeOwnMedia(previousCover));
+        }
+        if (cleanup.length) {
+          Promise.allSettled(cleanup).then(results => {
+            if (results.some(result => result.status === 'rejected')) {
+              console.warn('ORIGEN media cleanup incomplete; new profile media remains saved.');
+            }
+          });
+        }
+
         state.editAvatar = null; state.editCover = null;
         showToast('¡Perfil actualizado!');
         go('mi-perfil');
