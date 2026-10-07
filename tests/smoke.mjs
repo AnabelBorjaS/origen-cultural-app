@@ -22,7 +22,9 @@ const checks = [
   ['Brand sand is exact', styles.includes('--sand: #c8a97e;')],
   ['No service-role key in frontend files', ![index, app, supabase, mundo, trust].join('\n').toLowerCase().includes('service_role')],
   ['Legacy local user database removed', !app.includes('oc-users') && !app.includes('oc-posts') && !mundo.includes('oc-users') && !mundo.includes('oc-posts')],
-  ['Cultural world reads live providers', mundo.includes('ORIGEN_API?.cache?.publicProfiles')]
+  ['Cultural world reads live providers', mundo.includes('ORIGEN_API?.cache?.publicProfiles')],
+  ['Provider feed requires cultural purpose', app.includes('name="contentPurpose" required') && supabase.includes('content_purpose')],
+  ['Provider text-only post option is removed', app.includes("const types = isProvider") && app.includes("state.createData.type === 'text'")]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
