@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'runtime-config.js'
       - 'app.js'
       - 'mundo.js'
       - 'supabase-client.js'
