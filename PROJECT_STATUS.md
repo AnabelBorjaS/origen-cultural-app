@@ -136,8 +136,8 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Release build now uses explicit runtime whitelist via `npm run build:static`.
 - ✅ `dist/` excludes Markdown, SQL, GitHub/agent/Replit development files.
 - ✅ Release build rejects any `service_role` reference in deployable runtime text.
-- ✅ GitHub Quality Gate #86 passed on the current PR head.
-- ✅ Artifact `origen-static-86` generated: 25 public files, 6.63 MB.
-- ✅ Artifact digest: `sha256:2c2b3996e50ed22265ca949607e4b316b0fcfbe80538deaebe55a29a3edc53b8`.
+- ✅ GitHub Quality Gate #89 passed with deployable bundle + deterministic release evidence artifacts.
+- ✅ Artifacts `origen-static-89` and `origen-release-evidence-89` generated: 25 public runtime files, 6.63 MB.
+- ✅ Deterministic runtime content digest: `sha256:bcbebdc778a897d90fd1854708bc11f2ae886be2cf46ca8f0e45f8c5d2fb5952`.
 - ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
 - ⛔ No custom domain changes and no merge to `main` yet.
