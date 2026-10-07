@@ -63,3 +63,9 @@ Public beta remains NO-GO until:
 - Current app preference storage and Supabase authentication storage must be documented accurately.
 - When optional cookies/analytics are enabled, provide equivalent Accept, Reject and Configure choices before those technologies run.
 - Re-run the cookie/storage inventory after every material analytics, authentication or advertising change.
+
+
+## Publishing scope — Public Beta
+- Cultural Agents may publish cultural/educational feed content subject to current media, purpose and moderation rules.
+- Cultural Explorers do not publish feed posts in this beta; they discover, follow, save, comment, learn and connect.
+- Any future Explorer publishing capability requires an explicit privacy/identity design and separate QA before activation.
