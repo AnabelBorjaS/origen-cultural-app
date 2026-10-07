@@ -49,7 +49,11 @@ const checks = [
   ['Reduced motion preference is respected', styles.includes('@media (prefers-reduced-motion: reduce)')],
   ['Critical Auth views include ES/EN copy', app.includes("const es = state.lang === 'es';") && app.includes('Welcome back') && app.includes('Reset your password') && app.includes('New password')],
   ['Persistent shell supports ES/EN translation', app.includes('function updateStaticLanguage()') && app.includes('Skip to content') && app.includes('DIGITAL WELLBEING') && app.includes('Search living culture')],
-  ['Document language follows active locale', app.includes('document.documentElement.lang = state.lang')]
+  ['Document language follows active locale', app.includes('document.documentElement.lang = state.lang')],
+  ['Registration flow includes ES/EN copy', app.includes('Cultural Agent') && app.includes('Cultural Explorer') && app.includes('Create my profile') && app.includes('Already have an account?')]
+  ['Registration preserves canonical category values', app.includes("['Artesanía y tradición','Crafts and tradition']") && app.includes('data-cat=')],
+  ['Legal consent is translated without changing version', app.includes('Community Guidelines and Cultural Rights v1.2') && app.includes('Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2')],
+  ['Account and category selectors expose pressed state', app.includes('aria-pressed=') && app.includes("setAttribute('aria-pressed'"))
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
