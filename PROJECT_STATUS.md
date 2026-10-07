@@ -166,3 +166,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Social database hardening: profile role self-escalation blocked, post counters/editorial fields protected, comment identity protected and interactions limited to published content.
 - ✅ Social table grants reduced to least privilege required by the current Beta client.
 - ✅ Supabase Security Advisor remains at 0 active security lints after migrations `20261007140601` and `20261007140657`.
+
+- ✅ Storage/privacy hardening: avatar/cover replacements use owned UID paths and old managed media is cleaned only after successful profile save.
+- ✅ Bucket limits verified in Production: avatar 5 MB, cover 8 MB, post-media 50 MB with explicit MIME allowlists.
+- ✅ Public Explorer profile enumeration blocked; only Cultural Agent profiles are public through `profiles`, while users retain access to their own row.
+- ✅ Supabase Security Advisor remains at 0 active security lints after privacy migration `20261007141841`.
+- ⏳ Two-account browser-level Storage ownership tests remain a staging QA requirement.
