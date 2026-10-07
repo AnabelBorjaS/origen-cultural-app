@@ -18,7 +18,7 @@ const checks = [
   ['Auth client is CAPTCHA-ready for signup', supabase.includes('payload.captchaToken') && supabase.includes('options.captchaToken = payload.captchaToken')],
   ['Auth client is CAPTCHA-ready for password login', supabase.includes('signIn(email, password, captchaToken = null)') && supabase.includes('credentials.options = { captchaToken }')],
   ['Auth client is CAPTCHA-ready for password recovery', supabase.includes('resetPassword(email, captchaToken = null)') && supabase.includes('options.captchaToken = captchaToken')],
-  ['Auth redirects require HTTPS outside localhost', supabase.includes("ORIGEN Auth requires HTTPS outside local development.") && supabase.includes("url.protocol !== 'https:'")),
+  ['Auth redirects require HTTPS outside localhost', supabase.includes("ORIGEN Auth requires HTTPS outside local development.") && supabase.includes("url.protocol !== 'https:'")],
   ['CSP allows approved globe CDN images', index.includes("img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net")],
   ['Globe uses HTTPS Earth texture', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg")],
   ['Globe uses HTTPS space texture', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png")],
