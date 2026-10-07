@@ -221,3 +221,12 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ `AUTH_PRODUCTION_CHECKLIST.md` and `RELEASE_QA_RUNBOOK.md` now reflect the Turnstile decision and required tests.
 - ⏳ Turnstile widget/Site Key/Secret Key remain pending the exact Cloudflare Pages staging hostname.
 - ⛔ Do not enable Supabase CAPTCHA enforcement or loosen CSP until the staging widget is producing valid tokens.
+
+
+### Incident response & recovery — 8 Oct 2026
+- ✅ `INCIDENT_RECOVERY_RUNBOOK.md` defines severity, containment, evidence preservation, credential response, code rollback, database recovery and post-incident review.
+- ✅ Release Gate now requires recovery evidence before Public Beta.
+- ✅ Code rollback uses a last-known-good GitHub commit/build; database schema history remains append-only with reviewed forward-fix migrations preferred.
+- ⚠️ Supabase Free should not be treated as guaranteed PITR/dashboard recovery. A logical database backup must be created and verified outside the public repository before Public Beta.
+- ⚠️ Database backups do not restore deleted physical Storage objects; media recovery/retention expectations remain a separate pilot requirement.
+- ⏳ Actual pre-beta logical backup export and validation are still pending.
