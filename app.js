@@ -1847,11 +1847,15 @@
         state.regStep++; render('registro', false);
       } else if (step === 5) {
         const form = document.getElementById('reg-social');
-        if (form) {
-          const fd = Object.fromEntries(new FormData(form));
-          const links = {};
-          ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-          state.regData.links = links;
+        if (!form || !form.reportValidity()) return;
+        const fd = Object.fromEntries(new FormData(form));
+        const links = {};
+        ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
+        state.regData.links = links;
+        state.regData.acceptedLegal = fd.acceptedLegal === 'on';
+        if (!state.regData.acceptedLegal) {
+          if (errEl) { errEl.textContent = 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.'; errEl.style.display = 'block'; }
+          return;
         }
         nextBtn.disabled = true;
         nextBtn.textContent = 'Creando cuenta…';
