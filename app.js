@@ -1,5 +1,5 @@
-// ORIGEN Cultural — Red Social Cultural Demo
-// localStorage-based · Supabase-ready architecture
+// ORIGEN Cultural — Red Social Cultural
+// Supabase-backed beta architecture
 (() => {
   'use strict';
 
@@ -37,29 +37,6 @@
     wellbeingElapsedMs: 0,
     wellbeingLastTick: Date.now(),
     wellbeingNextPromptMs: null,
-  };
-
-  /* ═══════════════════════════════════════════════════════════
-     LOCAL DB (localStorage abstraction — swap for Supabase)
-  ═══════════════════════════════════════════════════════════ */
-  const DB = {
-    get(k, d)    { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : d; } catch { return d; } },
-    set(k, v)    { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { showToast('Almacenamiento lleno. Elimina imágenes para continuar.'); return false; } },
-    users()      { return this.get('oc-users', {}); },
-    setUsers(u)  { this.set('oc-users', u); },
-    session()    { return this.get('oc-session', null); },
-    setSession(u){ this.set('oc-session', u); },
-    clearSess()  { localStorage.removeItem('oc-session'); },
-    posts()      { return this.get('oc-posts', []); },
-    setPosts(p)  { this.set('oc-posts', p); },
-    likes()      { return this.get('oc-likes', {}); },
-    setLikes(l)  { this.set('oc-likes', l); },
-    comments()   { return this.get('oc-comments', {}); },
-    setComments(c){ this.set('oc-comments', c); },
-    saves()      { return this.get('oc-saves', {}); },
-    setSaves(s)  { this.set('oc-saves', s); },
-    follows()    { return this.get('oc-follows', {}); },
-    setFollows(f){ this.set('oc-follows', f); },
   };
 
   /* ═══════════════════════════════════════════════════════════
