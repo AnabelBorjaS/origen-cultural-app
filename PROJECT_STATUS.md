@@ -199,3 +199,8 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Release candidate, beta branch and current `main` use the modern Supabase `sb_publishable_...` browser key.
 - ✅ The legacy `anon` JWT key is not referenced in the repository code search.
 - ⏳ The legacy key remains enabled in Supabase for compatibility; disable/rotate only after deployed staging confirms no remaining external client depends on it.
+
+- ✅ Automated Chromium Browser QA now covers desktop/mobile anonymous rendering, Trust Center, ES/EN login, programmatic labels, mobile-drawer focus management and service-worker cache privacy.
+- ✅ Browser QA #17 and #18 passed after the initial workflow issues were corrected; the workflow is now part of release validation.
+- ✅ Trigger-only `touch_updated_at()` direct RPC execution removed from browser roles; triggers remain active.
+- ✅ Supabase Security Advisor remains at 0 active security lints after migration `20261007143630`.
