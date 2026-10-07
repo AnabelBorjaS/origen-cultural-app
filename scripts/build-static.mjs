@@ -79,6 +79,9 @@ const textRuntime = [
 if (textRuntime.includes('service_role')) {
   throw new Error('Forbidden service-role reference found in deployable runtime.');
 }
+if (textRuntime.includes('turnstile_secret') || textRuntime.includes('turnstile-secret') || textRuntime.includes('secretkey')) {
+  throw new Error('Forbidden Turnstile secret material/reference found in deployable runtime.');
+}
 
 const ordered = files
   .map(file => ({
