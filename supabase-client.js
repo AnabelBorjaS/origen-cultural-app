@@ -76,8 +76,21 @@
     return loadMyProfile(cache.session.user);
   }
 
-  async function signIn(email, password) {
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
+  function authRedirect(hashRoute) {
+    const url = new URL(window.location.href);
+    const localHost = ['localhost', '127.0.0.1'].includes(url.hostname);
+    if (url.protocol !== 'https:' && !localHost) {
+      throw new Error('ORIGEN Auth requires HTTPS outside local development.');
+    }
+    url.search = '';
+    url.hash = hashRoute.startsWith('#') ? hashRoute : '#' + hashRoute;
+    return url.toString();
+  }
+
+  async function signIn(email, password, captchaToken = null) {
+    const credentials = { email, password };
+    if (captchaToken) credentials.options = { captchaToken };
+    const { data, error } = await client.auth.signInWithPassword(credentials);
     if (error) throw error;
     cache.session = data.session || null;
     return loadMyProfile(data.user);
@@ -105,11 +118,13 @@
       community_guidelines_version: 'v1.2',
       cultural_rights_version: 'v1.2'
     };
-    const redirectTo = window.location.origin + window.location.pathname + '#login';
+    const redirectTo = authRedirect('#login');
+    const options = { data: metadata, emailRedirectTo: redirectTo };
+    if (payload.captchaToken) options.captchaToken = payload.captchaToken;
     const { data, error } = await client.auth.signUp({
       email: payload.email,
       password: payload.password,
-      options: { data: metadata, emailRedirectTo: redirectTo }
+      options
     });
     if (error) throw error;
 
@@ -129,9 +144,11 @@
     cache.profile = null;
   }
 
-  async function resetPassword(email) {
-    const redirectTo = window.location.origin + window.location.pathname + '#restablecer';
-    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+  async function resetPassword(email, captchaToken = null) {
+    const redirectTo = authRedirect('#restablecer');
+    const options = { redirectTo };
+    if (captchaToken) options.captchaToken = captchaToken;
+    const { error } = await client.auth.resetPasswordForEmail(email, options);
     if (error) throw error;
   }
 
@@ -514,6 +531,6 @@
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
     listPosts, loadMorePosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
-    submitClaim, report, upload, validateUpload, normaliseUser
+    submitClaim, report, upload, validateUpload, authRedirect, normaliseUser
   };
 })();
