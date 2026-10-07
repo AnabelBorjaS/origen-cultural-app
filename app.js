@@ -2340,12 +2340,14 @@
   if (closeBtn) closeBtn.addEventListener('click', () => closeDrawer(true));
   if (overlay) overlay.addEventListener('click', () => closeDrawer(true));
 
-  drawer.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && drawer.classList.contains('open')) {
       event.preventDefault();
       closeDrawer(true);
-      return;
     }
+  });
+
+  drawer.addEventListener('keydown', event => {
     if (event.key !== 'Tab') return;
     const focusable = drawerFocusable();
     if (!focusable.length) {
