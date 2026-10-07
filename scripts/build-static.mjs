@@ -7,6 +7,7 @@ const out = path.join(root, 'dist');
 
 const runtimeEntries = [
   'index.html',
+  'runtime-config.js',
   'app.js',
   'data.js',
   'trust.js',
@@ -34,6 +35,12 @@ for (const entry of runtimeEntries) {
   fs.cpSync(source, destination, { recursive: true });
 }
 
+const turnstileSiteKey = String(process.env.ORIGEN_TURNSTILE_SITE_KEY || '').trim();
+fs.writeFileSync(
+  path.join(out, 'runtime-config.js'),
+  `window.ORIGEN_CONFIG = Object.freeze(${JSON.stringify({ turnstileSiteKey })});\n`
+);
+
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const full = path.join(dir, entry.name);
@@ -57,6 +64,7 @@ if (forbidden.length) {
 
 const textRuntime = [
   'index.html',
+  'runtime-config.js',
   'app.js',
   'data.js',
   'trust.js',
