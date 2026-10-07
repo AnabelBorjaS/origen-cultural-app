@@ -2619,7 +2619,11 @@
   initApp();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(error => {
+        console.warn('[ORIGEN] Service worker registration failed:', error);
+      });
+    });
   }
 
 })();
