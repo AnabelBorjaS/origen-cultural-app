@@ -7,6 +7,10 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Legacy local auth/session and profile-follow state has been removed from Mundo Cultural; account state comes from Supabase/ORIGEN_API.
+- Static hosting security headers are defined in `_headers` for Cloudflare Pages, including anti-framing, MIME sniffing protection, referrer policy, permissions policy and CSP.
+- Auth redirect construction requires HTTPS outside localhost and strips query parameters before email-confirmation/password-recovery redirects.
+- The Supabase client accepts optional CAPTCHA tokens for signup, password login and password recovery; provider/widget enforcement remains disabled until staging is ready.
 - Privileged cultural-profile fields (ownership, verification status/source and follower counters) are protected from owner self-modification by a database trigger.
 - Supabase Auth instead of locally stored passwords.
 - PostgreSQL Row Level Security on public application tables.
