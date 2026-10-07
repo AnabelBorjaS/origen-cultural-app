@@ -8,6 +8,7 @@ const styles = read('styles.css');
 const mundo = read('mundo.js');
 const trust = read('trust.js');
 const headers = read('_headers');
+const runtimeConfig = read('runtime-config.js');
 const serviceWorker = read('service-worker.js');
 
 const checks = [
@@ -19,6 +20,11 @@ const checks = [
   ['Auth client is CAPTCHA-ready for signup', supabase.includes('payload.captchaToken') && supabase.includes('options.captchaToken = payload.captchaToken')],
   ['Auth client is CAPTCHA-ready for password login', supabase.includes('signIn(email, password, captchaToken = null)') && supabase.includes('credentials.options = { captchaToken }')],
   ['Auth client is CAPTCHA-ready for password recovery', supabase.includes('resetPassword(email, captchaToken = null)') && supabase.includes('options.captchaToken = captchaToken')],
+  ['Turnstile is disabled safely without a site key', runtimeConfig.includes("turnstileSiteKey: ''") && app.includes('function turnstileEnabled()')],
+  ['Turnstile uses explicit SPA rendering', app.includes('turnstile/v0/api.js?render=explicit') && app.includes('window.turnstile.render')],
+  ['Turnstile tokens are required only when configured', app.includes('function requireCaptchaToken(action)') && app.includes('if (!turnstileEnabled()) return null')],
+  ['Turnstile token resets after Auth attempts', app.includes("resetTurnstile('login')") && app.includes("resetTurnstile('recovery')") && app.includes("resetTurnstile('signup')")],
+  ['Turnstile CSP origins are explicit', index.includes('https://challenges.cloudflare.com') && headers.includes('frame-src https://challenges.cloudflare.com')],
   ['Auth redirects require HTTPS outside localhost', supabase.includes("ORIGEN Auth requires HTTPS outside local development.") && supabase.includes("url.protocol !== 'https:'")],
   ['CSP allows approved globe CDN images', index.includes("img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net")],
   ['Globe uses pinned HTTPS Earth texture', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg")],
