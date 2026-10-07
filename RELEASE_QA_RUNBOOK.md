@@ -27,6 +27,23 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — CAPTCHA / bot protection
+
+Provider: **Cloudflare Turnstile**
+
+| Test | Expected result | Status |
+|---|---|---|
+| Signup with valid token | Auth request succeeds subject to normal validation | ⬜ |
+| Signup without token after enforcement | Rejected safely | ⬜ |
+| Login with valid token | Auth request succeeds subject to credentials | ⬜ |
+| Login without/invalid token | Rejected safely | ⬜ |
+| Password recovery with valid token | Recovery request accepted | ⬜ |
+| Expired/reused token | Rejected; user can retry | ⬜ |
+| Widget/network failure | Accessible retry/error state; no silent lockout | ⬜ |
+| ES/EN challenge/error state | Understandable in both languages | ⬜ |
+
+Do not mark this section PASS until the widget is tested **before and after** Supabase CAPTCHA enforcement.
+
 ## P0 — RLS / cross-user isolation
 
 With A and B authenticated separately:
