@@ -1498,7 +1498,27 @@
 
     /* report */
     document.querySelectorAll('[data-report]').forEach(btn => {
-      btn.addEventListener('click', () => showToast('Reporte enviado. Gracias por ayudarnos a mantener la comunidad.'));
+      btn.addEventListener('click', async () => {
+        if (!isAuth()) {
+          showToast('Inicia sesión para enviar un reporte.');
+          go('login');
+          return;
+        }
+        const reason = window.prompt('¿Cuál es el motivo del reporte? Describe el problema brevemente.');
+        if (!reason || !reason.trim()) return;
+        const details = window.prompt('Puedes añadir más contexto (opcional).') || '';
+        try {
+          await window.ORIGEN_API.report({
+            target_type: 'post',
+            target_id: btn.dataset.report,
+            reason: reason.trim().slice(0, 500),
+            details: details.trim().slice(0, 6000)
+          });
+          showToast('Reporte recibido. Gracias por ayudarnos a cuidar ORIGEN.');
+        } catch (error) {
+          showToast(error.message || 'No pudimos enviar el reporte.');
+        }
+      });
     });
 
     /* more (···) */
