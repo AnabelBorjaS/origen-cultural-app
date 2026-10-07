@@ -136,9 +136,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Release build now uses explicit runtime whitelist via `npm run build:static`.
 - ✅ `dist/` excludes Markdown, SQL, GitHub/agent/Replit development files.
 - ✅ Release build rejects any `service_role` reference in deployable runtime text.
-- ✅ GitHub Quality Gate #89 passed with deployable bundle + deterministic release evidence artifacts.
-- ✅ Artifacts `origen-static-89` and `origen-release-evidence-89` generated: 25 public runtime files, 6.63 MB.
-- ✅ Deterministic runtime content digest: `sha256:bcbebdc778a897d90fd1854708bc11f2ae886be2cf46ca8f0e45f8c5d2fb5952`.
+- ✅ GitHub Quality Gate #116 passed with the current deployable runtime + deterministic release evidence artifacts.
+- ✅ Artifacts `origen-static-116` and `origen-release-evidence-116` generated: 25 public runtime files, 6.64 MB.
+- ✅ Deterministic runtime content digest: `sha256:8b9b6ba4eb256f8f5e9d31ea2fdce3501a15428549eac1d5dfd4a09a8e7ca3e6`.
 - ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
 - ⛔ No custom domain changes and no merge to `main` yet.
 
@@ -156,3 +156,5 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Mundo Cultural live-agent mini cards now escape user data and sanitize media URLs.
 - ⏳ Browser-level accessibility, keyboard, mobile/desktop and full ES/EN review still require deployed staging.
 - ⏳ XSS attack-string testing with real persisted records remains a staging QA requirement.
+
+- ✅ Mobile drawer focus management: dialog semantics, focus trap, Escape close and opener-focus restoration.
