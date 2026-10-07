@@ -17,6 +17,8 @@ Production reports these migrations:
 7. `20261007003848_add_cultural_post_purpose`
 8. `20261007125206_protect_cultural_profile_privileged_fields`
 9. `20261007135902_harden_claim_report_insert_integrity_and_grants`
+10. `20261007140601_harden_social_privileged_fields_and_grants`
+11. `20261007140657_scope_social_interactions_to_published_content`
 
 ## Security verification
 
@@ -45,3 +47,14 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
   - forged `resolved` moderation report is blocked by RLS;
   - anonymous report insert is blocked by table privilege.
 - Supabase Security Advisor after migration: **0 active security lints**.
+
+
+## Social integrity hardening verified — 7 October 2026
+- Profile owners cannot change their own `role` or promote themselves to `admin`.
+- Post authors cannot modify server-owned counters (`like_count`, `comment_count`) or editorial/source fields.
+- New user posts cannot be created as editorial, with fake counters, or with editorial source metadata.
+- Comment owners cannot move an existing comment to another post or change its author/timestamp.
+- Public comment reads are scoped to published parent posts, except the comment owner/admin.
+- Likes, saves, follows, favourites and new comments can target published content/profiles only.
+- Social-table privileges were reduced to the operations actually required by the Beta client.
+- Supabase Security Advisor after both migrations: **0 active security lints**.
