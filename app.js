@@ -8,6 +8,7 @@
   ═══════════════════════════════════════════════════════════ */
   const { creators, categories, impact } = window.ORIGEN_DATA;
   const SEED_POSTS = window.ORIGEN_DATA.posts || [];
+  const SB = window.ORIGEN_SUPABASE || null;
 
   /* ═══════════════════════════════════════════════════════════
      DOM REFS
@@ -152,24 +153,163 @@
   const me     = () => DB.session();
   const isAuth = () => !!me();
 
-  function doLogin(email, pw) {
-    const users = DB.users();
-    const user  = Object.values(users).find(u => u.email === email && u.password === pw);
-    if (!user) return false;
-    DB.setSession(user);
-    return true;
+  function toAppUser(profile, authUser = null) {
+    if (!profile) return null;
+    return {
+      id: profile.id,
+      email: authUser?.email || me()?.email || '',
+      name: profile.display_name || 'Perfil cultural',
+      accountType: profile.role === 'creator' ? 'creator' : 'explorer',
+      location: profile.location || [profile.city, profile.country].filter(Boolean).join(', '),
+      story: profile.story || profile.bio || '',
+      categories: profile.categories || [],
+      links: profile.links || {},
+      avatar: profile.avatar_url || '',
+      cover: profile.cover_url || '',
+      createdAt: profile.created_at || null,
+    };
   }
-  function doRegister(data) {
+
+  function cacheAppUser(user) {
+    if (!user) return;
+    const clean = { ...user };
+    delete clean.password;
     const users = DB.users();
-    if (Object.values(users).find(u => u.email === data.email))
-      return { ok: false, error: 'Este correo ya está registrado.' };
-    const user = { ...data, id: uid(), createdAt: new Date().toISOString() };
-    users[user.id] = user;
+    users[clean.id] = clean;
     DB.setUsers(users);
-    DB.setSession(user);
-    return { ok: true, user };
+    DB.setSession(clean);
   }
-  function doLogout() { DB.clearSess(); updateShell(); go('inicio'); }
+
+  async function fetchRemoteProfile(authUser) {
+    if (!SB || !authUser) return null;
+    const { data, error } = await SB
+      .from('profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+    if (error) throw error;
+    return toAppUser(data, authUser);
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const [head, body] = String(dataUrl || '').split(',');
+    const mime = (head.match(/data:([^;]+)/) || [,'application/octet-stream'])[1];
+    const bytes = atob(body || '');
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  async function uploadDataUrl(bucket, dataUrl, userId, prefix) {
+    if (!SB || !dataUrl || !dataUrl.startsWith('data:')) return dataUrl || '';
+    const blob = dataUrlToBlob(dataUrl);
+    const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
+    const path = `${userId}/${prefix}-${Date.now()}.${ext}`;
+    const { error } = await SB.storage.from(bucket).upload(path, blob, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: blob.type,
+    });
+    if (error) throw error;
+    const { data } = SB.storage.from(bucket).getPublicUrl(path);
+    return data?.publicUrl || '';
+  }
+
+  async function flushPendingProfileMedia(userId) {
+    if (!SB || !userId) return;
+    const pendingAvatar = localStorage.getItem('oc-pending-avatar');
+    const pendingCover  = localStorage.getItem('oc-pending-cover');
+    if (!pendingAvatar && !pendingCover) return;
+
+    const patch = {};
+    try {
+      if (pendingAvatar) patch.avatar_url = await uploadDataUrl('avatars', pendingAvatar, userId, 'avatar');
+      if (pendingCover)  patch.cover_url  = await uploadDataUrl('covers', pendingCover, userId, 'cover');
+      if (Object.keys(patch).length) {
+        const { error } = await SB.from('profiles').update(patch).eq('id', userId);
+        if (error) throw error;
+      }
+      localStorage.removeItem('oc-pending-avatar');
+      localStorage.removeItem('oc-pending-cover');
+    } catch (err) {
+      console.warn('No se pudo completar la carga de imágenes del perfil:', err);
+    }
+  }
+
+  async function hydrateSupabaseSession() {
+    if (!SB) {
+      DB.clearSess();
+      return null;
+    }
+    const { data, error } = await SB.auth.getSession();
+    if (error || !data?.session?.user) {
+      DB.clearSess();
+      return null;
+    }
+    await flushPendingProfileMedia(data.session.user.id);
+    const appUser = await fetchRemoteProfile(data.session.user);
+    cacheAppUser(appUser);
+    return appUser;
+  }
+
+  async function doLogin(email, pw) {
+    if (!SB) return { ok: false, error: 'La conexión segura no está disponible.' };
+    const { data, error } = await SB.auth.signInWithPassword({ email, password: pw });
+    if (error || !data?.user) return { ok: false, error: 'Correo o contraseña incorrectos.' };
+    const appUser = await fetchRemoteProfile(data.user);
+    cacheAppUser(appUser);
+    return { ok: true, user: appUser };
+  }
+
+  async function doRegister(data) {
+    if (!SB) return { ok: false, error: 'La conexión segura no está disponible.' };
+
+    if (data.avatar) localStorage.setItem('oc-pending-avatar', data.avatar);
+    if (data.cover)  localStorage.setItem('oc-pending-cover', data.cover);
+
+    const metadata = {
+      account_type: data.accountType === 'creator' ? 'creator' : 'explorer',
+      display_name: data.name || '',
+      location: data.location || '',
+      story: data.story || '',
+      categories: data.categories || [],
+      links: data.links || {},
+      accepted_legal: false,
+    };
+
+    const { data: signup, error } = await SB.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: metadata,
+        emailRedirectTo: `${location.origin}${location.pathname}#mi-perfil`,
+      },
+    });
+
+    if (error) {
+      return { ok: false, error: error.message || 'No pudimos crear la cuenta.' };
+    }
+
+    if (signup?.session?.user) {
+      await flushPendingProfileMedia(signup.session.user.id);
+      const appUser = await fetchRemoteProfile(signup.session.user);
+      cacheAppUser(appUser);
+      return { ok: true, user: appUser, needsConfirmation: false };
+    }
+
+    DB.clearSess();
+    return { ok: true, user: null, needsConfirmation: true };
+  }
+
+  async function doLogout() {
+    if (SB) {
+      try { await SB.auth.signOut(); } catch (err) { console.warn('Sign out:', err); }
+    }
+    DB.clearSess();
+    updateShell();
+    go('inicio');
+  }
+
   function refreshSession() {
     const u = me(); if (!u) return;
     const users = DB.users();
@@ -908,7 +1048,7 @@
         <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
           <span class="atype-icon">◈</span>
           <h3>Agente Cultural</h3>
-          <p>Persona, comunidad, negocio u organización que preserva, practica o comparte cultura.</p>
+          <p>Persona que practica, comparte, transmite o contribuye activamente a mantener viva una expresión, conocimiento o práctica cultural.</p>
         </button>
         <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
           <span class="atype-icon">◎</span>
@@ -1422,12 +1562,23 @@
   function bindLogin() {
     const form = document.getElementById('login-form');
     if (!form) return;
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const { email, password } = Object.fromEntries(new FormData(form));
-      const ok = doLogin(email, password);
-      if (ok) { updateShell(); go('feed'); }
-      else    { const err = document.getElementById('login-error'); if (err) err.style.display = 'block'; }
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Entrando…'; }
+      const result = await doLogin(email, password);
+      if (result.ok) {
+        updateShell();
+        go('feed');
+      } else {
+        const err = document.getElementById('login-error');
+        if (err) {
+          err.innerHTML = `<p style="color:#c0392b;font-size:13px">${esc(result.error || 'No pudimos iniciar sesión.')}</p>`;
+          err.style.display = 'block';
+        }
+        if (submit) { submit.disabled = false; submit.textContent = 'Entrar'; }
+      }
     });
   }
 
@@ -1479,7 +1630,7 @@
     /* next / submit */
     const nextBtn = document.getElementById('reg-next');
     if (!nextBtn) return;
-    nextBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', async () => {
       const step = state.regStep;
       const errEl = document.getElementById('reg-error');
 
@@ -1507,12 +1658,21 @@
           ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
           state.regData.links = links;
         }
-        const result = doRegister(state.regData);
+        nextBtn.disabled = true;
+        nextBtn.textContent = 'Creando perfil…';
+        const result = await doRegister(state.regData);
         if (result.ok) {
           state.regStep = 1; state.regData = {};
-          showToast('¡Bienvenida/o a Origen Cultural!');
-          updateShell(); go('feed');
+          if (result.needsConfirmation) {
+            showToast('Cuenta creada. Revisa tu correo para confirmar tu acceso.', 5000);
+            go('login');
+          } else {
+            showToast('¡Bienvenida/o a Origen Cultural!');
+            updateShell(); go('feed');
+          }
         } else {
+          nextBtn.disabled = false;
+          nextBtn.textContent = 'Crear mi perfil';
           if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
         }
       }
@@ -1644,29 +1804,51 @@
     /* form submit */
     const form = document.getElementById('edit-form');
     if (!form) return;
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
-      const user = me(); if (!user) return;
+      const user = me(); if (!user || !SB) return;
       const fd   = Object.fromEntries(new FormData(form));
       const links = {};
       ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-      const updated = {
-        ...user,
-        name:       fd.name || user.name,
-        location:   fd.location,
-        story:      fd.story,
-        categories: userCats.list,
-        links,
-        avatar:     state.editAvatar || user.avatar,
-        cover:      state.editCover  || user.cover,
-      };
-      const users = DB.users();
-      users[user.id] = updated;
-      DB.setUsers(users);
-      DB.setSession(updated);
-      state.editAvatar = null; state.editCover = null;
-      showToast('¡Perfil actualizado!');
-      go('mi-perfil');
+
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Guardando…'; }
+
+      try {
+        let avatarUrl = user.avatar || '';
+        let coverUrl  = user.cover || '';
+        if (state.editAvatar) avatarUrl = await uploadDataUrl('avatars', state.editAvatar, user.id, 'avatar');
+        if (state.editCover)  coverUrl  = await uploadDataUrl('covers',  state.editCover,  user.id, 'cover');
+
+        const patch = {
+          display_name: fd.name || user.name,
+          location: fd.location || '',
+          story: fd.story || '',
+          categories: userCats.list,
+          links,
+          avatar_url: avatarUrl || null,
+          cover_url: coverUrl || null,
+        };
+
+        const { data, error } = await SB
+          .from('profiles')
+          .update(patch)
+          .eq('id', user.id)
+          .select('*')
+          .single();
+        if (error) throw error;
+
+        const { data: authData } = await SB.auth.getUser();
+        const updated = toAppUser(data, authData?.user || null);
+        cacheAppUser(updated);
+        state.editAvatar = null; state.editCover = null;
+        showToast('¡Perfil actualizado!');
+        go('mi-perfil');
+      } catch (err) {
+        console.error(err);
+        showToast('No pudimos guardar el perfil. Inténtalo de nuevo.');
+        if (submit) { submit.disabled = false; submit.textContent = 'Guardar cambios'; }
+      }
     });
   }
 
@@ -1727,10 +1909,41 @@
   /* ═══════════════════════════════════════════════════════════
      INIT
   ═══════════════════════════════════════════════════════════ */
-  document.documentElement.lang = state.lang;
-  render(currentRoute());
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+  async function initApp() {
+    document.documentElement.lang = state.lang;
+    try {
+      await hydrateSupabaseSession();
+    } catch (err) {
+      console.warn('No se pudo restaurar la sesión segura:', err);
+      DB.clearSess();
+    }
+    render(currentRoute());
+
+    if (SB) {
+      SB.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          DB.clearSess();
+          return;
+        }
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
+          setTimeout(async () => {
+            try {
+              const appUser = await fetchRemoteProfile(session.user);
+              cacheAppUser(appUser);
+              if (event === 'SIGNED_IN') render(currentRoute(), false);
+            } catch (err) {
+              console.warn('No se pudo sincronizar la sesión:', err);
+            }
+          }, 0);
+        }
+      });
+    }
+
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+    }
   }
+
+  initApp();
 
 })();
