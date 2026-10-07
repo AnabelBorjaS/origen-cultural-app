@@ -172,3 +172,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Public Explorer profile enumeration blocked; only Cultural Agent profiles are public through `profiles`, while users retain access to their own row.
 - ✅ Supabase Security Advisor remains at 0 active security lints after privacy migration `20261007141841`.
 - ⏳ Two-account browser-level Storage ownership tests remain a staging QA requirement.
+
+- ✅ PWA/cache hardening: service worker caches only same-origin public static assets/navigation, bypasses cross-origin/Auth requests and respects private/no-store/error responses.
+- ✅ Smoke tests now fail if future commits reintroduce broad service-worker caching.
+- ⏳ Installed-PWA/offline behaviour still requires staging/browser verification.
