@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 const root = process.cwd();
 const out = path.join(root, 'dist');
@@ -71,6 +72,29 @@ if (textRuntime.includes('service_role')) {
   throw new Error('Forbidden service-role reference found in deployable runtime.');
 }
 
-const bytes = files.reduce((sum, file) => sum + fs.statSync(file).size, 0);
-console.log(`ORIGEN static bundle ready: ${files.length} files, ${(bytes / 1024 / 1024).toFixed(2)} MB`);
+const ordered = files
+  .map(file => ({
+    path: path.relative(out, file).replaceAll('\\', '/'),
+    sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
+    bytes: fs.statSync(file).size
+  }))
+  .sort((a, b) => a.path.localeCompare(b.path));
+
+const contentFingerprint = ordered.map(file => `${file.path}:${file.sha256}`).join('\n');
+const bundleSha256 = crypto.createHash('sha256').update(contentFingerprint).digest('hex');
+const bytes = ordered.reduce((sum, file) => sum + file.bytes, 0);
+
+const evidenceDir = path.join(root, '.release-evidence');
+fs.rmSync(evidenceDir, { recursive: true, force: true });
+fs.mkdirSync(evidenceDir, { recursive: true });
+fs.writeFileSync(path.join(evidenceDir, 'bundle-manifest.json'), JSON.stringify({
+  bundle_sha256: bundleSha256,
+  file_count: ordered.length,
+  total_bytes: bytes,
+  files: ordered
+}, null, 2) + '\n');
+
+console.log(`ORIGEN static bundle ready: ${ordered.length} files, ${(bytes / 1024 / 1024).toFixed(2)} MB`);
+console.log(`ORIGEN bundle content SHA256: ${bundleSha256}`);
 console.log('Output: dist/');
+console.log('Evidence: .release-evidence/bundle-manifest.json');
