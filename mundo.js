@@ -348,18 +348,12 @@ window.MundoCultural = (() => {
   function loadGeo() {
     if (_geoPromise) return _geoPromise;
     _geoPromise = fetch(
-      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+      'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json'
     ).then(async r => {
-      // world-atlas uses TopoJSON; we need topojson-client
+      if (!r.ok) throw new Error(`World atlas request failed: ${r.status}`);
       const topo = await r.json();
-      // Inline micro-converter (only the arc/geometry we need)
       return topoToGeo(topo);
-    }).catch(() =>
-      // Fallback: fetch GeoJSON directly
-      fetch('https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/DATA/world.geojson')
-        .then(r => r.json())
-        .then(g => g.features)
-    );
+    });
     return _geoPromise;
   }
 
@@ -836,8 +830,8 @@ window.MundoCultural = (() => {
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
-      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg')
+      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
       .lineHoverPrecision(0)
       .atmosphereColor('rgba(200,169,126,0.25)')
       .atmosphereAltitude(0.15)
@@ -1134,8 +1128,8 @@ window.HeroGlobe = (() => {
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
-        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg')
+        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
         .lineHoverPrecision(0)
         .atmosphereColor('rgba(200,169,126,0.30)')
         .atmosphereAltitude(0.14)
