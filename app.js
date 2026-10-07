@@ -538,7 +538,50 @@
   /* ═══════════════════════════════════════════════════════════
      SHELL / NAV
   ═══════════════════════════════════════════════════════════ */
+  function updateStaticLanguage() {
+    const es = state.lang === 'es';
+    const setText = (selector, esText, enText) => {
+      const el = document.querySelector(selector);
+      if (el) el.textContent = es ? esText : enText;
+    };
+
+    setText('#skip-link', 'Saltar al contenido', 'Skip to content');
+    setText('#drawer-manifesto',
+      'La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.',
+      'Culture is not just another product. It is identity, memory, knowledge and future.');
+    setText('#search-eyebrow', 'DESCUBRIR', 'DISCOVER');
+    setText('#search-title', 'Busca cultura viva', 'Search living culture');
+    setText('#wellbeing-eyebrow', 'BIENESTAR DIGITAL', 'DIGITAL WELLBEING');
+    setText('#wellbeing-title', 'Una pausa también es parte del viaje.', 'A pause is part of the journey too.');
+    setText('#wellbeing-copy',
+      'Has llegado al objetivo diario de bienestar de ORIGEN. Puedes tomar un descanso, continuar un poco más o desactivar este recordatorio.',
+      'You have reached ORIGEN’s daily wellbeing target. You can take a break, continue a little longer, or disable this reminder.');
+    setText('[data-wellbeing="break"]', 'Tomar un descanso', 'Take a break');
+    setText('[data-wellbeing="snooze"]', 'Seguir 15 minutos', 'Continue 15 minutes');
+    setText('[data-wellbeing="off"]', 'Desactivar recordatorios', 'Turn off reminders');
+    setText('#wellbeing-note',
+      'ORIGEN no usa rachas ni recompensas por permanecer conectado.',
+      'ORIGEN does not use streaks or rewards for staying connected.');
+
+    const search = document.getElementById('global-search');
+    if (search) {
+      search.placeholder = es
+        ? 'Busca tradición, territorio, oficio o agente cultural...'
+        : 'Search tradition, territory, craft or cultural agent...';
+      search.setAttribute('aria-label', es ? 'Buscar cultura viva' : 'Search living culture');
+    }
+
+    document.getElementById('brand-home')?.setAttribute(
+      'aria-label',
+      es ? 'Origen Cultural, inicio' : 'Origen Cultural, home'
+    );
+    document.querySelector('.desktop-nav')?.setAttribute('aria-label', es ? 'Navegación principal' : 'Primary navigation');
+    document.querySelector('.mobile-drawer nav')?.setAttribute('aria-label', es ? 'Navegación móvil' : 'Mobile navigation');
+    document.querySelector('.bottom-nav')?.setAttribute('aria-label', es ? 'Navegación inferior' : 'Bottom navigation');
+  }
+
   function updateShell() {
+    updateStaticLanguage();
     const user       = me();
     const dNav       = document.querySelector('.desktop-nav');
     const dDrawer    = document.querySelector('.mobile-drawer nav');
