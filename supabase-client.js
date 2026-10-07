@@ -285,6 +285,7 @@
       title: p.title || '',
       description: p.body || '',
       category: p.category || '',
+      contentPurpose: p.content_purpose || '',
       territory: p.territory || '',
       tags: p.tags || [],
       timestamp: p.created_at,
@@ -328,6 +329,7 @@
       post_type: payload.type || 'text',
       media_urls: payload.media || [],
       category: payload.category || null,
+      content_purpose: payload.contentPurpose || null,
       territory: payload.territory || null,
       tags: payload.tags || [],
       is_published: true
