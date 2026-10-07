@@ -14,13 +14,13 @@
   <title>Origen Cultural</title>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Saltar al contenido</a>
+  <a class="skip-link" id="skip-link" href="#main-content">Saltar al contenido</a>
   <div id="app-shell">
     <header class="topbar">
       <button class="icon-button mobile-only" id="menu-button" aria-label="Abrir menú" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
-      <a class="brand" href="#inicio" aria-label="Origen Cultural, inicio">
+      <a class="brand" id="brand-home" href="#inicio" aria-label="Origen Cultural, inicio">
         <img src="assets/logo-lockup.svg" alt="Origen Cultural" />
       </a>
       <nav class="desktop-nav" aria-label="Navegación principal">
@@ -47,7 +47,7 @@
         <a href="#inicio">Inicio</a><a href="#explorar">Explorar</a><a href="#pasaporte">Pasaporte Cultural</a>
         <a href="#impacto">Impacto</a><a href="#unirse">Crear Perfil Cultural</a>
       </nav>
-      <p class="drawer-manifesto">La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.</p>
+      <p class="drawer-manifesto" id="drawer-manifesto">La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.</p>
     </aside>
     <div class="drawer-overlay" id="drawer-overlay"></div>
 
@@ -64,7 +64,7 @@
 
   <dialog id="search-dialog" class="modal">
     <form method="dialog" class="modal-card search-modal-card">
-      <div class="modal-header"><div><p class="eyebrow">DESCUBRIR</p><h2>Busca cultura viva</h2></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div>
+      <div class="modal-header"><div><p class="eyebrow" id="search-eyebrow">DESCUBRIR</p><h2 id="search-title">Busca cultura viva</h2></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div>
       <label class="search-field"><span aria-hidden="true">⌕</span><input id="global-search" type="search" aria-label="Buscar cultura viva" placeholder="Busca tradición, territorio, oficio o agente cultural..." autocomplete="off" /></label>
       <div id="search-results" class="search-results" aria-live="polite"></div>
     </form>
@@ -72,15 +72,15 @@
 
   <dialog id="wellbeing-dialog" class="modal wellbeing-modal" aria-labelledby="wellbeing-title">
     <div class="modal-card wellbeing-card">
-      <p class="eyebrow">BIENESTAR DIGITAL</p>
+      <p class="eyebrow" id="wellbeing-eyebrow">BIENESTAR DIGITAL</p>
       <h2 id="wellbeing-title">Una pausa también es parte del viaje.</h2>
-      <p>Has llegado al objetivo diario de bienestar de ORIGEN. Puedes tomar un descanso, continuar un poco más o desactivar este recordatorio.</p>
+      <p id="wellbeing-copy">Has llegado al objetivo diario de bienestar de ORIGEN. Puedes tomar un descanso, continuar un poco más o desactivar este recordatorio.</p>
       <div class="wellbeing-actions">
         <button class="btn" type="button" data-wellbeing="break">Tomar un descanso</button>
         <button class="btn secondary" type="button" data-wellbeing="snooze">Seguir 15 minutos</button>
         <button class="text-button" type="button" data-wellbeing="off">Desactivar recordatorios</button>
       </div>
-      <p class="wellbeing-note">ORIGEN no usa rachas ni recompensas por permanecer conectado.</p>
+      <p class="wellbeing-note" id="wellbeing-note">ORIGEN no usa rachas ni recompensas por permanecer conectado.</p>
     </div>
   </dialog>
 
