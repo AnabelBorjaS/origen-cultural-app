@@ -655,19 +655,24 @@
         <a href="#feed"      data-route-link="feed">Feed</a>
         <a href="#explorar"  data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
         <a href="#mundo"     data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
-        <a href="#crear"     data-route-link="crear">${es ? 'Crear' : 'Create'}</a>
+        ${user.accountType === 'creator' ? `<a href="#crear" data-route-link="crear">${es ? 'Crear' : 'Create'}</a>` : ''}
         <a href="#guardados" data-route-link="guardados">${es ? 'Guardados' : 'Saved'}</a>`;
       if (dDrawer) dDrawer.innerHTML = `
         <a href="#feed">Feed</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
         <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
-        <a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>
+        ${user.accountType === 'creator' ? `<a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>` : ''}
         <a href="#guardados">${es ? 'Guardados' : 'Saved'}</a><a href="#mi-perfil">${es ? 'Mi perfil' : 'My profile'}</a>`;
-      if (dBottom) dBottom.innerHTML = `
-        <a href="#feed"      data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
-        <a href="#explorar"  data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
-        <a class="create-action" href="#crear" data-route-link="crear"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
-        <a href="#mundo"     data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
-        <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`;
+      if (dBottom) dBottom.innerHTML = user.accountType === 'creator'
+        ? `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
+            <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+            <a class="create-action" href="#crear" data-route-link="crear"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
+            <a href="#mundo" data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+            <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`
+        : `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
+            <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+            <a class="create-action" href="#pasaporte" data-route-link="pasaporte"><span aria-hidden="true">◇</span><small>${es ? 'Pasaporte' : 'Passport'}</small></a>
+            <a href="#mundo" data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+            <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`;
       if (profileBtn) {
         const init = (user.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
         if (user.avatar) {
@@ -1057,8 +1062,22 @@
   function createPostView() {
     const user = me();
     if (!user) { go('login'); return ''; }
+    if (user.accountType !== 'creator') {
+      const es = state.lang === 'es';
+      return `<section class="page-hero"><div class="section-inner">
+        <p class="eyebrow">${es ? 'BETA ORIGEN' : 'ORIGEN BETA'}</p>
+        <h1>${es ? 'El feed cultural es para Agentes Culturales' : 'The cultural feed is for Cultural Agents'}</h1>
+        <p class="lead">${es
+          ? 'Como Explorador Cultural puedes descubrir, seguir, guardar, aprender y conectar con Agentes Culturales. La publicación de contenido para Exploradores no forma parte de esta beta.'
+          : 'As a Cultural Explorer you can discover, follow, save, learn and connect with Cultural Agents. Publishing content as an Explorer is not part of this beta.'}</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px">
+          <a class="btn" href="#explorar">${es ? 'Explorar cultura' : 'Explore culture'}</a>
+          <a class="btn secondary" href="#pasaporte">${es ? 'Mi Pasaporte Cultural' : 'My Cultural Passport'}</a>
+        </div>
+      </div></section>${footer()}`;
+    }
     const d = state.createData;
-    const isProvider = user.accountType === 'creator';
+    const isProvider = true;
     const types = isProvider
       ? [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video']]
       : [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
@@ -2112,6 +2131,8 @@
 
   /* Create post */
   function bindCreatePost() {
+    const currentUser = me();
+    if (!currentUser || currentUser.accountType !== 'creator') return;
     /* type buttons */
     document.querySelectorAll('[data-ctype]').forEach(btn => {
       btn.addEventListener('click', () => {
