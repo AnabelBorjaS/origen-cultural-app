@@ -21,6 +21,7 @@ Production reports these migrations:
 11. `20261007140657_scope_social_interactions_to_published_content`
 12. `20261007141841_limit_public_profiles_to_creators`
 13. `20261007143630_restrict_touch_updated_at_execution`
+14. `20261007144230_restrict_beta_post_creation_to_creators`
 
 ## Security verification
 
@@ -75,4 +76,12 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 - Direct EXECUTE is revoked from `PUBLIC`, `anon` and `authenticated`.
 - Trigger associations remain present after the revoke.
 - Sensitive private trigger/admin functions remain inaccessible directly to browser roles.
+- Supabase Security Advisor after migration: **0 active security lints**.
+
+
+## Beta publishing-role integrity — 7 October 2026
+- New feed posts require an authenticated `profiles.role = creator` row.
+- Explorers cannot bypass the UI and publish directly through the Data API.
+- Existing post ownership/editorial/counter restrictions remain in the same INSERT policy.
+- The rule aligns the database with the current Beta product model: Cultural Agents publish; Explorers discover and interact.
 - Supabase Security Advisor after migration: **0 active security lints**.
