@@ -9,6 +9,9 @@ Do not open public registration until the Auth configuration has been verified i
 
 ## Production URL configuration
 
+- [x] Auth redirect helper enforces HTTPS outside localhost and removes query parameters before constructing callback URLs.
+
+
 Target production Site URL:
 
 `https://origencultural.com`
@@ -54,9 +57,9 @@ Decision required before activation:
 - [ ] Create provider widget/site.
 - [ ] Keep **Secret Key** only in Supabase/provider configuration; never commit it to GitHub.
 - [ ] Site Key may be used by the frontend.
-- [ ] Add CAPTCHA token to sign-up.
-- [ ] Add CAPTCHA token to sign-in.
-- [ ] Add CAPTCHA token to password recovery.
+- [x] Client API accepts CAPTCHA token for sign-up. *(Widget/token source still pending.)*
+- [x] Client API accepts CAPTCHA token for sign-in. *(Widget/token source still pending.)*
+- [x] Client API accepts CAPTCHA token for password recovery. *(Widget/token source still pending.)*
 - [ ] Reset/refresh the challenge after each Auth attempt.
 - [ ] Test successful human flow.
 - [ ] Test missing/invalid/expired CAPTCHA token.
