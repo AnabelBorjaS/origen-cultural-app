@@ -1067,6 +1067,13 @@
         <p class="form-note full" style="grid-column:1/-1">Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.</p>
         ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo electrónico'],['web','Sitio web']].map(([k, label]) =>
           `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+        <div class="form-field full legal-consent">
+          <label class="legal-check">
+            <input type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
+            <span>Acepto los <a href="#confianza">Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2</a> de ORIGEN.</span>
+          </label>
+          <p class="form-note">Puedes revisar el Centro de confianza antes de crear tu cuenta.</p>
+        </div>
       </form>`;
     }
 
