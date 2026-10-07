@@ -2183,24 +2183,23 @@
       });
     });
 
-    /* avatar upload */
-    const avaInput = document.getElementById('edit-avatar-input');
-    if (avaInput) avaInput.addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return;
+    /* avatar / cover upload: listen on persistent zones so rebuilt file inputs keep working */
+    const avaZone = document.getElementById('edit-avatar-zone');
+    if (avaZone) avaZone.addEventListener('change', e => {
+      if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'edit-avatar-input') return;
+      const file = e.target.files?.[0]; if (!file) return;
       state.editAvatar = file;
       const preview = URL.createObjectURL(file);
-      const zone = document.getElementById('edit-avatar-zone');
-      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`);
+      avaZone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`;
     });
 
-    /* cover upload */
-    const covInput = document.getElementById('edit-cover-input');
-    if (covInput) covInput.addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return;
+    const covZone = document.getElementById('edit-cover-zone');
+    if (covZone) covZone.addEventListener('change', e => {
+      if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'edit-cover-input') return;
+      const file = e.target.files?.[0]; if (!file) return;
       state.editCover = file;
       const preview = URL.createObjectURL(file);
-      const zone = document.getElementById('edit-cover-zone');
-      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
+      covZone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
     });
 
     /* form submit */
