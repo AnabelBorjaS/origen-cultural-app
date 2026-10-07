@@ -29,6 +29,15 @@ hr { border: 0; border-top: 1px solid var(--grey); margin: 20px 0; }
 .skip-link { position: fixed; z-index: 999; top: 8px; left: 8px; padding: 10px 14px; background: var(--black); color: var(--white); transform: translateY(-150%); }
 .skip-link:focus { transform: translateY(0); }
 
+/* Global keyboard focus */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--sand);
+  outline-offset: 3px;
+}
+:where(input, textarea, select):focus-visible {
+  border-color: var(--black);
+}
+
 /* ── TOPBAR ────────────────────────────────────────────────── */
 .topbar { position: sticky; top: 0; z-index: 80; min-height: 76px; padding: 0 clamp(18px, 4vw, 56px); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 34px; background: rgba(255,255,255,.96); border-bottom: 1px solid rgba(0,0,0,.08); backdrop-filter: blur(16px); }
 .brand img { width: 205px; }
