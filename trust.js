@@ -29,7 +29,7 @@ window.ORIGEN_TRUST = {
       title: 'Privacidad y datos',
       body: [
         'La beta utiliza Supabase para autenticación, base de datos y almacenamiento de archivos. Los datos de cuenta pueden incluir correo, nombre, perfil, publicaciones, interacciones, reclamaciones y reportes.',
-        'En el navegador usamos almacenamiento local para preferencias como idioma y bienestar digital, y para algunas funciones experimentales del Pasaporte Cultural durante la beta.',
+        'En el navegador usamos almacenamiento local para preferencias como idioma y bienestar digital, y para funciones experimentales del Pasaporte Cultural y seguimiento de territorios durante la beta. La sesión de autenticación puede persistirse localmente mediante Supabase Auth.',
         'No vendemos datos personales a anunciantes. En esta beta no activamos publicidad ni analítica opcional de marketing.'
       ]
     },
@@ -38,7 +38,7 @@ window.ORIGEN_TRUST = {
       title: 'Cookies y almacenamiento',
       body: [
         'ORIGEN usa únicamente tecnologías necesarias para que la cuenta y la experiencia funcionen. Supabase puede mantener la sesión de autenticación en el navegador.',
-        'También cargamos librerías y recursos técnicos mediante jsDelivr para funciones como el globo cultural. No activaremos cookies de publicidad o analítica opcional sin revisar consentimiento, documentación e inventario técnico.'
+        'El service worker puede usar Cache Storage del navegador para archivos estáticos y mejorar rendimiento/disponibilidad. También cargamos librerías y recursos técnicos mediante jsDelivr para funciones como el globo cultural. No activaremos cookies de publicidad o analítica opcional sin revisar consentimiento, documentación e inventario técnico.'
       ]
     },
     {
