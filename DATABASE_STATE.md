@@ -16,6 +16,7 @@ Production reports these migrations:
 6. `20261006082339_abuse_prevention_rate_limits_and_content_bounds`
 7. `20261007003848_add_cultural_post_purpose`
 8. `20261007125206_protect_cultural_profile_privileged_fields`
+9. `20261007135902_harden_claim_report_insert_integrity_and_grants`
 
 ## Security verification
 
@@ -32,3 +33,15 @@ Database changes made in Production must be represented in GitHub before release
 Older migrations predate this repository migration folder and remain recorded in Supabase's migration history. They should be pulled/reconstructed into repository migration files before the project moves to a mature multi-environment deployment workflow.
 
 Do not treat the legacy root `schema.sql` as a complete representation of current Production.
+
+
+## Claim/report integrity hardening verified — 7 October 2026
+- New profile claims must be created by the authenticated claimant, include explicit authority declaration, start as `pending`, have no reviewer metadata and target an unowned `reference` Cultural Profile.
+- New moderation reports must be created by the authenticated reporter, start as `open` and have no `resolved_at`.
+- `anon` has SELECT only on published Cultural Profiles and no table privileges on claims/reports.
+- `authenticated` has least-privilege table access required by current Beta flows.
+- Negative RLS tests PASS:
+  - forged `approved` claim is blocked by RLS;
+  - forged `resolved` moderation report is blocked by RLS;
+  - anonymous report insert is blocked by table privilege.
+- Supabase Security Advisor after migration: **0 active security lints**.
