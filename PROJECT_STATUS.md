@@ -207,3 +207,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 
 - ✅ `touch_updated_at` direct execution restricted: `anon` and `authenticated` cannot invoke the trigger helper directly.
 - ✅ Current release evidence: Quality Gate #154 + Browser QA #19 both SUCCESS; runtime content fingerprint remains `sha256:07c669ffa2f24065d718ca6926c238ad096787ab8033297381a1efa1a681bdcc`.
+
+- ✅ Beta publishing roles aligned: Cultural Agents publish cultural/educational feed content; Explorers discover, follow, save, learn, comment and connect without a publicly enumerable profile or feed-post capability.
+- ✅ Explorer post creation is blocked in UI, client API and Production RLS; future Explorer publishing requires a deliberate public-identity/privacy model.
+- ✅ Supabase Security Advisor remains at 0 active security lints after migration `20261007144230`.
