@@ -7,6 +7,8 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Controlled account-deletion/privacy-request process is documented; beta users have a visible private request path, while destructive Auth deletion remains an admin-controlled operation with Storage cleanup and cultural-profile review.
+
 - Trigger-only public helper functions are not exposed as callable browser RPCs; direct EXECUTE on `public.touch_updated_at()` is revoked from public client roles.
 
 - Globe tooltips and cultural-card HTML escape external/profile text before insertion, and micro-story links pass through an http/https/hash allow-list.
