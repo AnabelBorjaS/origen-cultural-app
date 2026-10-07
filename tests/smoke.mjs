@@ -32,6 +32,8 @@ const checks = [
   ['Provider feed requires cultural purpose', app.includes('name="contentPurpose" required') && supabase.includes('content_purpose')],
   ['Provider text-only post option is removed', app.includes("const types = isProvider") && app.includes("state.createData.type === 'text'")],
   ['Upload type/size preflight exists', supabase.includes('UPLOAD_RULES') && supabase.includes('validateUpload(bucket, file)')],
+  ['Managed media cleanup enforces current-user folder ownership', supabase.includes('function parseManagedMediaUrl(publicUrl)') && supabase.includes('function removeOwnMedia(publicUrl)') && supabase.includes("parsed.path.startsWith(uid + '/')")],
+  ['Profile media is cleaned only after successful profile update', app.includes('const updated = await window.ORIGEN_API.updateMyProfile') && app.includes('Promise.allSettled(cleanup)') && app.includes('removeOwnMedia(previousAvatar)')],
   ['Upload pickers use supported MIME types', app.includes('image/jpeg,image/png,image/webp') && app.includes('video/mp4,video/webm,video/quicktime')],
   ['No legacy local auth session remains in Mundo', !mundo.includes("localStorage.getItem('oc-session')")],
   ['No legacy local profile-follow map remains in Mundo', !mundo.includes("localStorage.getItem('oc-follows')") && !mundo.includes("localStorage.setItem('oc-follows')")],
