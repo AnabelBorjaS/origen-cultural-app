@@ -117,3 +117,15 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ PR #3 abierto en draft y mergeable.
 - ✅ ORIGEN Quality Gate del PR #3 finalizó con éxito.
 - ⛔ Merge a `main` sigue bloqueado hasta completar el release gate.
+
+
+### Browser/Auth hardening — 7 Oct 2026
+- ✅ Removed legacy `oc-session` and local profile-follow state from Mundo Cultural.
+- ✅ Mundo Cultural account/follow actions now use the Supabase-backed ORIGEN API.
+- ✅ Public terminology standardised to `Agente Cultural / Cultural Agent` in the current beta UI.
+- ✅ Trust Center browser-storage disclosure aligned with localStorage, Supabase session persistence and service-worker Cache Storage.
+- ✅ Cloudflare-compatible security headers added in `_headers`.
+- ✅ Auth callbacks require HTTPS outside localhost.
+- ✅ Supabase Auth client prepared to accept CAPTCHA tokens for signup, login and password recovery.
+- ⏳ CAPTCHA provider/widget + server-side enforcement remain blocked until an approved staging URL and provider keys exist.
+- ⏳ Public Beta remains NO-GO; `main` and `origencultural.com` remain untouched.
