@@ -164,3 +164,13 @@ Public Beta requires:
 - [ ] Trust/legal proportional review complete.
 - [ ] Rollback path confirmed.
 - [ ] Final CEO GO decision recorded.
+
+
+## P1 — Service worker / PWA privacy
+
+- [ ] Install/open staging as PWA where supported.
+- [ ] Confirm ORIGEN shell/static assets work offline as expected.
+- [ ] Confirm Supabase/Auth/network data is **not** served from Cache Storage.
+- [ ] Confirm logout does not expose authenticated data from offline cache.
+- [ ] Confirm a new deployment updates app JS/CSS without requiring manual cache clearing.
+- [ ] Confirm private/no-store responses are not stored by the service worker.
