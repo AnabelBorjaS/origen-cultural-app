@@ -1,5 +1,5 @@
-// ORIGEN Cultural — Red Social Cultural Demo
-// localStorage-based · Supabase-ready architecture
+// ORIGEN Cultural — Red Social Cultural
+// Supabase-backed beta architecture
 (() => {
   'use strict';
 
@@ -8,7 +8,6 @@
   ═══════════════════════════════════════════════════════════ */
   const { creators, categories, impact } = window.ORIGEN_DATA;
   const SEED_POSTS = window.ORIGEN_DATA.posts || [];
-  const SB = window.ORIGEN_SUPABASE || null;
 
   /* ═══════════════════════════════════════════════════════════
      DOM REFS
@@ -26,34 +25,18 @@
     query: '',
     regStep: 1,
     regData: {},
-    createData: { type: 'photo', media: [], tags: [] },
+    createData: { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' },
     openComments: new Set(),
     carIdx: {},
     editAvatar: null,
     editCover: null,
-  };
-
-  /* ═══════════════════════════════════════════════════════════
-     LOCAL DB (localStorage abstraction — swap for Supabase)
-  ═══════════════════════════════════════════════════════════ */
-  const DB = {
-    get(k, d)    { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : d; } catch { return d; } },
-    set(k, v)    { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { showToast('Almacenamiento lleno. Elimina imágenes para continuar.'); return false; } },
-    users()      { return this.get('oc-users', {}); },
-    setUsers(u)  { this.set('oc-users', u); },
-    session()    { return this.get('oc-session', null); },
-    setSession(u){ this.set('oc-session', u); },
-    clearSess()  { localStorage.removeItem('oc-session'); },
-    posts()      { return this.get('oc-posts', []); },
-    setPosts(p)  { this.set('oc-posts', p); },
-    likes()      { return this.get('oc-likes', {}); },
-    setLikes(l)  { this.set('oc-likes', l); },
-    comments()   { return this.get('oc-comments', {}); },
-    setComments(c){ this.set('oc-comments', c); },
-    saves()      { return this.get('oc-saves', {}); },
-    setSaves(s)  { this.set('oc-saves', s); },
-    follows()    { return this.get('oc-follows', {}); },
-    setFollows(f){ this.set('oc-follows', f); },
+    user: null,
+    authReady: false,
+    feedLoading: false,
+    wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 120),
+    wellbeingElapsedMs: 0,
+    wellbeingLastTick: Date.now(),
+    wellbeingNextPromptMs: null,
   };
 
   /* ═══════════════════════════════════════════════════════════
@@ -120,6 +103,18 @@
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function esc(s) { const d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+  function safeExternalUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^mailto:/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.origin);
+      if (!['http:','https:'].includes(u.protocol)) return '';
+      return u.href;
+    } catch {
+      return '';
+    }
+  }
   function timeAgo(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
     if (s < 60)     return 'ahora';
@@ -150,170 +145,137 @@
   /* ═══════════════════════════════════════════════════════════
      AUTH
   ═══════════════════════════════════════════════════════════ */
-  const me     = () => DB.session();
+  const me     = () => state.user;
   const isAuth = () => !!me();
 
-  function toAppUser(profile, authUser = null) {
-    if (!profile) return null;
-    return {
-      id: profile.id,
-      email: authUser?.email || me()?.email || '',
-      name: profile.display_name || 'Perfil cultural',
-      accountType: profile.role === 'creator' ? 'creator' : 'explorer',
-      location: profile.location || [profile.city, profile.country].filter(Boolean).join(', '),
-      story: profile.story || profile.bio || '',
-      categories: profile.categories || [],
-      links: profile.links || {},
-      avatar: profile.avatar_url || '',
-      cover: profile.cover_url || '',
-      createdAt: profile.created_at || null,
-    };
-  }
-
-  function cacheAppUser(user) {
-    if (!user) return;
-    const clean = { ...user };
-    delete clean.password;
-    const users = DB.users();
-    users[clean.id] = clean;
-    DB.setUsers(users);
-    DB.setSession(clean);
-  }
-
-  async function fetchRemoteProfile(authUser) {
-    if (!SB || !authUser) return null;
-    const { data, error } = await SB
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
-    if (error) throw error;
-    return toAppUser(data, authUser);
-  }
-
-  function dataUrlToBlob(dataUrl) {
-    const [head, body] = String(dataUrl || '').split(',');
-    const mime = (head.match(/data:([^;]+)/) || [,'application/octet-stream'])[1];
-    const bytes = atob(body || '');
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    return new Blob([arr], { type: mime });
-  }
-
-  async function uploadDataUrl(bucket, dataUrl, userId, prefix) {
-    if (!SB || !dataUrl || !dataUrl.startsWith('data:')) return dataUrl || '';
-    const blob = dataUrlToBlob(dataUrl);
-    const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
-    const path = `${userId}/${prefix}-${Date.now()}.${ext}`;
-    const { error } = await SB.storage.from(bucket).upload(path, blob, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: blob.type,
-    });
-    if (error) throw error;
-    const { data } = SB.storage.from(bucket).getPublicUrl(path);
-    return data?.publicUrl || '';
-  }
-
-  async function flushPendingProfileMedia(userId) {
-    if (!SB || !userId) return;
-    const pendingAvatar = localStorage.getItem('oc-pending-avatar');
-    const pendingCover  = localStorage.getItem('oc-pending-cover');
-    if (!pendingAvatar && !pendingCover) return;
-
-    const patch = {};
-    try {
-      if (pendingAvatar) patch.avatar_url = await uploadDataUrl('avatars', pendingAvatar, userId, 'avatar');
-      if (pendingCover)  patch.cover_url  = await uploadDataUrl('covers', pendingCover, userId, 'cover');
-      if (Object.keys(patch).length) {
-        const { error } = await SB.from('profiles').update(patch).eq('id', userId);
-        if (error) throw error;
-      }
-      localStorage.removeItem('oc-pending-avatar');
-      localStorage.removeItem('oc-pending-cover');
-    } catch (err) {
-      console.warn('No se pudo completar la carga de imágenes del perfil:', err);
-    }
-  }
-
-  async function hydrateSupabaseSession() {
-    if (!SB) {
-      DB.clearSess();
-      return null;
-    }
-    const { data, error } = await SB.auth.getSession();
-    if (error || !data?.session?.user) {
-      DB.clearSess();
-      return null;
-    }
-    await flushPendingProfileMedia(data.session.user.id);
-    const appUser = await fetchRemoteProfile(data.session.user);
-    cacheAppUser(appUser);
-    return appUser;
-  }
-
   async function doLogin(email, pw) {
-    if (!SB) return { ok: false, error: 'La conexión segura no está disponible.' };
-    const { data, error } = await SB.auth.signInWithPassword({ email, password: pw });
-    if (error || !data?.user) return { ok: false, error: 'Correo o contraseña incorrectos.' };
-    const appUser = await fetchRemoteProfile(data.user);
-    cacheAppUser(appUser);
-    return { ok: true, user: appUser };
+    if (!window.ORIGEN_API) throw new Error('Servicio de autenticación no disponible.');
+    const user = await window.ORIGEN_API.signIn(email, pw);
+    state.user = user;
+    await Promise.allSettled([
+      window.ORIGEN_API.listCulturalProfiles(),
+      window.ORIGEN_API.myFollows(),
+      window.ORIGEN_API.myFavorites()
+    ]);
+    return user;
   }
 
   async function doRegister(data) {
-    if (!SB) return { ok: false, error: 'La conexión segura no está disponible.' };
-
-    if (data.avatar) localStorage.setItem('oc-pending-avatar', data.avatar);
-    if (data.cover)  localStorage.setItem('oc-pending-cover', data.cover);
-
-    const metadata = {
-      account_type: data.accountType === 'creator' ? 'creator' : 'explorer',
-      display_name: data.name || '',
-      location: data.location || '',
-      story: data.story || '',
-      categories: data.categories || [],
-      links: data.links || {},
-      accepted_legal: false,
-    };
-
-    const { data: signup, error } = await SB.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: metadata,
-        emailRedirectTo: `${location.origin}${location.pathname}#mi-perfil`,
-      },
-    });
-
-    if (error) {
-      return { ok: false, error: error.message || 'No pudimos crear la cuenta.' };
+    if (!window.ORIGEN_API) return { ok: false, error: 'Servicio de autenticación no disponible.' };
+    try {
+      const result = await window.ORIGEN_API.signUp(data);
+      if (result.session) {
+        state.user = await window.ORIGEN_API.restoreSession();
+        let avatar = state.user?.avatar || '';
+        let cover = state.user?.cover || '';
+        if (data.avatarFile instanceof File) avatar = await window.ORIGEN_API.upload('avatars', data.avatarFile, 'avatar');
+        if (data.coverFile instanceof File) cover = await window.ORIGEN_API.upload('covers', data.coverFile, 'cover');
+        if (avatar || cover) {
+          state.user = await window.ORIGEN_API.updateMyProfile({
+            name: state.user?.name || data.name,
+            location: data.location || state.user?.location,
+            story: data.story || state.user?.story,
+            categories: data.categories || state.user?.categories || [],
+            links: data.links || state.user?.links || {},
+            accountType: data.accountType,
+            providerHeadline: data.providerHeadline || '',
+            services: data.services || [],
+            serviceDescription: data.serviceDescription || '',
+            avatar,
+            cover
+          });
+        }
+        await Promise.allSettled([
+          window.ORIGEN_API.listCulturalProfiles(),
+          window.ORIGEN_API.listPublicProfiles(),
+          window.ORIGEN_API.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API.myFollows(),
+          window.ORIGEN_API.myFavorites(),
+          window.ORIGEN_API.listPosts(),
+          window.ORIGEN_API.loadPostInteractions()
+        ]);
+      }
+      return { ok: true, ...result };
+    } catch (error) {
+      return { ok: false, error: error.message || 'No pudimos crear tu cuenta.' };
     }
-
-    if (signup?.session?.user) {
-      await flushPendingProfileMedia(signup.session.user.id);
-      const appUser = await fetchRemoteProfile(signup.session.user);
-      cacheAppUser(appUser);
-      return { ok: true, user: appUser, needsConfirmation: false };
-    }
-
-    DB.clearSess();
-    return { ok: true, user: null, needsConfirmation: true };
   }
 
   async function doLogout() {
-    if (SB) {
-      try { await SB.auth.signOut(); } catch (err) { console.warn('Sign out:', err); }
-    }
-    DB.clearSess();
+    try { await window.ORIGEN_API?.signOut(); } catch (_) {}
+    state.user = null;
     updateShell();
     go('inicio');
   }
 
-  function refreshSession() {
-    const u = me(); if (!u) return;
-    const users = DB.users();
-    if (users[u.id]) DB.setSession(users[u.id]);
+  function refreshSession() {}
+
+  function remoteFollowRefs() {
+    const api = window.ORIGEN_API;
+    if (!api || !state.user) return [];
+    return (api.cache.follows || []).map(id => {
+      const p = api.cache.culturalProfiles.find(x => x.id === id);
+      return p?.owner_id || p?.slug || id;
+    });
+  }
+
+  function remoteFavoriteRefs() {
+    const api = window.ORIGEN_API;
+    if (!api || !state.user) return [];
+    return (api.cache.favorites || []).map(id => {
+      const p = api.cache.culturalProfiles.find(x => x.id === id);
+      return p?.owner_id || p?.slug || id;
+    });
+  }
+
+  async function culturalProfileId(ref) {
+    const api = window.ORIGEN_API;
+    if (!api) return null;
+    let p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref || x.owner_id === ref);
+    if (!p) {
+      await api.listCulturalProfiles();
+      p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref || x.owner_id === ref);
+    }
+    return p?.id || null;
+  }
+
+  function normalisePublicProvider(row) {
+    if (!row) return null;
+    const links = row.links || {};
+    return {
+      id: row.id,
+      name: row.display_name || 'Agente Cultural',
+      type: 'Agente Cultural',
+      accountType: 'creator',
+      category: (row.categories || [])[0] || 'Cultura',
+      categories: row.categories || [],
+      location: row.location || [row.city, row.country].filter(Boolean).join(', '),
+      country: row.country || '',
+      verified: false,
+      profileStatus: 'pending',
+      image: row.avatar_url || '',
+      avatar: row.avatar_url || '',
+      cover: row.cover_url || '',
+      short: links?._provider?.headline || row.bio || 'Perfil cultural en ORIGEN',
+      story: row.story || row.bio || '',
+      tags: row.categories || [],
+      links,
+      providerHeadline: links?._provider?.headline || '',
+      services: links?._provider?.services || [],
+      serviceDescription: links?._provider?.description || '',
+      website: links?.web || '',
+      publicEmail: links?.email || '',
+      publicWhatsapp: links?.whatsapp || '',
+      followers: window.ORIGEN_API?.cache?.culturalProfiles?.find(cp => cp.owner_id === row.id)?.follower_count || 0,
+      posts: [],
+      _kind: 'user'
+    };
+  }
+
+  function directoryProfiles() {
+    const dynamic = (window.ORIGEN_API?.cache?.publicProfiles || []).map(normalisePublicProvider).filter(Boolean);
+    const seen = new Set(dynamic.map(p => p.id));
+    return [...dynamic, ...creators.filter(p => !seen.has(p.id))];
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -322,8 +284,10 @@
   function getProfile(id) {
     const c = creators.find(x => x.id === id);
     if (c) return { ...c, _kind: 'creator' };
-    const u = DB.users()[id];
-    return u ? { ...u, _kind: 'user' } : null;
+    if (state.user && state.user.id === id) return { ...state.user, _kind: 'user' };
+    const publicRow = (window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id);
+    if (publicRow) return normalisePublicProvider(publicRow);
+    return null;
   }
   function avatarEl(profile, sz = 'md') {
     if (!profile) return `<div class="ava ava-${sz} ava-init">OC</div>`;
@@ -332,19 +296,23 @@
     if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
     return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" onerror="this.parentElement.classList.add('ava-init');this.parentElement.textContent='${init}';"></div>`;
   }
-  function verBadge(p) { return p && p.verified ? '<span class="verified" title="Verificación Cultural">✓</span>' : ''; }
+  function verBadge(p) {
+    const verified = p && (p.profileStatus === 'verified' || (p.verified && !p.referenceProfile));
+    return verified ? '<span class="verified" title="Perfil verificado">✓</span>' : '';
+  }
 
   /* ═══════════════════════════════════════════════════════════
      POSTS
   ═══════════════════════════════════════════════════════════ */
   function allPosts() {
-    return [...DB.posts(), ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const remote = window.ORIGEN_API?.cache?.posts || [];
+    return [...remote, ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
   function feedPosts() {
     const user    = me();
     const all     = allPosts();
     if (!user) return all.slice(0, 10);
-    const follows = DB.follows()[user.id] || [];
+    const follows = remoteFollowRefs();
     const mine    = all.filter(p => p.authorId === user.id || follows.includes(p.authorId));
     const disc    = all.filter(p => p.authorId !== user.id && !follows.includes(p.authorId));
     return [...mine, ...disc];
@@ -356,9 +324,27 @@
   function socialLinksHtml(profile) {
     if (!profile.links || !Object.keys(profile.links).length) return '';
     const icons = { instagram:'IG', facebook:'FB', tiktok:'TK', youtube:'YT', linkedin:'LI', whatsapp:'WA', email:'✉', web:'↗' };
-    const entries = Object.entries(profile.links).filter(([, v]) => v && v.trim());
+    const allowed = new Set(['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web']);
+    const entries = Object.entries(profile.links)
+      .filter(([k]) => allowed.has(k))
+      .map(([k, v]) => [k, safeExternalUrl(v)])
+      .filter(([, v]) => !!v);
     if (!entries.length) return '';
-    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
+    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noopener noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
+  }
+
+  function contentPurposeLabel(value) {
+    return ({
+      education: 'Educación cultural',
+      history: 'Historia y memoria',
+      technique: 'Técnica / proceso',
+      territory: 'Territorio',
+      language: 'Lengua',
+      gastronomy: 'Gastronomía',
+      arts: 'Artes / expresión',
+      heritage: 'Patrimonio',
+      community: 'Comunidad'
+    })[value] || '';
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -369,19 +355,16 @@
     const author = getProfile(post.authorId);
     if (!author) return '';
 
-    const likes      = DB.likes();
-    const postLikes  = likes[post.id] || [];
-    const totalLikes = postLikes.length + (postLikes.length === 0 ? (post.likes || 0) : 0);
-    const liked      = !!(user && postLikes.includes(user.id));
+    const liked      = !!(user && (window.ORIGEN_API?.cache?.likes || []).includes(post.id));
+    const totalLikes = post.likes || 0;
 
-    const allComs = DB.comments();
-    const coms    = allComs[post.id] || [];
+    const coms = (window.ORIGEN_API?.cache?.comments || [])
+      .filter(x => x.post_id === post.id)
+      .map(x => ({ id:x.id, authorId:x.user_id, text:x.body, ts:x.created_at }));
 
-    const savesMap  = DB.saves();
-    const saved     = !!(user && (savesMap[user.id] || []).includes(post.id));
+    const saved = !!(user && (window.ORIGEN_API?.cache?.saves || []).includes(post.id));
 
-    const followsMap = DB.follows();
-    const myFollows  = user ? (followsMap[user.id] || []) : [];
+    const myFollows  = user ? remoteFollowRefs() : [];
     const following  = myFollows.includes(post.authorId);
     const isOwn      = !!(user && user.id === post.authorId);
 
@@ -402,7 +385,7 @@
         ` : ''}
       </div>`;
     } else if (post.type === 'video' && post.media && post.media.length) {
-      media = `<div class="post-media"><video controls preload="metadata" src="${post.media[0]}" style="width:100%;display:block;max-height:480px"></video></div>`;
+      media = `<div class="post-media"><video controls muted playsinline preload="metadata" src="${post.media[0]}" aria-label="${esc(post.title || 'Video cultural')}"></video></div>`;
     }
 
     const authorHref = author._kind === 'creator' ? `#perfil/${author.id}` : `#usuario/${author.id}`;
@@ -424,7 +407,10 @@
       </div>
       ${media}
       <div class="post-body${post.type === 'text' ? ' post-text-body' : ''}">
-        ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
+        <div class="post-context-chips">
+          ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
+          ${post.contentPurpose ? `<span class="post-purpose">${esc(contentPurposeLabel(post.contentPurpose))}</span>` : ''}
+        </div>
         <h3 class="post-title">${esc(post.title)}</h3>
         <p class="post-desc">${esc(post.description)}</p>
         ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
@@ -475,8 +461,8 @@
   ═══════════════════════════════════════════════════════════ */
   function storiesRow() {
     const user     = me();
-    const myFollow = user ? (DB.follows()[user.id] || []) : [];
-    const all      = [...creators, ...Object.values(DB.users())].slice(0, 14);
+    const myFollow = user ? remoteFollowRefs() : [];
+    const all      = directoryProfiles().slice(0, 14);
     return `<div class="stories-row"><div class="stories-scroll">
       ${user ? `<a class="story-item" href="#mi-perfil">
         <div class="story-ring own">${avatarEl(user, 'story')}</div>
@@ -498,19 +484,21 @@
      CREATOR CARD (directory)
   ═══════════════════════════════════════════════════════════ */
   function creatorCard(c) {
-    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const favs  = remoteFavoriteRefs();
     const saved = favs.includes(c.id);
+    const href  = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`;
+    const image = c.image || c.avatar || 'assets/logo-mark.svg';
     return `<article class="creator-card">
       <div class="creator-card-image">
-        <a href="#perfil/${c.id}" aria-label="${t('profile')}: ${c.name}"><img src="${c.image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
+        <a href="${href}" aria-label="${t('profile')}: ${c.name}"><img src="${image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
         <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
       </div>
       <div class="creator-card-body">
         <div class="creator-meta"><span>${c.type}</span><span>${verBadge(c)} ${c.location}</span></div>
-        <h3><a href="#perfil/${c.id}">${c.name}</a></h3>
+        <h3><a href="${href}">${c.name}</a></h3>
         <p>${c.short}</p>
-        <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers)} seguidores</span><a class="link-arrow" href="#perfil/${c.id}">${t('profile')}</a></div>
+        <div class="creator-tags">${(c.tags || []).map(tg => `<span>${tg}</span>`).join('')}</div>
+        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers || 0)} seguidores</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
       </div>
     </article>`;
   }
@@ -523,10 +511,10 @@
       <div class="footer-top">
         <div class="footer-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"><p>${t('tagline')}<br><br>Una red social cultural para descubrir, seguir y valorar culturas vivas.</p></div>
         <div><h4>Explorar</h4><div class="footer-links"><a href="#explorar">Perfiles culturales</a><a href="#feed">Feed cultural</a><a href="#pasaporte">Pasaporte Cultural</a></div></div>
-        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
+        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#confianza">Centro de confianza</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
         <div><h4>Social</h4><div class="footer-links"><a href="https://www.instagram.com/origen.cultural" target="_blank" rel="noreferrer">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></div></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Demo funcional · Versión productiva: Supabase</span></div>
+      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Beta controlada · Datos sincronizados con Supabase</span></div>
     </div></footer>`;
   }
 
@@ -610,7 +598,7 @@
 
   /* ── LANDING ─────────────────────────────────────────────── */
   function landingView() {
-    const featured = creators.slice(0, 5);
+    const featured = directoryProfiles().slice(0, 5);
     return `
     <!-- HERO GLOBE -->
     <section class="hero-globe-section">
@@ -628,11 +616,11 @@
         </div>
         <a href="#login" class="hero-login-link">¿Ya tienes cuenta? Entrar →</a>
         <div class="hero-globe-stats">
-          <div class="hero-gstat"><strong>6</strong><span>Territorios activos</span></div>
+          <div class="hero-gstat"><strong>6</strong><span>Territorios explorables</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>5+</strong><span>Agentes culturales</span></div>
+          <div class="hero-gstat"><strong>4</strong><span>Perfiles de referencia</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>8+</strong><span>Publicaciones</span></div>
+          <div class="hero-gstat"><strong>Beta</strong><span>Controlada</span></div>
         </div>
       </div>
       <div class="hero-globe-right">
@@ -647,8 +635,7 @@
           <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
         </div>
         <p class="hero-globe-hint">Toca un país para explorar su cultura</p>
-        <div class="hero-globe-territories" aria-label="Territorios activos">
-          <span class="hgt-title">Territorios activos</span>
+        <div class="hero-globe-territories">
           ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪','Perú'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽','México'],['japan','🇯🇵','Japón']]
             .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="Ver ${n}">${f} ${n}</button>`).join('')}
         </div>
@@ -681,7 +668,7 @@
     <section class="section" style="background:var(--grey-2)">
       <div class="section-inner">
         <div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
-        <div class="creator-grid">${creators.slice(0, 3).map(creatorCard).join('')}</div>
+        <div class="creator-grid">${directoryProfiles().slice(0, 3).map(creatorCard).join('')}</div>
       </div>
     </section>
 
@@ -697,7 +684,7 @@
     <section class="cta-panel">
       <img src="assets/images/mural.jpg" alt="Mural cultural">
       <div class="cta-content">
-        <p class="eyebrow">AGENTES CULTURALES</p>
+        <p class="eyebrow">PROVEEDORES CULTURALES</p>
         <h2>Tu historia cultural merece ser encontrada.</h2>
         <p>Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.</p>
         <a class="btn light" href="#registro">Empezar ahora</a>
@@ -711,7 +698,7 @@
     if (!isAuth()) return loginView();
     const posts = feedPosts();
     const user  = me();
-    const myFollows = DB.follows()[user.id] || [];
+    const myFollows = remoteFollowRefs();
     return `<div class="feed-layout">
       ${storiesRow()}
       <div class="feed-col">
@@ -722,14 +709,15 @@
         <div id="feed-posts">
           ${posts.length
             ? posts.map(postCard).join('')
-            : `<div class="empty-feed"><p>Sigue agentes culturales para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar agentes culturales</a></div>`}
+            : `<div class="empty-feed"><p>Sigue proveedores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar proveedores</a></div>`}
+          ${posts.length ? `<div id="feed-sentinel" class="feed-sentinel${window.ORIGEN_API?.cache?.postsExhausted ? ' done' : ''}" aria-live="polite"></div>` : ''}
         </div>
       </div>
       <aside class="feed-aside">
         <div class="aside-card">
           <p class="eyebrow">DESCUBRIR</p>
-          <h3>Agentes culturales</h3>
-          ${creators.slice(0, 4).map(c => `<div class="aside-row">
+          <h3>Proveedores culturales</h3>
+          ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
             <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? 'Siguiendo' : '+ Seguir'}</button>
@@ -778,7 +766,7 @@
   function renderExploreGrid() {
     const grid = document.getElementById('explore-grid'); if (!grid) return;
     const q = state.query.toLowerCase().trim();
-    const filtered = creators.filter(c => {
+    const filtered = directoryProfiles().filter(c => {
       const catOk = state.activeCategory === 'Todos' || c.category.toLowerCase().includes(state.activeCategory.toLowerCase()) || c.tags.some(tg => tg.toLowerCase().includes(state.activeCategory.toLowerCase()));
       const qOk   = !q || [c.name, c.type, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
       return catOk && qOk;
@@ -791,11 +779,12 @@
 
   /* ── CREATOR PROFILE ─────────────────────────────────────── */
   function creatorProfileView(id) {
-    const c = creators.find(x => x.id === id) || creators[0];
+    const c = creators.find(x => x.id === id);
+    if (!c) return `<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a class="btn" href="#explorar">Volver a explorar</a></div></section>`;
     const user = me();
-    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const myFollows = user ? remoteFollowRefs() : [];
     const isFollowing = myFollows.includes(c.id);
-    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const favs  = remoteFavoriteRefs();
     const isSaved = favs.includes(c.id);
     const cPosts = allPosts().filter(p => p.authorId === c.id);
     return `<section class="profile-hero">
@@ -815,6 +804,7 @@
     </section>
     <section class="profile-layout">
       <div>
+        
         <div class="profile-story">
           <p class="eyebrow">SU HISTORIA CULTURAL</p>
           <h2>Una puerta directa a su identidad</h2>
@@ -836,23 +826,30 @@
           <div><dt>Verificación</dt><dd>${c.verified ? 'Verificado manualmente' : 'En proceso'}</dd></div>
         </dl>
         ${socialLinksHtml(c)}
-        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del agente cultural.</p>
+        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del creador.</p>
       </aside>
     </section>
     ${footer()}`;
   }
 
+  function claimProfileView(id) {
+    const c = creators.find(x => x.id === id);
+    if (!c) return '<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a href="#explorar" class="btn">Volver</a></div></section>';
+    const user = me();
+    if (!user) return `<div class="auth-page"><div class="auth-card"><a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a><h2>Reclamar ${esc(c.name)}</h2><p class="auth-sub">Para proteger a las comunidades y evitar suplantaciones, primero debes iniciar sesión.</p><a class="btn" href="#login" style="width:100%;text-align:center">Iniciar sesión</a><p class="auth-alt"><a href="#registro">Crear cuenta ORIGEN</a></p></div></div>`;
+    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">RECLAMACIÓN DE PERFIL</p><h1>¿Representas a ${esc(c.name)}?</h1><p class="lead">La gestión no se transfiere automáticamente. ORIGEN revisará que tengas autoridad para representar a esta persona, comunidad, negocio u organización.</p></div></section><section class="section"><div class="section-inner" style="max-width:820px"><form id="claim-form" class="form-grid" data-profile-ref="${c.id}"><div class="form-field"><label>Tu nombre completo *</label><input name="claimant_name" value="${esc(user.name || '')}" required></div><div class="form-field"><label>Cargo o relación *</label><input name="relationship_role" required placeholder="Fundadora, gerente, representante autorizado…"></div><div class="form-field"><label>Correo oficial *</label><input type="email" name="official_email" value="${esc(user.email || '')}" required></div><div class="form-field"><label>Web o red social oficial</label><input name="official_url" placeholder="https://"></div><div class="form-field full"><label>¿Cómo podemos verificar tu autoridad? *</label><textarea name="explanation" rows="4" required></textarea></div><div class="form-field full"><label><input type="checkbox" name="authority" required> Declaro que estoy autorizado/a para solicitar la gestión de este perfil.</label></div><div id="claim-status" class="form-field full" aria-live="polite"></div><div class="form-field full"><button class="btn" type="submit" style="width:100%">Enviar solicitud para revisión</button></div></form></div></section>${footer()}`;
+  }
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
     const user    = me();
-    const profile = DB.users()[id];
+    const profile = (user && user.id === id) ? user : normalisePublicProvider((window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id));
     if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
-    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const myFollows = user ? remoteFollowRefs() : [];
     const isMe      = !!(user && user.id === id);
     const following = myFollows.includes(id);
-    const followsMap = DB.follows();
-    const follCount  = Object.values(followsMap).filter(list => list.includes(id)).length;
-    const followCount = (followsMap[id] || []).length;
+    const ownedCultural = (window.ORIGEN_API?.cache?.culturalProfiles || []).find(cp => cp.owner_id === id);
+    const follCount = ownedCultural?.follower_count || 0;
+    const followCount = isMe ? remoteFollowRefs().length : 0;
     const uPosts = allPosts().filter(p => p.authorId === id);
     return `<section class="profile-hero">
       ${profile.cover
@@ -875,6 +872,7 @@
     <section class="profile-layout">
       <div>
         ${profile.story ? `<div class="profile-story"><p class="eyebrow">HISTORIA CULTURAL</p><p>${esc(profile.story)}</p></div>` : ''}
+        ${profile.accountType === 'creator' ? `<section class="provider-professional"><div class="provider-prof-head"><div><p class="eyebrow">PERFIL PROFESIONAL CULTURAL</p><h2>${esc(profile.providerHeadline || 'Servicios y conocimiento cultural')}</h2></div>${profile.website ? `<a class="btn secondary" href="${esc(safeExternalUrl(profile.website))}" target="_blank" rel="noopener noreferrer">Visitar sitio web ↗</a>` : ''}</div>${profile.serviceDescription ? `<p class="provider-prof-copy">${esc(profile.serviceDescription)}</p>` : ''}${profile.services && profile.services.length ? `<div class="service-grid">${profile.services.map(service => `<div class="service-chip">${esc(service)}</div>`).join('')}</div>` : `<p class="form-note">Añade tus servicios, talleres, experiencias o conocimientos desde “Editar perfil”.</p>`}<div class="provider-contact-row">${profile.publicEmail ? `<a href="mailto:${esc(profile.publicEmail)}">✉ ${esc(profile.publicEmail)}</a>` : ''}${profile.publicWhatsapp ? `<span>WhatsApp: ${esc(profile.publicWhatsapp)}</span>` : ''}</div></section>` : ''}
         ${profile.categories && profile.categories.length ? `<div class="creator-tags" style="margin:18px 0">${profile.categories.map(cat => `<span>${esc(cat)}</span>`).join('')}</div>` : ''}
         <div style="margin-top:40px">
           <p class="eyebrow">PUBLICACIONES (${uPosts.length})</p>
@@ -910,7 +908,7 @@
   function savedView() {
     const user = me();
     if (!user) { go('login'); return ''; }
-    const saves = DB.saves()[user.id] || [];
+    const saves = window.ORIGEN_API?.cache?.saves || [];
     const saved = allPosts().filter(p => saves.includes(p.id));
     return `<section class="page-hero">
       <div class="section-inner">
@@ -934,8 +932,22 @@
     const user = me();
     if (!user) { go('login'); return ''; }
     const d = state.createData;
-    const types = [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
+    const isProvider = user.accountType === 'creator';
+    const types = isProvider
+      ? [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video']]
+      : [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
     const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const PURPOSES = [
+      ['education','Educación cultural'],
+      ['history','Historia y memoria'],
+      ['technique','Técnica / proceso'],
+      ['territory','Territorio'],
+      ['language','Lengua'],
+      ['gastronomy','Gastronomía'],
+      ['arts','Artes / expresión'],
+      ['heritage','Patrimonio'],
+      ['community','Comunidad']
+    ];
     const hasMedia = d.media && d.media.length > 0;
 
     return `<section class="page-hero" style="min-height:220px">
@@ -954,24 +966,26 @@
             ${hasMedia
               ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${src}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
-            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/*' : 'image/*'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
+            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
         <form class="form-grid" id="create-form">
+          ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">FEED CULTURAL Y EDUCATIVO</p><p>Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.</p></div>` : ''}
           <div class="form-field full"><label>Título *</label><input name="title" required placeholder="Un título que invite a descubrir" value="${esc(d.title || '')}"></div>
           <div class="form-field full"><label>Descripción *</label><textarea name="description" rows="4" required placeholder="Comparte el contexto, la historia o el significado cultural...">${esc(d.description || '')}</textarea></div>
           <div class="form-field"><label>Categoría cultural</label><select name="category">${CATS.map(c => `<option${d.category === c ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
+          <div class="form-field"><label>Propósito cultural *</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
           <div class="form-field"><label>Territorio</label><input name="territory" placeholder="Ciudad, región o país" value="${esc(d.territory || '')}"></div>
           <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
           <div class="form-field full">
             <button class="btn" type="submit" style="width:100%">Publicar →</button>
-            <p class="form-note" style="margin-top:12px">Publicación guardada en esta demo funcional. La versión productiva conectará con Supabase Storage.</p>
+            <p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>
           </div>
         </form>
       </div>
       <div class="create-preview-wrap">
         <p class="eyebrow" style="margin-bottom:16px">VISTA PREVIA</p>
         ${d.title || hasMedia
-          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
           : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
       </div>
     </div>`;
@@ -993,14 +1007,14 @@
       <div class="upload-section">
         <div class="upload-zone" id="edit-avatar-zone">
           ${user.avatar ? `<img src="${user.avatar}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
-          <input type="file" id="edit-avatar-input" accept="image/*" style="display:none">
+          <input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>
         </div>
         <div class="upload-zone wide" id="edit-cover-zone">
           ${user.cover
             ? `<img src="${user.cover}" class="edit-cover-preview" alt="Portada">`
             : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
-          <input type="file" id="edit-cover-input" accept="image/*" style="display:none">
+          <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>
         </div>
       </div>
@@ -1012,7 +1026,8 @@
           <label>Categorías culturales</label>
           <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${userCats.includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
         </div>
-        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES SOCIALES</p>
+        ${user.accountType === 'creator' ? `<p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">PERFIL PROFESIONAL CULTURAL</p><div class="form-field full"><label>Titular profesional</label><input name="providerHeadline" maxlength="180" value="${esc(user.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((user.services || []).join(', '))}" placeholder="Talleres, piezas por encargo, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Explica qué ofreces, para quién y cómo pueden contactarte.">${esc(user.serviceDescription || '')}</textarea></div>` : ''}
+        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES Y CONTACTO</p>
         ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo'],['web','Sitio web']].map(([k, label]) =>
           `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(user.links && user.links[k] ? user.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
         <div class="form-field full">
@@ -1047,8 +1062,8 @@
       body = `<div class="atype-grid">
         <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
           <span class="atype-icon">◈</span>
-          <h3>Agente Cultural</h3>
-          <p>Persona que practica, comparte, transmite o contribuye activamente a mantener viva una expresión, conocimiento o práctica cultural.</p>
+          <h3>Proveedor Cultural</h3>
+          <p>Persona, comunidad, negocio u organización que preserva, enseña, comparte u ofrece servicios vinculados a la cultura.</p>
         </button>
         <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
           <span class="atype-icon">◎</span>
@@ -1060,21 +1075,22 @@
       body = `<form class="form-grid" id="reg-basic">
         <div class="form-field"><label>Nombre completo *</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
         <div class="form-field"><label>Correo electrónico *</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
-        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="6"></div>
+        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
         <div class="form-field"><label>País y ciudad *</label><input name="location" required placeholder="Quito, Ecuador" value="${esc(d.location || '')}"></div>
       </form>`;
     } else if (step === 3) {
       body = `<div class="upload-section">
         <div class="upload-zone" id="reg-avatar-zone">
           ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="Foto de perfil">` : `<div class="upload-placeholder"><span>+</span><p>Foto de perfil</p><small>Opcional</small></div>`}
-          <input type="file" id="reg-avatar-input" accept="image/*" style="display:none">
+          <input type="file" id="reg-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">Subir foto de perfil</button>
         </div>
         <div class="upload-zone wide" id="reg-cover-zone">
           ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="Portada">` : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p><small>Opcional</small></div>`}
-          <input type="file" id="reg-cover-input" accept="image/*" style="display:none">
+          <input type="file" id="reg-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">Subir portada</button>
         </div>
+        <p class="form-note" style="width:100%;max-width:760px">Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.</p>
       </div>`;
     } else if (step === 4) {
       body = `<form class="form-grid" id="reg-story">
@@ -1083,12 +1099,20 @@
           <label>Categorías culturales</label>
           <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${(d.categories || []).includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
         </div>
+        ${d.accountType === 'creator' ? `<div class="form-field full"><label>¿Qué ofreces como Agente Cultural?</label><input name="providerHeadline" maxlength="180" value="${esc(d.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((d.services || []).join(', '))}" placeholder="Talleres, artesanía, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de tus servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Describe cómo aportas valor cultural y cómo pueden conocerte o contratarte.">${esc(d.serviceDescription || '')}</textarea></div>` : ''}
       </form>`;
     } else if (step === 5) {
       body = `<form class="form-grid" id="reg-social">
         <p class="form-note full" style="grid-column:1/-1">Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.</p>
         ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo electrónico'],['web','Sitio web']].map(([k, label]) =>
           `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+        <div class="form-field full legal-consent">
+          <label class="legal-check">
+            <input type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
+            <span>Acepto los <a href="#confianza">Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2</a> de ORIGEN.</span>
+          </label>
+          <p class="form-note">Puedes revisar el Centro de confianza antes de crear tu cuenta.</p>
+        </div>
       </form>`;
     }
 
@@ -1120,35 +1144,108 @@
           <div id="login-error" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">Correo o contraseña incorrectos.</p></div>
           <div class="form-field full"><button class="btn" type="submit" style="width:100%">Entrar</button></div>
         </form>
+        <p class="auth-alt"><a href="#recuperar">¿Olvidaste tu contraseña?</a></p>
         <p class="auth-alt">¿No tienes cuenta? <a href="#registro">Crear perfil cultural</a></p>
         <p class="auth-alt"><a href="#explorar" style="color:#888">Explorar sin cuenta →</a></p>
       </div>
     </div>`;
   }
 
+
+  function recoverPasswordView() {
+    return `<div class="auth-page"><div class="auth-card">
+      <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+      <h2>Recuperar contraseña</h2>
+      <p class="auth-sub">Te enviaremos un enlace seguro para restablecerla.</p>
+      <form class="form-grid" id="recover-form">
+        <div class="form-field full"><label>Correo electrónico</label><input type="email" name="email" required autocomplete="email"></div>
+        <div id="recover-status" class="form-field full" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">Enviar enlace</button></div>
+      </form>
+      <p class="auth-alt"><a href="#login">← Volver a iniciar sesión</a></p>
+    </div></div>`;
+  }
+
+  function resetPasswordView() {
+    return `<div class="auth-page"><div class="auth-card">
+      <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+      <h2>Nueva contraseña</h2>
+      <p class="auth-sub">Crea una contraseña nueva para tu cuenta ORIGEN.</p>
+      <form class="form-grid" id="reset-password-form">
+        <div class="form-field full"><label>Nueva contraseña</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+        <div id="reset-status" class="form-field full" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">Guardar nueva contraseña</button></div>
+      </form>
+    </div></div>`;
+  }
+
   /* ── PASSPORT ────────────────────────────────────────────── */
   function passportView() {
     const user = me();
-    const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
-    const foll = JSON.parse(localStorage.getItem('origen-following') || '[]');
-    const name = user ? user.name : 'Anabel Borja';
+    const favs = remoteFavoriteRefs();
+    const foll = remoteFollowRefs();
+    const name = user ? user.name : 'Explorador Cultural';
     const init = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    const collectedRefs = new Set([...favs, ...foll]);
+    const collected = directoryProfiles().filter(p => collectedRefs.has(p.id) || collectedRefs.has(p.slug));
+    const countries = [...new Set(collected.map(p => p.country || (p.location || '').split(',').pop()?.trim()).filter(Boolean))];
+    const cultures = [...new Set(collected.flatMap(p => p.categories || [p.category]).filter(Boolean))];
+
+    const score = collected.length + (countries.length * 2) + cultures.length;
+    const levels = [
+      { name:'Semilla', min:0, next:3 },
+      { name:'Caminante Cultural', min:3, next:7 },
+      { name:'Cartógrafo Cultural', min:7, next:12 },
+      { name:'Explorador Global', min:12, next:20 },
+      { name:'Conector Cultural', min:20, next:null }
+    ];
+    const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
+    const progress = level.next ? Math.max(0, Math.min(100, Math.round(((score - level.min) / (level.next - level.min)) * 100))) : 100;
+
+    const badge = (unlocked, mark, title, body) => `
+      <div class="badge${unlocked ? ' unlocked' : ' locked'}">
+        <div class="badge-mark"><span>${unlocked ? mark : '○'}</span></div>
+        <h3>${title}</h3>
+        <p>${body}</p>
+      </div>`;
+
     return `<section class="passport-page"><div class="passport-shell">
-      <div class="section-head"><div><p class="eyebrow">TRAYECTORIA INTERCULTURAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${t('passportSub')}</p></div>
+      <div class="section-head"><div><p class="eyebrow">COLECCIÓN CULTURAL GLOBAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>Tu Pasaporte Cultural crece cuando descubres, guardas y sigues cultura viva. El progreso premia aprendizaje y diversidad, no tiempo de pantalla.</p></div>
+
       <article class="passport-card">
-        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>OC-EC-0001</div></div>
-        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'AGENTE CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
+        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>COLECCIÓN PERSONAL</div></div>
+        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'AGENTE CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Explorando cultura viva alrededor del mundo'}</p></div></div>
         <div class="passport-progress">
-          <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
-          <div class="progress-stat"><strong>${foll.length}</strong><span>Agentes seguidos</span></div>
-          <div class="progress-stat"><strong>${user ? DB.posts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
+          <div class="progress-stat"><strong>${collected.length}</strong><span>Perfiles en tu colección</span></div>
+          <div class="progress-stat"><strong>${countries.length}</strong><span>Países descubiertos</span></div>
+          <div class="progress-stat"><strong>${cultures.length}</strong><span>Categorías culturales</span></div>
         </div>
       </article>
-      <div class="level-section"><p class="eyebrow">NIVEL CULTURAL</p><h2>Semilla · Nivel 1</h2><div class="level-track"><div class="level-fill"></div></div><p>34% para alcanzar el nivel Caminante Cultural.</p>
+
+      <div class="level-section">
+        <p class="eyebrow">NIVEL DE EXPLORACIÓN</p>
+        <h2>${level.name}</h2>
+        <div class="level-track"><div class="level-fill" style="width:${progress}%"></div></div>
+        <p>${level.next ? `${progress}% hacia el siguiente nivel. Cada nueva cultura, territorio o categoría suma a tu recorrido.` : 'Has alcanzado el nivel más alto de esta primera colección.'}</p>
+
+        <div class="collection-strip">
+          <div><strong>${countries.length || 0}</strong><span>Sellos de país</span></div>
+          <div><strong>${cultures.length || 0}</strong><span>Colecciones temáticas</span></div>
+          <div><strong>${favs.length}</strong><span>Memorias guardadas</span></div>
+        </div>
+
+        ${countries.length ? `<div class="passport-stamps"><p class="eyebrow">MIS SELLOS</p><div class="creator-tags">${countries.map(country => `<span>⌖ ${esc(country)}</span>`).join('')}</div></div>` : ''}
+
         <div class="badges">
-          <div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Agentes Culturales para desbloquearla.</p></div>
+          ${badge(collected.length >= 1, '⌖', 'Primer descubrimiento', collected.length >= 1 ? 'Guardaste o seguiste tu primer perfil cultural.' : 'Descubre y guarda tu primer perfil cultural.')}
+          ${badge(collected.length >= 3, '◇', 'Coleccionista curioso', collected.length >= 3 ? 'Ya reuniste tres perfiles culturales.' : 'Reúne tres perfiles culturales en tu Pasaporte.')}
+          ${badge(countries.length >= 2, '◎', 'Cruce de fronteras', countries.length >= 2 ? 'Tu colección ya conecta al menos dos países.' : 'Descubre cultura de al menos dos países.')}
+        </div>
+
+        <div class="passport-philosophy">
+          <p class="eyebrow">JUGAR SIN PERDER EL EQUILIBRIO</p>
+          <p>ORIGEN puede usar colecciones, niveles, sellos y retos culturales. No premiamos permanecer conectado más tiempo y evitamos castigar al usuario por tomarse días de descanso.</p>
         </div>
       </div>
     </div></section>${footer()}`;
@@ -1162,7 +1259,7 @@
       ['Autonomía','Cada perfil conserva sus canales, decisiones, historia e identidad.'],
       ['Conexión global','La plataforma conecta culturas con públicos, aliados y oportunidades internacionales.'],
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
-      ['Soberanía narrativa','Cada agente cultural decide qué mostrar, qué reservar y cómo ser contactado.']
+      ['Soberanía narrativa','Cada creador decide qué mostrar, qué reservar y cómo ser contactado.']
     ];
     return `<section class="page-hero" style="background:var(--black);color:var(--white)">
       <div class="section-inner"><p class="eyebrow">PROPÓSITO · ÉTICA · ESCALA</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div>
@@ -1175,9 +1272,29 @@
       <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Agentes Culturales</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Proveedores Culturales</span></div>
         <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
         <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
+      </div>
+    </div></section>${footer()}`;
+  }
+
+  /* ── TRUST CENTER ───────────────────────────────────────── */
+  function trustCenterView() {
+    const trust = window.ORIGEN_TRUST;
+    if (!trust) return `<section class="section"><div class="section-inner"><h2>Centro de confianza no disponible</h2></div></section>`;
+    return `<section class="page-hero trust-hero"><div class="section-inner">
+      <p class="eyebrow">CONFIANZA · PRIVACIDAD · CULTURA</p>
+      <h1>Centro de confianza</h1>
+      <p class="lead">Lo esencial para entender cómo ORIGEN cuida tu cuenta, tus datos, el contenido cultural y la comunidad.</p>
+      <div class="trust-meta"><span>${esc(trust.version)}</span><span>${esc(trust.updated)}</span></div>
+    </div></section>
+    <section class="section trust-section"><div class="section-inner trust-layout">
+      <aside class="trust-nav">${trust.sections.map(s => `<a href="#trust-${s.id}">${esc(s.title)}</a>`).join('')}</aside>
+      <div class="trust-content">
+        <div class="trust-status"><strong>Estado beta</strong><p>${esc(trust.status)}</p></div>
+        ${trust.sections.map(s => `<article class="trust-card" id="trust-${s.id}"><p class="eyebrow">${esc(s.title)}</p>${s.body.map(p => `<p>${esc(p)}</p>`).join('')}</article>`).join('')}
+        <article class="trust-card trust-contact"><p class="eyebrow">CONTACTO</p><h2>Ayuda, reportes y solicitudes</h2><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
       </div>
     </div></section>${footer()}`;
   }
@@ -1205,6 +1322,7 @@
     else if (route === 'explorar')                html = exploreView();
     else if (route === 'mundo')                   html = mundoView();
     else if (route.startsWith('perfil/'))         html = creatorProfileView(route.split('/')[1]);
+    else if (route.startsWith('reclamar/'))        html = claimProfileView(route.split('/')[1]);
     else if (route.startsWith('usuario/'))        html = userProfileView(route.split('/')[1]);
     else if (route === 'mi-perfil')               html = myProfileView();
     else if (route === 'editar-perfil')           html = editProfileView();
@@ -1212,8 +1330,11 @@
     else if (route === 'crear')                   html = createPostView();
     else if (route === 'registro')                html = registerView();
     else if (route === 'login')                   html = loginView();
+    else if (route === 'recuperar')               html = recoverPasswordView();
+    else if (route === 'restablecer')             html = resetPasswordView();
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
+    else if (route === 'confianza')                html = trustCenterView();
     else                                          html = isAuth() ? feedView() : landingView();
 
     $app.innerHTML = html;
@@ -1228,9 +1349,13 @@
   function bindAll(route) {
     bindPostInteractions();
     bindFavorites();
+    if (document.getElementById('feed-posts')) bindFeedExperience();
     if (route === 'explorar')      bindExplore();
+    if (route.startsWith('reclamar/')) bindClaimProfile();
     if (route === 'registro')      bindRegister();
     if (route === 'login')         bindLogin();
+    if (route === 'recuperar')     bindRecoverPassword();
+    if (route === 'restablecer')   bindResetPassword();
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
     if (route === 'mundo')         bindMundo();
@@ -1255,7 +1380,7 @@
         <div class="mundo-header">
           <p class="eyebrow">EXPLORACIÓN CULTURAL</p>
           <h1 class="mundo-title">Mundo Cultural</h1>
-          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus agentes culturales.</p>
+          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus proveedores.</p>
         </div>
         <div class="mundo-body">
           <div class="mundo-globe-wrap">
@@ -1279,7 +1404,7 @@
             <div class="panel-welcome">
               <div class="panel-welcome-icon">◎</div>
               <h3>Selecciona un territorio</h3>
-              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.</p>
+              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los proveedores registrados en Origen Cultural.</p>
               <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
               <div class="featured-countries">
                 ${featured.map(f => `<button class="featured-country" data-fc="${f.key}"><span>${f.flag}</span><span>${f.name}</span></button>`).join('')}
@@ -1353,41 +1478,44 @@
   function bindPostInteractions() {
     /* likes */
     document.querySelectorAll('[data-like]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para dar me gusta.'); go('login'); return; }
-        const pid  = btn.dataset.like;
-        const user = me();
-        const lks  = DB.likes();
-        if (!lks[pid]) lks[pid] = [];
-        const idx = lks[pid].indexOf(user.id);
-        if (idx === -1) lks[pid].push(user.id); else lks[pid].splice(idx, 1);
-        DB.setLikes(lks);
-        rerenderPost(pid);
+        const pid = btn.dataset.like;
+        try {
+          await window.ORIGEN_API.toggleLike(pid);
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar el me gusta.');
+        }
       });
     });
 
     /* toggle comments */
     document.querySelectorAll('[data-tcoms]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const pid = btn.dataset.tcoms;
-        state.openComments.has(pid) ? state.openComments.delete(pid) : state.openComments.add(pid);
+        if (state.openComments.has(pid)) {
+          state.openComments.delete(pid);
+        } else {
+          state.openComments.add(pid);
+          try { await window.ORIGEN_API.listComments(pid); } catch (_) {}
+        }
         rerenderPost(pid);
       });
     });
 
     /* saves */
     document.querySelectorAll('[data-save]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para guardar publicaciones.'); go('login'); return; }
-        const pid  = btn.dataset.save;
-        const user = me();
-        const svs  = DB.saves();
-        if (!svs[user.id]) svs[user.id] = [];
-        const idx = svs[user.id].indexOf(pid);
-        if (idx === -1) { svs[user.id].push(pid); showToast('Publicación guardada.'); }
-        else            { svs[user.id].splice(idx, 1); showToast('Publicación eliminada de guardados.'); }
-        DB.setSaves(svs);
-        rerenderPost(pid);
+        const pid = btn.dataset.save;
+        try {
+          const added = await window.ORIGEN_API.toggleSavePost(pid);
+          showToast(added ? 'Publicación guardada.' : 'Publicación eliminada de guardados.');
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar tus guardados.');
+        }
       });
     });
 
@@ -1402,7 +1530,27 @@
 
     /* report */
     document.querySelectorAll('[data-report]').forEach(btn => {
-      btn.addEventListener('click', () => showToast('Reporte enviado. Gracias por ayudarnos a mantener la comunidad.'));
+      btn.addEventListener('click', async () => {
+        if (!isAuth()) {
+          showToast('Inicia sesión para enviar un reporte.');
+          go('login');
+          return;
+        }
+        const reason = window.prompt('¿Cuál es el motivo del reporte? Describe el problema brevemente.');
+        if (!reason || !reason.trim()) return;
+        const details = window.prompt('Puedes añadir más contexto (opcional).') || '';
+        try {
+          await window.ORIGEN_API.report({
+            target_type: 'post',
+            target_id: btn.dataset.report,
+            reason: reason.trim().slice(0, 500),
+            details: details.trim().slice(0, 6000)
+          });
+          showToast('Reporte recibido. Gracias por ayudarnos a cuidar ORIGEN.');
+        } catch (error) {
+          showToast(error.message || 'No pudimos enviar el reporte.');
+        }
+      });
     });
 
     /* more (···) */
@@ -1410,13 +1558,12 @@
       btn.addEventListener('click', () => {
         const pid  = btn.dataset.pmore;
         const user = me();
-        const post = DB.posts().find(p => p.id === pid);
+        const post = allPosts().find(p => p.id === pid);
         if (user && post && post.authorId === user.id) {
           if (confirm('¿Eliminar esta publicación?')) {
-            const updated = DB.posts().filter(p => p.id !== pid);
-            DB.setPosts(updated);
-            showToast('Publicación eliminada.');
-            render(currentRoute(), false);
+            window.ORIGEN_API.deletePost(pid)
+              .then(() => { showToast('Publicación eliminada.'); render(currentRoute(), false); })
+              .catch(error => showToast(error.message || 'No pudimos eliminar la publicación.'));
           }
         } else {
           showToast('Reportar o guardar este perfil para no ver más contenido similar.');
@@ -1447,17 +1594,17 @@
 
     /* comment forms */
     document.querySelectorAll('[data-cf]').forEach(form => {
-      form.addEventListener('submit', e => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
-        const pid  = form.dataset.cf;
+        const pid = form.dataset.cf;
         const text = new FormData(form).get('text').trim();
         if (!text || !isAuth()) return;
-        const user = me();
-        const coms = DB.comments();
-        if (!coms[pid]) coms[pid] = [];
-        coms[pid].push({ id: uid(), authorId: user.id, text, ts: new Date().toISOString() });
-        DB.setComments(coms);
-        rerenderPost(pid);
+        try {
+          await window.ORIGEN_API.addComment(pid, text);
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos publicar el comentario.');
+        }
       });
     });
 
@@ -1467,6 +1614,59 @@
         if (!isAuth()) { e.stopPropagation(); showToast('Inicia sesión para interactuar.'); go('login'); }
       }, true);
     });
+  }
+
+  function bindFeedExperience() {
+    bindFeedVideos();
+
+    const sentinel = document.getElementById('feed-sentinel');
+    if (!sentinel || window.ORIGEN_API?.cache?.postsExhausted) return;
+
+    const observer = new IntersectionObserver(async entries => {
+      if (!entries.some(entry => entry.isIntersecting) || state.feedLoading) return;
+      state.feedLoading = true;
+      sentinel.setAttribute('aria-busy', 'true');
+      const y = window.scrollY;
+      try {
+        await window.ORIGEN_API.loadMorePosts();
+        render(currentRoute(), false);
+        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
+      } catch (error) {
+        showToast(error.message || 'No pudimos cargar más publicaciones.');
+      } finally {
+        state.feedLoading = false;
+      }
+    }, { rootMargin: '500px 0px', threshold: 0.01 });
+
+    observer.observe(sentinel);
+  }
+
+  function bindFeedVideos() {
+    const videos = [...document.querySelectorAll('.post-media video')];
+    if (!videos.length) return;
+
+    const pauseOthers = active => {
+      videos.forEach(video => { if (video !== active && !video.paused) video.pause(); });
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+          pauseOthers(video);
+          video.muted = true;
+          const playPromise = video.play();
+          if (playPromise?.catch) playPromise.catch(() => {});
+        } else if (!video.paused) {
+          video.pause();
+        }
+      });
+    }, { threshold: [0, .3, .7, 1] });
+
+    videos.forEach(video => observer.observe(video));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) videos.forEach(video => video.pause());
+    }, { once: true });
   }
 
   /* Re-render a single post card in place */
@@ -1491,15 +1691,26 @@
   /* Favorites (directory profiles) */
   function bindFavorites() {
     document.querySelectorAll('[data-favorite]').forEach(btn => {
-      btn.addEventListener('click', e => {
+      btn.addEventListener('click', async e => {
         e.preventDefault(); e.stopPropagation();
-        const id   = btn.dataset.favorite;
-        const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
-        const idx  = favs.indexOf(id);
-        if (idx === -1) { favs.push(id); showToast('Perfil guardado en tu Pasaporte Cultural.'); }
-        else            { favs.splice(idx, 1); showToast('Perfil eliminado de guardados.'); }
-        localStorage.setItem('origen-favorites', JSON.stringify(favs));
-        render(currentRoute(), false);
+        if (!isAuth()) { showToast('Inicia sesión para guardar perfiles.'); go('login'); return; }
+        const ref = btn.dataset.favorite;
+        try {
+          const id = await culturalProfileId(ref);
+          if (!id) throw new Error('Perfil cultural no encontrado.');
+          const exists = window.ORIGEN_API.cache.favorites.includes(id);
+          const uid = me().id;
+          const query = exists
+            ? window.ORIGEN_API.client.from('favorites').delete().eq('user_id', uid).eq('cultural_profile_id', id)
+            : window.ORIGEN_API.client.from('favorites').insert({ user_id: uid, cultural_profile_id: id });
+          const { error } = await query;
+          if (error) throw error;
+          await window.ORIGEN_API.myFavorites();
+          showToast(exists ? 'Perfil eliminado de guardados.' : 'Perfil guardado en tu Pasaporte Cultural.');
+          render(currentRoute(), false);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar tus guardados.');
+        }
       });
     });
   }
@@ -1507,29 +1718,29 @@
   /* Follow buttons (user or creator) */
   function bindFollowButtons() {
     document.querySelectorAll('[data-fuser]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para seguir.'); go('login'); return; }
-        const targetId = btn.dataset.fuser;
-        const user     = me();
-        const follows  = DB.follows();
-        if (!follows[user.id]) follows[user.id] = [];
-        const idx = follows[user.id].indexOf(targetId);
-        if (idx === -1) {
-          follows[user.id].push(targetId);
-          btn.textContent = 'Siguiendo'; btn.classList.add('on');
-          showToast('¡Ahora sigues este perfil cultural!');
-        } else {
-          follows[user.id].splice(idx, 1);
-          btn.textContent = '+ Seguir'; btn.classList.remove('on');
-          showToast('Dejaste de seguir este perfil.');
+        const ref = btn.dataset.fuser;
+        try {
+          const id = await culturalProfileId(ref);
+          if (!id) {
+            showToast('Este seguimiento todavía no está disponible para este tipo de perfil.');
+            return;
+          }
+          const exists = window.ORIGEN_API.cache.follows.includes(id);
+          const uid = me().id;
+          const query = exists
+            ? window.ORIGEN_API.client.from('follows').delete().eq('user_id', uid).eq('cultural_profile_id', id)
+            : window.ORIGEN_API.client.from('follows').insert({ user_id: uid, cultural_profile_id: id });
+          const { error } = await query;
+          if (error) throw error;
+          await window.ORIGEN_API.myFollows();
+          btn.textContent = exists ? '+ Seguir' : 'Siguiendo';
+          btn.classList.toggle('on', !exists);
+          showToast(exists ? 'Dejaste de seguir este perfil.' : '¡Ahora sigues este perfil cultural!');
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar el seguimiento.');
         }
-        DB.setFollows(follows);
-        // Also sync with legacy localStorage
-        const legFoll = JSON.parse(localStorage.getItem('origen-following') || '[]');
-        const legIdx  = legFoll.indexOf(targetId);
-        if (idx === -1 && legIdx === -1) legFoll.push(targetId);
-        else if (idx !== -1 && legIdx !== -1) legFoll.splice(legIdx, 1);
-        localStorage.setItem('origen-following', JSON.stringify(legFoll));
       });
     });
   }
@@ -1558,6 +1769,28 @@
     if (clearBtn) clearBtn.addEventListener('click', () => { state.query = ''; state.activeCategory = 'Todos'; render('explorar', false); });
   }
 
+  function bindClaimProfile() {
+    const form = document.getElementById('claim-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const status = document.getElementById('claim-status');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Enviando…'; }
+      try {
+        const profileId = await culturalProfileId(form.dataset.profileRef);
+        if (!profileId) throw new Error('No encontramos el perfil de referencia en la base de datos.');
+        const fd = Object.fromEntries(new FormData(form));
+        await window.ORIGEN_API.submitClaim({ cultural_profile_id: profileId, claimant_name: fd.claimant_name, relationship_role: fd.relationship_role, official_email: fd.official_email, official_url: fd.official_url, explanation: fd.explanation });
+        if (status) status.textContent = 'Solicitud recibida. Estado: pendiente de revisión.';
+        if (submit) submit.textContent = 'Solicitud enviada';
+        showToast('Solicitud de reclamación enviada.');
+      } catch (error) {
+        if (status) status.textContent = error.message || 'No pudimos enviar la solicitud.';
+        if (submit) { submit.disabled = false; submit.textContent = 'Enviar solicitud para revisión'; }
+      }
+    });
+  }
   /* Login */
   function bindLogin() {
     const form = document.getElementById('login-form');
@@ -1567,17 +1800,53 @@
       const { email, password } = Object.fromEntries(new FormData(form));
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = 'Entrando…'; }
-      const result = await doLogin(email, password);
-      if (result.ok) {
+      try {
+        await doLogin(email, password);
         updateShell();
         go('feed');
-      } else {
+      } catch (error) {
         const err = document.getElementById('login-error');
         if (err) {
-          err.innerHTML = `<p style="color:#c0392b;font-size:13px">${esc(result.error || 'No pudimos iniciar sesión.')}</p>`;
           err.style.display = 'block';
+          const p = err.querySelector('p');
+          if (p) p.textContent = error.message || 'No pudimos iniciar sesión.';
         }
+      } finally {
         if (submit) { submit.disabled = false; submit.textContent = 'Entrar'; }
+      }
+    });
+  }
+
+
+  function bindRecoverPassword() {
+    const form = document.getElementById('recover-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = new FormData(form).get('email');
+      const status = document.getElementById('recover-status');
+      try {
+        await window.ORIGEN_API.resetPassword(email);
+        if (status) status.textContent = 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.';
+      } catch (error) {
+        if (status) status.textContent = error.message || 'No pudimos enviar el enlace.';
+      }
+    });
+  }
+
+  function bindResetPassword() {
+    const form = document.getElementById('reset-password-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const password = new FormData(form).get('password');
+      const status = document.getElementById('reset-status');
+      try {
+        await window.ORIGEN_API.updatePassword(password);
+        if (status) status.textContent = 'Contraseña actualizada. Ya puedes continuar.';
+        setTimeout(() => go('feed'), 900);
+      } catch (error) {
+        if (status) status.textContent = error.message || 'No pudimos actualizar la contraseña.';
       }
     });
   }
@@ -1610,7 +1879,8 @@
     if (regAvatarInput) {
       regAvatarInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
-        state.regData.avatar = await resizeImg(file, 400);
+        state.regData.avatarFile = file;
+        state.regData.avatar = URL.createObjectURL(file);
         render('registro', false);
       });
     }
@@ -1618,7 +1888,8 @@
     if (regCoverInput) {
       regCoverInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
-        state.regData.cover = await resizeImg(file, 1200);
+        state.regData.coverFile = file;
+        state.regData.cover = URL.createObjectURL(file);
         render('registro', false);
       });
     }
@@ -1648,32 +1919,41 @@
         state.regStep++; render('registro', false);
       } else if (step === 4) {
         const form = document.getElementById('reg-story');
-        if (form) { const fd = Object.fromEntries(new FormData(form)); Object.assign(state.regData, fd); }
+        if (form) {
+          const fd = Object.fromEntries(new FormData(form));
+          Object.assign(state.regData, fd);
+          state.regData.services = fd.services ? fd.services.split(',').map(s => s.trim()).filter(Boolean) : [];
+        }
         state.regStep++; render('registro', false);
       } else if (step === 5) {
         const form = document.getElementById('reg-social');
-        if (form) {
-          const fd = Object.fromEntries(new FormData(form));
-          const links = {};
-          ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-          state.regData.links = links;
+        if (!form || !form.reportValidity()) return;
+        const fd = Object.fromEntries(new FormData(form));
+        const links = {};
+        ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
+        state.regData.links = links;
+        state.regData.acceptedLegal = fd.acceptedLegal === 'on';
+        if (!state.regData.acceptedLegal) {
+          if (errEl) { errEl.textContent = 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.'; errEl.style.display = 'block'; }
+          return;
         }
         nextBtn.disabled = true;
-        nextBtn.textContent = 'Creando perfil…';
+        nextBtn.textContent = 'Creando cuenta…';
         const result = await doRegister(state.regData);
         if (result.ok) {
+          const requiresConfirmation = result.requiresEmailConfirmation;
           state.regStep = 1; state.regData = {};
-          if (result.needsConfirmation) {
-            showToast('Cuenta creada. Revisa tu correo para confirmar tu acceso.', 5000);
+          if (requiresConfirmation) {
+            showToast('Revisa tu correo para confirmar tu cuenta.');
             go('login');
           } else {
-            showToast('¡Bienvenida/o a Origen Cultural!');
+            showToast('¡Bienvenida/o a ORIGEN Cultural!');
             updateShell(); go('feed');
           }
         } else {
+          if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
           nextBtn.disabled = false;
           nextBtn.textContent = 'Crear mi perfil';
-          if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
         }
       }
     });
@@ -1700,12 +1980,16 @@
       });
       mediaInput.addEventListener('change', async e => {
         const files = Array.from(e.target.files || []);
+        if (!files.length) return;
         if (state.createData.type === 'video') {
+          state.createData.files = [files[0]];
           state.createData.media = [URL.createObjectURL(files[0])];
+        } else if (state.createData.type === 'carousel') {
+          state.createData.files = [...(state.createData.files || []), ...files];
+          state.createData.media = [...(state.createData.media || []), ...files.map(file => URL.createObjectURL(file))];
         } else {
-          const resized = await Promise.all(files.map(f => resizeImg(f, 900)));
-          if (state.createData.type === 'carousel') state.createData.media = [...(state.createData.media || []), ...resized];
-          else state.createData.media = resized;
+          state.createData.files = [files[0]];
+          state.createData.media = [URL.createObjectURL(files[0])];
         }
         render('crear', false);
       });
@@ -1721,6 +2005,7 @@
         e.stopPropagation();
         const idx = parseInt(btn.dataset.rmidx, 10);
         state.createData.media.splice(idx, 1);
+        if (state.createData.files) state.createData.files.splice(idx, 1);
         render('crear', false);
       });
     });
@@ -1728,7 +2013,7 @@
     /* form inputs → update preview */
     const form = document.getElementById('create-form');
     if (!form) return;
-    ['title','description','category','territory','tags'].forEach(field => {
+    ['title','description','category','contentPurpose','territory','tags'].forEach(field => {
       const el = form.querySelector(`[name="${field}"]`);
       if (el) el.addEventListener('input', () => {
         state.createData[field] = field === 'tags'
@@ -1741,32 +2026,43 @@
     });
 
     /* submit */
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const user = me(); if (!user) return;
       const fd = Object.fromEntries(new FormData(form));
-      if (state.createData.type !== 'text' && (!state.createData.media || !state.createData.media.length)) {
+      if (user.accountType === 'creator' && state.createData.type === 'text') {
+        showToast('El feed de Proveedores Culturales requiere foto, carrusel o video.'); return;
+      }
+      if (!fd.contentPurpose) {
+        showToast('Selecciona el propósito cultural de la publicación.'); return;
+      }
+      if (state.createData.type !== 'text' && (!state.createData.files || !state.createData.files.length)) {
         showToast('Por favor sube al menos una imagen o video.'); return;
       }
-      const post = {
-        id:          uid(),
-        authorId:    user.id,
-        type:        state.createData.type,
-        media:       state.createData.media || [],
-        title:       fd.title,
-        description: fd.description,
-        category:    fd.category,
-        territory:   fd.territory,
-        tags:        fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
-        timestamp:   new Date().toISOString(),
-        likes:       0,
-      };
-      const posts = DB.posts();
-      posts.unshift(post);
-      DB.setPosts(posts);
-      state.createData = { type: 'photo', media: [], tags: [] };
-      showToast('¡Publicación creada!');
-      go('feed');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
+      try {
+        const uploaded = [];
+        for (let i = 0; i < (state.createData.files || []).length; i++) {
+          uploaded.push(await window.ORIGEN_API.upload('post-media', state.createData.files[i], `post-${i+1}`));
+        }
+        await window.ORIGEN_API.createPost({
+          type: state.createData.type,
+          media: uploaded,
+          title: fd.title,
+          description: fd.description,
+          category: fd.category,
+          contentPurpose: fd.contentPurpose,
+          territory: fd.territory,
+          tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
+        });
+        state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
+        showToast('¡Publicación creada!');
+        go('feed');
+      } catch (error) {
+        showToast(error.message || 'No pudimos crear la publicación.');
+        if (submit) { submit.disabled = false; submit.textContent = 'Publicar →'; }
+      }
     });
   }
 
@@ -1787,18 +2083,20 @@
     const avaInput = document.getElementById('edit-avatar-input');
     if (avaInput) avaInput.addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
-      state.editAvatar = await resizeImg(file, 400);
+      state.editAvatar = file;
+      const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-avatar-zone');
-      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${state.editAvatar}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/*" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
+      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
     });
 
     /* cover upload */
     const covInput = document.getElementById('edit-cover-input');
     if (covInput) covInput.addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
-      state.editCover = await resizeImg(file, 1200);
+      state.editCover = file;
+      const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-cover-zone');
-      if (zone) zone.innerHTML = `<img src="${state.editCover}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/*" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
+      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
     });
 
     /* form submit */
@@ -1806,48 +2104,34 @@
     if (!form) return;
     form.addEventListener('submit', async e => {
       e.preventDefault();
-      const user = me(); if (!user || !SB) return;
+      const user = me(); if (!user) return;
       const fd   = Object.fromEntries(new FormData(form));
       const links = {};
       ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-
-      const submit = form.querySelector('button[type="submit"]');
-      if (submit) { submit.disabled = true; submit.textContent = 'Guardando…'; }
-
       try {
-        let avatarUrl = user.avatar || '';
-        let coverUrl  = user.cover || '';
-        if (state.editAvatar) avatarUrl = await uploadDataUrl('avatars', state.editAvatar, user.id, 'avatar');
-        if (state.editCover)  coverUrl  = await uploadDataUrl('covers',  state.editCover,  user.id, 'cover');
-
-        const patch = {
-          display_name: fd.name || user.name,
-          location: fd.location || '',
-          story: fd.story || '',
+        let avatar = user.avatar;
+        let cover = user.cover;
+        if (state.editAvatar instanceof File) avatar = await window.ORIGEN_API.upload('avatars', state.editAvatar, 'avatar');
+        if (state.editCover instanceof File) cover = await window.ORIGEN_API.upload('covers', state.editCover, 'cover');
+        const updated = await window.ORIGEN_API.updateMyProfile({
+          name: fd.name || user.name,
+          location: fd.location,
+          story: fd.story,
           categories: userCats.list,
           links,
-          avatar_url: avatarUrl || null,
-          cover_url: coverUrl || null,
-        };
-
-        const { data, error } = await SB
-          .from('profiles')
-          .update(patch)
-          .eq('id', user.id)
-          .select('*')
-          .single();
-        if (error) throw error;
-
-        const { data: authData } = await SB.auth.getUser();
-        const updated = toAppUser(data, authData?.user || null);
-        cacheAppUser(updated);
+          accountType: user.accountType,
+          providerHeadline: fd.providerHeadline || '',
+          services: fd.services ? fd.services.split(',').map(s => s.trim()).filter(Boolean) : [],
+          serviceDescription: fd.serviceDescription || '',
+          avatar,
+          cover
+        });
+        state.user = updated;
         state.editAvatar = null; state.editCover = null;
         showToast('¡Perfil actualizado!');
         go('mi-perfil');
-      } catch (err) {
-        console.error(err);
-        showToast('No pudimos guardar el perfil. Inténtalo de nuevo.');
-        if (submit) { submit.disabled = false; submit.textContent = 'Guardar cambios'; }
+      } catch (error) {
+        showToast(error.message || 'No pudimos actualizar tu perfil.');
       }
     });
   }
@@ -1876,6 +2160,85 @@
     showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
   });
 
+  function initDigitalWellbeing() {
+    const dialog = document.getElementById('wellbeing-dialog');
+    if (!dialog) return;
+
+    // Migrate the earlier 30-minute experimental default to the new 120-minute daily target.
+    const stored = Number(localStorage.getItem('origen-wellbeing-minutes'));
+    if (!stored || stored === 30) {
+      state.wellbeingMinutes = 120;
+      localStorage.setItem('origen-wellbeing-minutes', '120');
+    }
+
+    const pauseAllVideos = () => document.querySelectorAll('video').forEach(v => v.pause());
+    const todayKey = () => new Date().toISOString().slice(0, 10);
+
+    const readDaily = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('origen-wellbeing-daily') || '{}');
+        if (saved.date !== todayKey()) return { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+        return {
+          date: saved.date,
+          activeMs: Math.max(0, Number(saved.activeMs) || 0),
+          nextPromptMs: Math.max(Number(saved.nextPromptMs) || 0, state.wellbeingMinutes * 60 * 1000)
+        };
+      } catch {
+        return { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+      }
+    };
+
+    const writeDaily = daily => {
+      localStorage.setItem('origen-wellbeing-daily', JSON.stringify(daily));
+    };
+
+    let daily = readDaily();
+    state.wellbeingNextPromptMs = daily.nextPromptMs;
+    state.wellbeingLastTick = Date.now();
+
+    dialog.querySelector('[data-wellbeing="break"]')?.addEventListener('click', () => {
+      pauseAllVideos();
+      dialog.close();
+      daily.nextPromptMs = daily.activeMs + 30 * 60 * 1000;
+      state.wellbeingNextPromptMs = daily.nextPromptMs;
+      writeDaily(daily);
+      showToast('Contenido en pausa. Vuelve cuando quieras.');
+    });
+
+    dialog.querySelector('[data-wellbeing="snooze"]')?.addEventListener('click', () => {
+      dialog.close();
+      daily.nextPromptMs = daily.activeMs + 15 * 60 * 1000;
+      state.wellbeingNextPromptMs = daily.nextPromptMs;
+      writeDaily(daily);
+    });
+
+    dialog.querySelector('[data-wellbeing="off"]')?.addEventListener('click', () => {
+      state.wellbeingMinutes = 0;
+      localStorage.setItem('origen-wellbeing-minutes', '0');
+      dialog.close();
+      showToast('Recordatorios de bienestar desactivados.');
+    });
+
+    setInterval(() => {
+      const now = Date.now();
+
+      if (daily.date !== todayKey()) {
+        daily = { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+      }
+
+      if (document.visibilityState === 'visible' && state.wellbeingMinutes > 0) {
+        daily.activeMs += Math.max(0, Math.min(now - state.wellbeingLastTick, 60000));
+        if (!dialog.open && daily.activeMs >= daily.nextPromptMs) {
+          pauseAllVideos();
+          dialog.showModal();
+        }
+        writeDaily(daily);
+      }
+
+      state.wellbeingLastTick = now;
+    }, 30000);
+  }
+
   /* Global search */
   const globalSearch = document.getElementById('global-search');
   if (globalSearch) {
@@ -1888,12 +2251,12 @@
   }
   function populateSearch(query) {
     const q = query.toLowerCase().trim();
-    const results = creators.filter(c => !q || [c.name, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q));
+    const results = directoryProfiles().filter(c => !q || [c.name, c.category, c.location, c.short, ...(c.tags || [])].join(' ').toLowerCase().includes(q));
     const resPosts = allPosts().filter(p => q && [p.title, p.description, ...(p.tags || [])].join(' ').toLowerCase().includes(q)).slice(0, 4);
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => `<a class="search-result" href="#perfil/${c.id}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`),
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image || c.avatar || 'assets/logo-mark.svg'}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`; }),
       ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" onclick="document.getElementById('search-dialog').close();state.openComments.clear()"><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
@@ -1909,41 +2272,59 @@
   /* ═══════════════════════════════════════════════════════════
      INIT
   ═══════════════════════════════════════════════════════════ */
+  document.documentElement.lang = state.lang;
+
   async function initApp() {
-    document.documentElement.lang = state.lang;
     try {
-      await hydrateSupabaseSession();
-    } catch (err) {
-      console.warn('No se pudo restaurar la sesión segura:', err);
-      DB.clearSess();
-    }
-    render(currentRoute());
-
-    if (SB) {
-      SB.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          DB.clearSess();
-          return;
-        }
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
-          setTimeout(async () => {
-            try {
-              const appUser = await fetchRemoteProfile(session.user);
-              cacheAppUser(appUser);
-              if (event === 'SIGNED_IN') render(currentRoute(), false);
-            } catch (err) {
-              console.warn('No se pudo sincronizar la sesión:', err);
-            }
-          }, 0);
-        }
-      });
-    }
-
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+      state.user = await window.ORIGEN_API?.restoreSession() || null;
+      const tasks = [
+        window.ORIGEN_API?.listCulturalProfiles(),
+        window.ORIGEN_API?.listPublicProfiles(),
+        window.ORIGEN_API?.listPosts()
+      ];
+      if (state.user) {
+        tasks.push(
+          window.ORIGEN_API?.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API?.myFollows(),
+          window.ORIGEN_API?.myFavorites(),
+          window.ORIGEN_API?.loadPostInteractions()
+        );
+      }
+      await Promise.allSettled(tasks);
+    } catch (error) {
+      console.error('[ORIGEN] Startup error:', error);
+      state.user = null;
+    } finally {
+      state.authReady = true;
+      render(currentRoute());
     }
   }
 
+  window.addEventListener('origen-auth-change', async () => {
+    try {
+      state.user = await window.ORIGEN_API?.restoreSession() || null;
+      if (state.user) {
+        await Promise.allSettled([
+          window.ORIGEN_API?.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API?.listCulturalProfiles(),
+          window.ORIGEN_API?.listPublicProfiles(),
+          window.ORIGEN_API?.myFollows(),
+          window.ORIGEN_API?.myFavorites(),
+          window.ORIGEN_API?.listPosts(),
+          window.ORIGEN_API?.loadPostInteractions()
+        ]);
+      }
+      updateShell();
+    } catch (error) {
+      console.error('[ORIGEN] Auth refresh error:', error);
+    }
+  });
+
+  initDigitalWellbeing();
   initApp();
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+  }
 
 })();
