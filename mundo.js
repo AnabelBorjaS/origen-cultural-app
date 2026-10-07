@@ -1059,7 +1059,7 @@ window.HeroGlobe = (() => {
     if (!db) { hidePopup(); return; }
     const { creators, posts } = stats(key);
     _popup.innerHTML = `
-      <button class="hpop-close" id="hpop-close">×</button>
+      <button class="hpop-close" id="hpop-close" aria-label="Cerrar historia">×</button>
       <div class="hpop-flag">${db.flag}</div>
       <h3 class="hpop-name">${db.name}</h3>
       <p class="hpop-cont">${db.continent}</p>
