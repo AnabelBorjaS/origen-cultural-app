@@ -3,7 +3,7 @@
 // These summaries must remain aligned with the actually deployed product.
 window.ORIGEN_TRUST = {
   version: 'v1.2',
-  updated: '7 October 2026',
+  updated: '8 October 2026',
   status: 'BETA — pendiente de revisión jurídica especializada antes de apertura pública',
   contact: 'info.origencultural@gmail.com',
   sections: [
@@ -31,6 +31,15 @@ window.ORIGEN_TRUST = {
         'La beta utiliza Supabase para autenticación, base de datos y almacenamiento de archivos. Los datos de cuenta pueden incluir correo, nombre, perfil, publicaciones, interacciones, reclamaciones y reportes.',
         'En el navegador usamos almacenamiento local para preferencias como idioma y bienestar digital, y para funciones experimentales del Pasaporte Cultural y seguimiento de territorios durante la beta. La sesión de autenticación puede persistirse localmente mediante Supabase Auth.',
         'No vendemos datos personales a anunciantes. En esta beta no activamos publicidad ni analítica opcional de marketing.'
+      ]
+    },
+    {
+      id: 'privacy-requests',
+      title: 'Solicitudes de privacidad y eliminación de cuenta',
+      body: [
+        'Durante la beta puedes solicitar acceso, corrección o eliminación de datos escribiendo a info.origencultural@gmail.com desde el correo asociado a tu cuenta. ORIGEN puede pedir información razonable para verificar identidad antes de actuar.',
+        'La eliminación de cuenta se procesa de forma controlada para retirar primero archivos propios de Storage y revisar cualquier perfil cultural vinculado antes de eliminar la cuenta de autenticación. No publiques datos personales, documentos de identidad ni evidencia sensible en GitHub o canales públicos.',
+        'Algunos registros pueden conservarse únicamente cuando exista una razón legítima o una obligación aplicable, por ejemplo seguridad, prevención de fraude, resolución de disputas o cumplimiento legal. El alcance y los plazos definitivos serán revisados jurídicamente antes de la apertura pública.'
       ]
     },
     {
