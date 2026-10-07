@@ -115,6 +115,19 @@
       return '';
     }
   }
+  function safeMediaUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^blob:/i.test(raw)) return raw;
+      if (/^data:image\/(?:png|jpe?g|webp);base64,/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.href);
+      if (!['http:','https:'].includes(u.protocol)) return '';
+      return u.href;
+    } catch {
+      return '';
+    }
+  }
   function timeAgo(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
     if (s < 60)     return 'ahora';
@@ -294,7 +307,7 @@
     const init = (profile.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const src  = profile.avatar || profile.image;
     if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
-    return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" data-avatar-fallback="${encodeURIComponent(init)}"></div>`;
+    return `<div class="ava ava-${sz}"><img src="${esc(safeMediaUrl(src) || 'assets/logo-mark.svg')}" alt="${esc(profile.name)}" data-avatar-fallback="${encodeURIComponent(init)}"></div>`;
   }
   function verBadge(p) {
     const verified = p && (p.profileStatus === 'verified' || (p.verified && !p.referenceProfile));
@@ -376,7 +389,7 @@
     if ((post.type === 'photo' || post.type === 'carousel') && post.media && post.media.length) {
       const isCarousel = post.type === 'carousel' && post.media.length > 1;
       media = `<div class="post-media${isCarousel ? ' is-carousel' : ''}" data-pid="${post.id}">
-        <img src="${post.media[cidx]}" alt="${esc(post.title)}" loading="lazy">
+        <img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">
         ${isCarousel ? `
           <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${post.id}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
           ${cidx > 0 ? `<button class="car-btn car-l" data-car="${post.id}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
@@ -385,7 +398,7 @@
         ` : ''}
       </div>`;
     } else if (post.type === 'video' && post.media && post.media.length) {
-      media = `<div class="post-media"><video controls muted playsinline preload="metadata" src="${post.media[0]}" aria-label="${esc(post.title || 'Video cultural')}"></video></div>`;
+      media = `<div class="post-media"><video controls muted playsinline preload="metadata" src="${esc(safeMediaUrl(post.media[0]))}" aria-label="${esc(post.title || 'Video cultural')}"></video></div>`;
     }
 
     const authorHref = author._kind === 'creator' ? `#perfil/${author.id}` : `#usuario/${author.id}`;
@@ -490,14 +503,14 @@
     const image = c.image || c.avatar || 'assets/logo-mark.svg';
     return `<article class="creator-card">
       <div class="creator-card-image">
-        <a href="${href}" aria-label="${t('profile')}: ${c.name}"><img src="${image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
+        <a href="${href}" aria-label="${esc(t('profile'))}: ${esc(c.name)}"><img src="${esc(safeMediaUrl(image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}: ${esc(c.category)}" loading="lazy"></a>
         <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
       </div>
       <div class="creator-card-body">
-        <div class="creator-meta"><span>${c.type}</span><span>${verBadge(c)} ${c.location}</span></div>
-        <h3><a href="${href}">${c.name}</a></h3>
-        <p>${c.short}</p>
-        <div class="creator-tags">${(c.tags || []).map(tg => `<span>${tg}</span>`).join('')}</div>
+        <div class="creator-meta"><span>${esc(c.type)}</span><span>${verBadge(c)} ${esc(c.location)}</span></div>
+        <h3><a href="${href}">${esc(c.name)}</a></h3>
+        <p>${esc(c.short)}</p>
+        <div class="creator-tags">${(c.tags || []).map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
         <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers || 0)} seguidores</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
       </div>
     </article>`;
@@ -735,7 +748,7 @@
           <div><p class="eyebrow">CURADURÍA CULTURAL</p><h2>${t('featured')}</h2></div>
           <div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div>
         </div>
-        <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${c.image}" alt="${c.name}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${c.category} · ${c.location}</div><h3>${c.name}</h3><p>${c.short}</p></div></a>`).join('')}</div>
+        <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
       </div>
     </section>
 
@@ -863,13 +876,13 @@
     const isSaved = favs.includes(c.id);
     const cPosts = allPosts().filter(p => p.authorId === c.id);
     return `<section class="profile-hero">
-      <img class="profile-cover" src="${c.cover}" alt="Portada de ${esc(c.name)}">
+      <img class="profile-cover" src="${esc(safeMediaUrl(c.cover))}" alt="Portada de ${esc(c.name)}">
       <div class="profile-hero-content">
-        <img class="profile-avatar" src="${c.image}" alt="${esc(c.name)}">
+        <img class="profile-avatar" src="${esc(safeMediaUrl(c.image))}" alt="${esc(c.name)}">
         <div class="profile-title">
-          <p class="eyebrow">${c.type} · ${c.location}</p>
+          <p class="eyebrow">${esc(c.type)} · ${esc(c.location)}</p>
           <h1>${esc(c.name)} ${verBadge(c)}</h1>
-          <p>${c.category} · ${Intl.NumberFormat('es').format(c.followers)} seguidores</p>
+          <p>${esc(c.category)} · ${Intl.NumberFormat('es').format(c.followers)} seguidores</p>
         </div>
         <div class="profile-actions">
           <button class="btn light" data-fuser="${c.id}">${isFollowing ? t('following') : t('follow')}</button>
@@ -883,21 +896,21 @@
         <div class="profile-story">
           <p class="eyebrow">SU HISTORIA CULTURAL</p>
           <h2>Una puerta directa a su identidad</h2>
-          <p>${c.story}</p>
-          <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
+          <p>${esc(c.story)}</p>
+          <div class="creator-tags">${c.tags.map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
         </div>
         <div style="margin-top:60px">
           <p class="eyebrow">PUBLICACIONES (${cPosts.length || c.posts.length})</p>
           ${cPosts.length
             ? `<div id="creator-posts" style="margin-top:20px">${cPosts.map(postCard).join('')}</div>`
-            : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${p.image}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
+            : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${esc(safeMediaUrl(p.image))}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
         </div>
       </div>
       <aside class="profile-aside">
         <p class="eyebrow">PERFIL CULTURAL</p>
         <dl>
-          <div><dt>Tipo</dt><dd>${c.type}</dd></div>
-          <div><dt>Ubicación</dt><dd>${c.location}</dd></div>
+          <div><dt>Tipo</dt><dd>${esc(c.type)}</dd></div>
+          <div><dt>Ubicación</dt><dd>${esc(c.location)}</dd></div>
           <div><dt>Verificación</dt><dd>${c.verified ? 'Verificado manualmente' : 'En proceso'}</dd></div>
         </dl>
         ${socialLinksHtml(c)}
@@ -928,7 +941,7 @@
     const uPosts = allPosts().filter(p => p.authorId === id);
     return `<section class="profile-hero">
       ${profile.cover
-        ? `<img class="profile-cover" src="${profile.cover}" alt="Portada">`
+        ? `<img class="profile-cover" src="${esc(safeMediaUrl(profile.cover))}" alt="Portada">`
         : `<div class="profile-cover-blank"></div>`}
       <div class="profile-hero-content">
         ${avatarEl(profile, 'lg')}
@@ -2389,7 +2402,7 @@
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${c.image || c.avatar || 'assets/logo-mark.svg'}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`; }),
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${esc(safeMediaUrl(c.image || c.avatar) || 'assets/logo-mark.svg')}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${esc(c.category)} · ${esc(c.location)}</p></div><span class="link-arrow">Ver</span></a>`; }),
       ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" data-close-search data-clear-comments><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
