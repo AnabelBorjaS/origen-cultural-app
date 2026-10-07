@@ -7,6 +7,8 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Globe tooltips and cultural-card HTML escape external/profile text before insertion, and micro-story links pass through an http/https/hash allow-list.
+
 - External globe dependencies are version-pinned; mutable `@master`/unversioned runtime URLs were removed, and the unused raw GitHub CSP origin was dropped.
 
 - Service worker caching is limited to same-origin public static assets/navigation, bypasses cross-origin and Authorization requests, rejects private/no-store/error responses, and does not cache arbitrary future same-origin endpoints.
