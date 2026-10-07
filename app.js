@@ -1133,6 +1133,7 @@
         </dl>
         ${socialLinksHtml(profile)}
         ${isMe ? `<a href="#editar-perfil" class="btn secondary" style="width:100%;margin-top:20px;text-align:center">Editar perfil</a>
+                  <a href="mailto:info.origencultural@gmail.com?subject=ORIGEN%20-%20Solicitud%20de%20privacidad%20o%20eliminaci%C3%B3n%20de%20cuenta" class="text-button privacy-request-link" style="display:block;width:100%;margin-top:14px;text-align:center">Solicitar privacidad / eliminación de cuenta</a>
                   <button id="logout-btn-aside" class="btn" style="width:100%;margin-top:10px;background:transparent;color:#888;border-color:#ddd">Cerrar sesión</button>` : ''}
       </aside>
     </section>
