@@ -595,11 +595,11 @@
         </div>
         <a href="#login" class="hero-login-link">¿Ya tienes cuenta? Entrar →</a>
         <div class="hero-globe-stats">
-          <div class="hero-gstat"><strong>6</strong><span>Territorios activos</span></div>
+          <div class="hero-gstat"><strong>6</strong><span>Territorios explorables</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>5+</strong><span>Proveedores culturales</span></div>
+          <div class="hero-gstat"><strong>4</strong><span>Perfiles de referencia</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>8+</strong><span>Publicaciones</span></div>
+          <div class="hero-gstat"><strong>Beta</strong><span>Controlada</span></div>
         </div>
       </div>
       <div class="hero-globe-right">
