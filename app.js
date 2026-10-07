@@ -162,9 +162,118 @@
   const me     = () => state.user;
   const isAuth = () => !!me();
 
-  async function doLogin(email, pw) {
+  const captchaRuntime = {
+    scriptPromise: null,
+    widgets: new Map(),
+    tokens: new Map()
+  };
+
+  function turnstileEnabled() {
+    return !!String(window.ORIGEN_CONFIG?.turnstileSiteKey || '').trim();
+  }
+
+  function captchaSlot(action) {
+    if (!turnstileEnabled()) return '';
+    return `<div class="form-field full turnstile-field">
+      <div id="turnstile-${action}" data-turnstile-action="${action}"></div>
+      <p id="turnstile-${action}-status" class="form-note" role="status" aria-live="polite"></p>
+    </div>`;
+  }
+
+  function loadTurnstile() {
+    if (!turnstileEnabled()) return Promise.resolve(false);
+    if (window.turnstile) return Promise.resolve(true);
+    if (captchaRuntime.scriptPromise) return captchaRuntime.scriptPromise;
+
+    captchaRuntime.scriptPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-origen-turnstile]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(true), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Turnstile no pudo cargarse.')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.dataset.origenTurnstile = 'true';
+      script.addEventListener('load', () => resolve(true), { once: true });
+      script.addEventListener('error', () => reject(new Error('Turnstile no pudo cargarse.')), { once: true });
+      document.head.appendChild(script);
+    });
+    return captchaRuntime.scriptPromise;
+  }
+
+  async function mountTurnstile(action) {
+    if (!turnstileEnabled()) return null;
+    const container = document.getElementById(`turnstile-${action}`);
+    if (!container) return null;
+    const status = document.getElementById(`turnstile-${action}-status`);
+
+    try {
+      await loadTurnstile();
+      const oldId = captchaRuntime.widgets.get(action);
+      if (oldId !== undefined && window.turnstile?.remove) {
+        try { window.turnstile.remove(oldId); } catch (_) {}
+      }
+      captchaRuntime.tokens.delete(action);
+      const widgetId = window.turnstile.render(container, {
+        sitekey: String(window.ORIGEN_CONFIG.turnstileSiteKey).trim(),
+        action,
+        theme: 'auto',
+        size: 'flexible',
+        language: state.lang === 'es' ? 'es' : 'en',
+        'response-field': false,
+        callback: token => {
+          captchaRuntime.tokens.set(action, token);
+          if (status) status.textContent = '';
+        },
+        'expired-callback': () => {
+          captchaRuntime.tokens.delete(action);
+          if (status) status.textContent = state.lang === 'es'
+            ? 'La verificación expiró. Complétala nuevamente.'
+            : 'Verification expired. Please complete it again.';
+        },
+        'error-callback': () => {
+          captchaRuntime.tokens.delete(action);
+          if (status) status.textContent = state.lang === 'es'
+            ? 'No pudimos completar la verificación anti-bot.'
+            : 'We could not complete the anti-bot verification.';
+        }
+      });
+      captchaRuntime.widgets.set(action, widgetId);
+      return widgetId;
+    } catch (error) {
+      if (status) status.textContent = error?.message || (state.lang === 'es'
+        ? 'No pudimos cargar la verificación anti-bot.'
+        : 'We could not load anti-bot verification.');
+      return null;
+    }
+  }
+
+  function requireCaptchaToken(action) {
+    if (!turnstileEnabled()) return null;
+    const token = captchaRuntime.tokens.get(action);
+    if (!token) {
+      throw new Error(state.lang === 'es'
+        ? 'Completa la verificación anti-bot para continuar.'
+        : 'Complete the anti-bot verification to continue.');
+    }
+    return token;
+  }
+
+  function resetTurnstile(action) {
+    if (!turnstileEnabled()) return;
+    captchaRuntime.tokens.delete(action);
+    const widgetId = captchaRuntime.widgets.get(action);
+    if (widgetId !== undefined && window.turnstile?.reset) {
+      try { window.turnstile.reset(widgetId); } catch (_) {}
+    }
+  }
+
+  async function doLogin(email, pw, captchaToken = null) {
     if (!window.ORIGEN_API) throw new Error('Servicio de autenticación no disponible.');
-    const user = await window.ORIGEN_API.signIn(email, pw);
+    const user = await window.ORIGEN_API.signIn(email, pw, captchaToken);
     state.user = user;
     await Promise.allSettled([
       window.ORIGEN_API.listCulturalProfiles(),
@@ -1275,6 +1384,7 @@
           'Add social links so people can contact you directly. Everything here is optional.'
         )}</p>
         ${socialLabels.map(([k, label]) => `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="${L('URL o usuario','URL or username')}"></div>`).join('')}
+        ${captchaSlot('signup')}
         <div class="form-field full legal-consent">
           <label class="legal-check">
             <input type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
@@ -1312,6 +1422,7 @@
           <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
           <div class="form-field full"><label>${es ? 'Contraseña' : 'Password'}</label><input type="password" name="password" required autocomplete="current-password"></div>
           <div id="login-error" role="alert" aria-live="assertive" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">${es ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'}</p></div>
+          ${captchaSlot('login')}
           <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Entrar' : 'Sign in'}</button></div>
         </form>
         <p class="auth-alt"><a href="#recuperar">${es ? '¿Olvidaste tu contraseña?' : 'Forgot your password?'}</a></p>
@@ -1330,6 +1441,7 @@
       <form class="form-grid" id="recover-form">
         <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
         <div id="recover-status" class="form-field full" role="status" aria-live="polite"></div>
+        ${captchaSlot('recovery')}
         <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Enviar enlace' : 'Send reset link'}</button></div>
       </form>
       <p class="auth-alt"><a href="#login">← ${es ? 'Volver a iniciar sesión' : 'Back to sign in'}</a></p>
@@ -1963,13 +2075,15 @@
   function bindLogin() {
     const form = document.getElementById('login-form');
     if (!form) return;
+    void mountTurnstile('login');
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const { email, password } = Object.fromEntries(new FormData(form));
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Entrando…' : 'Signing in…'; }
       try {
-        await doLogin(email, password);
+        const captchaToken = requireCaptchaToken('login');
+        await doLogin(email, password, captchaToken);
         updateShell();
         go('feed');
       } catch (error) {
@@ -1980,6 +2094,7 @@
           if (p) p.textContent = error.message || (state.lang === 'es' ? 'No pudimos iniciar sesión.' : 'We could not sign you in.');
         }
       } finally {
+        resetTurnstile('login');
         if (submit) { submit.disabled = false; submit.textContent = state.lang === 'es' ? 'Entrar' : 'Sign in'; }
       }
     });
@@ -1989,15 +2104,19 @@
   function bindRecoverPassword() {
     const form = document.getElementById('recover-form');
     if (!form) return;
+    void mountTurnstile('recovery');
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const email = new FormData(form).get('email');
       const status = document.getElementById('recover-status');
       try {
-        await window.ORIGEN_API.resetPassword(email);
+        const captchaToken = requireCaptchaToken('recovery');
+        await window.ORIGEN_API.resetPassword(email, captchaToken);
         if (status) status.textContent = state.lang === 'es' ? 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.' : 'Check your email. If an account exists, you will receive a recovery link.';
       } catch (error) {
         if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos enviar el enlace.' : 'We could not send the recovery link.');
+      } finally {
+        resetTurnstile('recovery');
       }
     });
   }
@@ -2021,6 +2140,7 @@
 
   /* Register wizard */
   function bindRegister() {
+    if (state.regStep === 5) void mountTurnstile('signup');
     /* account type selection */
     document.querySelectorAll('[data-atype]').forEach(card => {
       card.addEventListener('click', () => {
@@ -2107,10 +2227,17 @@
           if (errEl) { errEl.textContent = state.lang === 'es' ? 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.' : 'You must accept ORIGEN’s essential documents to create your account.'; errEl.style.display = 'block'; }
           return;
         }
+        try {
+          state.regData.captchaToken = requireCaptchaToken('signup');
+        } catch (error) {
+          if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+          return;
+        }
         nextBtn.disabled = true;
         nextBtn.textContent = state.lang === 'es' ? 'Creando cuenta…' : 'Creating account…';
         const result = await doRegister(state.regData);
         if (result.ok) {
+          resetTurnstile('signup');
           const requiresConfirmation = result.requiresEmailConfirmation;
           state.regStep = 1; state.regData = {};
           if (requiresConfirmation) {
@@ -2121,6 +2248,7 @@
             updateShell(); go('feed');
           }
         } else {
+          resetTurnstile('signup');
           if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
           nextBtn.disabled = false;
           nextBtn.textContent = state.lang === 'es' ? 'Crear mi perfil' : 'Create my profile';
