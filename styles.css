@@ -1511,3 +1511,11 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
   .trust-nav { position:static; display:flex; overflow:auto; gap:14px; padding-bottom:8px; }
   .trust-nav a { white-space:nowrap; }
 }
+
+
+/* ── CULTURAL FEED PURPOSE ─────────────────────────────────── */
+.cultural-feed-note { padding:18px 20px; border-left:3px solid var(--sand); background:var(--sand-soft); }
+.cultural-feed-note .eyebrow { margin-bottom:7px; }
+.cultural-feed-note p:last-child { margin-bottom:0; color:#3f3a34; line-height:1.6; }
+.post-context-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+.post-purpose { display:inline-flex; align-items:center; min-height:25px; padding:4px 9px; border:1px solid #d9c6aa; background:var(--sand-soft); color:#6f5434; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
