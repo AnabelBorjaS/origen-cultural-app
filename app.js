@@ -215,13 +215,19 @@
   function remoteFollowRefs() {
     const api = window.ORIGEN_API;
     if (!api || !state.user) return [];
-    return (api.cache.follows || []).map(id => api.cache.culturalProfiles.find(p => p.id === id)?.slug || id);
+    return (api.cache.follows || []).map(id => {
+      const p = api.cache.culturalProfiles.find(x => x.id === id);
+      return p?.owner_id || p?.slug || id;
+    });
   }
 
   function remoteFavoriteRefs() {
     const api = window.ORIGEN_API;
     if (!api || !state.user) return [];
-    return (api.cache.favorites || []).map(id => api.cache.culturalProfiles.find(p => p.id === id)?.slug || id);
+    return (api.cache.favorites || []).map(id => {
+      const p = api.cache.culturalProfiles.find(x => x.id === id);
+      return p?.owner_id || p?.slug || id;
+    });
   }
 
   async function culturalProfileId(ref) {
@@ -758,7 +764,8 @@
 
   /* ── CREATOR PROFILE ─────────────────────────────────────── */
   function creatorProfileView(id) {
-    const c = creators.find(x => x.id === id) || creators[0];
+    const c = creators.find(x => x.id === id);
+    if (!c) return `<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a class="btn" href="#explorar">Volver a explorar</a></div></section>`;
     const user = me();
     const myFollows = user ? remoteFollowRefs() : [];
     const isFollowing = myFollows.includes(c.id);
@@ -940,7 +947,7 @@
           <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
           <div class="form-field full">
             <button class="btn" type="submit" style="width:100%">Publicar →</button>
-            <p class="form-note" style="margin-top:12px">Publicación guardada en esta demo funcional. La versión productiva conectará con Supabase Storage.</p>
+            <p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>
           </div>
         </form>
       </div>
