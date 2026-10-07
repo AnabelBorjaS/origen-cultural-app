@@ -211,3 +211,13 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Beta publishing roles aligned: Cultural Agents publish cultural/educational feed content; Explorers discover, follow, save, learn, comment and connect without a publicly enumerable profile or feed-post capability.
 - ✅ Explorer post creation is blocked in UI, client API and Production RLS; future Explorer publishing requires a deliberate public-identity/privacy model.
 - ✅ Supabase Security Advisor remains at 0 active security lints after migration `20261007144230`.
+
+
+### CAPTCHA decision — 8 Oct 2026
+- ✅ Preferred CAPTCHA provider selected for controlled beta: **Cloudflare Turnstile Free**.
+- ✅ Supabase Auth supports Turnstile for sign-up, sign-in and password recovery.
+- ✅ ORIGEN Auth client already accepts optional `captchaToken` values for those three flows.
+- ✅ `CAPTCHA_INTEGRATION_PLAN.md` defines the safe activation order and $0 cost guard.
+- ✅ `AUTH_PRODUCTION_CHECKLIST.md` and `RELEASE_QA_RUNBOOK.md` now reflect the Turnstile decision and required tests.
+- ⏳ Turnstile widget/Site Key/Secret Key remain pending the exact Cloudflare Pages staging hostname.
+- ⛔ Do not enable Supabase CAPTCHA enforcement or loosen CSP until the staging widget is producing valid tokens.
