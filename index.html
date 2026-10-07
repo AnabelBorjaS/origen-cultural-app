@@ -38,7 +38,7 @@
       </div>
     </header>
 
-    <aside class="mobile-drawer" id="mobile-drawer" aria-hidden="true">
+    <aside class="mobile-drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menú de navegación" aria-hidden="true" inert>
       <div class="drawer-head">
         <img src="assets/logo-lockup.svg" alt="Origen Cultural" />
         <button class="icon-button" id="close-menu" aria-label="Cerrar menú">×</button>
@@ -49,7 +49,7 @@
       </nav>
       <p class="drawer-manifesto" id="drawer-manifesto">La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.</p>
     </aside>
-    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <div class="drawer-overlay" id="drawer-overlay" aria-hidden="true"></div>
 
     <main id="main-content" tabindex="-1"></main>
 
