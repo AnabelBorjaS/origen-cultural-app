@@ -29,3 +29,10 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 7
+      - name: Upload deterministic release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: origen-release-evidence-${{ github.run_number }}
+          path: .release-evidence/bundle-manifest.json
+          if-no-files-found: error
+          retention-days: 30
