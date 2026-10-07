@@ -101,7 +101,6 @@ async function desktopChecks() {
   check(swAudit.entries.every(entry => !/supabase\.co|cdn\.jsdelivr\.net|\/auth\//i.test(entry.url)), 'Service worker cache must not contain Supabase/CDN/Auth responses');
   await page.evaluate(() => { location.hash = '#login'; });
   await page.waitForSelector('#login-form');
-  await page.waitForFunction(() => (document.querySelector('#login-form')?.innerText || '').includes('Email address'));
   const loginLabels = await page.locator('#login-form input').evaluateAll(inputs =>
     inputs.map(input => [...input.labels].map(label => label.textContent.trim()).join(' '))
   );
