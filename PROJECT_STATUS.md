@@ -162,3 +162,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Claim/report database integrity hardening: claims cannot self-declare approved, reports cannot self-declare resolved, anonymous inserts are denied, and least-privilege table grants are applied.
 - ✅ Negative RLS verification executed against Production without persisting test rows.
 - ✅ Supabase Security Advisor remains at 0 active security lints after the hardening migration.
+
+- ✅ Social database hardening: profile role self-escalation blocked, post counters/editorial fields protected, comment identity protected and interactions limited to published content.
+- ✅ Social table grants reduced to least privilege required by the current Beta client.
+- ✅ Supabase Security Advisor remains at 0 active security lints after migrations `20261007140601` and `20261007140657`.
