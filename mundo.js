@@ -5,6 +5,25 @@
 window.MundoCultural = (() => {
   'use strict';
 
+  function _esc(value) {
+    const d = document.createElement('div');
+    d.textContent = String(value || '');
+    return d.innerHTML;
+  }
+
+  function _safeMediaUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^blob:/i.test(raw)) return raw;
+      if (/^data:image\/(?:png|jpe?g|webp);base64,/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.href);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
+    } catch {
+      return '';
+    }
+  }
+
   /* ── BASE DE DATOS CULTURAL ─────────────────────────────────── */
   const CULTURAL_DB = {
     ecuador: {
@@ -702,11 +721,12 @@ window.MundoCultural = (() => {
 
   function renderCreatorMini(c) {
     const init = (c.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const src  = c.avatar || c.image;
-    const href = c._kind === 'creator' ? `#perfil/${c.id}` : `#usuario/${c.id}`;
+    const src  = _safeMediaUrl(c.avatar || c.image);
+    const safeId = encodeURIComponent(String(c.id || ''));
+    const href = c._kind === 'creator' ? `#perfil/${safeId}` : `#usuario/${safeId}`;
     const avHtml = src
-      ? `<img src="${src}" alt="${c.name}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
-      : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${init}</div>`;
+      ? `<img src="${_esc(src)}" alt="${_esc(c.name)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
+      : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${_esc(init)}</div>`;
 
     const api = window.ORIGEN_API;
     const session = api?.cache?.session || null;
@@ -718,10 +738,10 @@ window.MundoCultural = (() => {
     return `<div class="creator-mini">
       <a href="${href}">${avHtml}</a>
       <div class="creator-mini-info">
-        <a href="${href}"><strong>${c.name}</strong></a>
-        <span>${c.type || c.accountType || ''}</span>
+        <a href="${href}"><strong>${_esc(c.name)}</strong></a>
+        <span>${_esc(c.type || c.accountType || '')}</span>
       </div>
-      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${c.id}" data-kind="${c._kind}">${isFollowing ? 'Siguiendo' : '+ Seguir'}</button>
+      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${_esc(c.id)}" data-kind="${_esc(c._kind)}">${isFollowing ? 'Siguiendo' : '+ Seguir'}</button>
     </div>`;
   }
 
