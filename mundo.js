@@ -403,16 +403,26 @@ window.MundoCultural = (() => {
 
   /* ── CREATOR DATA ───────────────────────────────────────────── */
   function getCreatorsForKey(countryKey) {
-    const db   = CULTURAL_DB[countryKey];
+    const db = CULTURAL_DB[countryKey];
     if (!db) return [];
-    const all  = (window.ORIGEN_DATA?.creators || []);
-    const users = (() => { try { return JSON.parse(localStorage.getItem('oc-users') || '{}'); } catch { return {}; } })();
+    const all = (window.ORIGEN_DATA?.creators || []);
     const seed = all.filter(c => db.creatorIds.includes(c.id)).map(c => ({ ...c, _kind: 'creator' }));
-    const usr  = Object.values(users).filter(u => {
-      const loc = (u.location || '').toLowerCase();
-      return loc.includes(db.name.toLowerCase()) || loc.includes(countryKey);
-    }).map(u => ({ ...u, _kind: 'user' }));
-    return [...seed, ...usr];
+    const live = (window.ORIGEN_API?.cache?.publicProfiles || [])
+      .filter(u => {
+        const loc = (u.location || [u.city, u.country].filter(Boolean).join(', ')).toLowerCase();
+        return loc.includes(db.name.toLowerCase()) || loc.includes(countryKey);
+      })
+      .map(u => ({
+        id: u.id,
+        name: u.display_name || 'Proveedor Cultural',
+        type: 'Proveedor Cultural',
+        category: (u.categories || [])[0] || 'Cultura',
+        location: u.location || [u.city, u.country].filter(Boolean).join(', '),
+        image: u.avatar_url || '',
+        avatar: u.avatar_url || '',
+        _kind: 'user'
+      }));
+    return [...seed, ...live];
   }
 
   function getCreatorPoints() {
@@ -451,11 +461,11 @@ window.MundoCultural = (() => {
 
     const creatorHtml = creators.length
       ? `<div class="card-section card-section-creators">
-          <p class="card-section-label">CREADORES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">PROVEEDORES EN ESTE TERRITORIO</p>
           <div class="card-creators">${creators.slice(0, 6).map(renderCreatorMini).join('')}</div>
         </div>`
       : `<div class="card-section card-section-creators">
-          <p class="card-section-label">CREADORES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">PROVEEDORES EN ESTE TERRITORIO</p>
           <div class="card-empty-creators">
             <p>Sé el primero en registrarte desde ${data.name}.</p>
             <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
@@ -1010,13 +1020,10 @@ window.HeroGlobe = (() => {
   function stats(key) {
     const db = getDB()[key];
     if (!db) return { creators: 0, posts: 0 };
-    const allC     = window.ORIGEN_DATA?.creators || [];
-    const seedC    = allC.filter(c => db.creatorIds.includes(c.id)).length;
-    const users    = (() => { try { return Object.values(JSON.parse(localStorage.getItem('oc-users') || '{}')); } catch { return []; } })();
-    const userC    = users.filter(u => (u.location || '').toLowerCase().includes(db.name.toLowerCase())).length;
-    const seedP    = (window.ORIGEN_DATA?.posts || []).filter(p => db.creatorIds.includes(p.authorId)).length;
-    const userP    = (() => { try { return JSON.parse(localStorage.getItem('oc-posts') || '[]'); } catch { return []; } })().filter(p => db.creatorIds.includes(p.authorId)).length;
-    return { creators: seedC + userC, posts: seedP + userP };
+    const providers = getCreatorsForKey(key);
+    const providerIds = new Set(providers.map(p => p.id));
+    const posts = (window.ORIGEN_API?.cache?.posts || []).filter(p => providerIds.has(p.authorId)).length;
+    return { creators: providers.length, posts };
   }
 
   /* popup */
@@ -1031,7 +1038,7 @@ window.HeroGlobe = (() => {
       <h3 class="hpop-name">${db.name}</h3>
       <p class="hpop-cont">${db.continent}</p>
       <div class="hpop-stats">
-        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Creadores</span></div>
+        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Proveedores</span></div>
         <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
         <div class="hpop-stat"><strong>${db.traditions.length}</strong><span>Tradiciones</span></div>
       </div>
