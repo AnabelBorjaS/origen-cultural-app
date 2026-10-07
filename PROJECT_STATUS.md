@@ -136,9 +136,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Release build now uses explicit runtime whitelist via `npm run build:static`.
 - ✅ `dist/` excludes Markdown, SQL, GitHub/agent/Replit development files.
 - ✅ Release build rejects any `service_role` reference in deployable runtime text.
-- ✅ GitHub Quality Gate #116 passed with the current deployable runtime + deterministic release evidence artifacts.
-- ✅ Artifacts `origen-static-116` and `origen-release-evidence-116` generated: 25 public runtime files, 6.64 MB.
-- ✅ Deterministic runtime content digest: `sha256:8b9b6ba4eb256f8f5e9d31ea2fdce3501a15428549eac1d5dfd4a09a8e7ca3e6`.
+- ✅ GitHub Quality Gate #153 passed with the current deployable runtime + deterministic release evidence artifacts.
+- ✅ Artifacts `origen-static-153` and `origen-release-evidence-153` generated: 25 public runtime files, 6.65 MB.
+- ✅ Deterministic runtime content digest: `sha256:07c669ffa2f24065d718ca6926c238ad096787ab8033297381a1efa1a681bdcc`.
 - ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
 - ⛔ No custom domain changes and no merge to `main` yet.
 
@@ -183,3 +183,19 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 
 - ✅ Globe XSS hardening: country labels, cultural point labels, micro-story copy and cultural-card fields are escaped before HTML rendering; micro-story hrefs use a safe-scheme allow-list.
 - ⏳ Visual globe behaviour remains part of browser/staging QA.
+
+
+### Automated browser QA — 7 Oct 2026
+- ✅ Separate GitHub workflow `ORIGEN Browser QA` added with pinned Playwright/Chromium.
+- ✅ Browser QA #17 passed on the release candidate in real headless Chromium.
+- ✅ Desktop anonymous checks cover home render, search dialog, Trust Center, ES/EN switching, persistent language preference, login labels and absence of uncaught JavaScript errors.
+- ✅ Mobile checks cover drawer semantics, focus transfer, Escape close, focus restoration and registration rendering.
+- ✅ PWA/cache browser checks verify service-worker activation, expected cache creation, same-origin-only cache entries and no Supabase/CDN/Auth responses in Cache Storage.
+- ✅ A real mobile drawer Escape/focus race discovered by Chromium was fixed at source level.
+- ✅ Browser QA workflow now uses concurrency cancellation and a Playwright browser cache to reduce redundant CI work.
+- ⏳ This browser QA is anonymous/local-bundle QA; authenticated two-account E2E still requires deployed staging.
+
+### Supabase browser-key review — 7 Oct 2026
+- ✅ Release candidate, beta branch and current `main` use the modern Supabase `sb_publishable_...` browser key.
+- ✅ The legacy `anon` JWT key is not referenced in the repository code search.
+- ⏳ The legacy key remains enabled in Supabase for compatibility; disable/rotate only after deployed staging confirms no remaining external client depends on it.
