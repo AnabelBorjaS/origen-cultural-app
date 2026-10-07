@@ -46,7 +46,10 @@ const checks = [
   ['Globe icon controls have accessible names', app.includes('aria-label="Acercar globo"') && app.includes('aria-label="Alejar globo"') && app.includes('aria-label="Restablecer vista del globo"')],
   ['Cultural story close control has accessible name', mundo.includes('aria-label="Cerrar historia"')],
   ['Keyboard focus is visibly styled', styles.includes(':focus-visible') && styles.includes('outline: 3px solid var(--sand)')],
-  ['Reduced motion preference is respected', styles.includes('@media (prefers-reduced-motion: reduce)')]
+  ['Reduced motion preference is respected', styles.includes('@media (prefers-reduced-motion: reduce)')],
+  ['Critical Auth views include ES/EN copy', app.includes("const es = state.lang === 'es';") && app.includes('Welcome back') && app.includes('Reset your password') && app.includes('New password')],
+  ['Persistent shell supports ES/EN translation', app.includes('function updateStaticLanguage()') && app.includes('Skip to content') && app.includes('DIGITAL WELLBEING') && app.includes('Search living culture')],
+  ['Document language follows active locale', app.includes('document.documentElement.lang = state.lang')]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
