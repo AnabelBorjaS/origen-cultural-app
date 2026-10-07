@@ -77,3 +77,11 @@ Public beta remains NO-GO until:
 - [ ] Backup date/time and migration version recorded.
 - [ ] Backup file validity checked without restoring over Production.
 - [ ] Storage/media recovery expectations documented for pilot participants.
+
+
+## Privacy requests & account deletion
+- [x] Public beta contact route for access/correction/deletion requests is documented.
+- [x] Controlled deletion process is documented in `PRIVACY_REQUEST_RUNBOOK.md`.
+- [ ] Complete one end-to-end test-account deletion lifecycle in staging, including Storage cleanup and Cultural Agent profile handling.
+- [ ] Confirm no deleted test-user personal data remains publicly visible after the lifecycle test.
+- [ ] Confirm final retention/deletion wording with proportional legal/privacy review before public launch.
