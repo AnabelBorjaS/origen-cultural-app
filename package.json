@@ -5,6 +5,8 @@
   "description": "ORIGEN Cultural controlled-beta release candidate.",
   "scripts": {
     "start": "python3 -m http.server 4173",
-    "check": "node --check app.js && node --check supabase-client.js && node --check data.js && node --check trust.js && node --check mundo.js && node --check service-worker.js && node tests/smoke.mjs"
+    "check": "node --check app.js && node --check supabase-client.js && node --check data.js && node --check trust.js && node --check mundo.js && node --check service-worker.js && node tests/smoke.mjs",
+    "build:static": "node scripts/build-static.mjs",
+    "check:release": "npm run check && npm run build:static"
   }
 }
