@@ -1,4 +1,4 @@
-const CACHE = 'origen-cultural-v7';
+const CACHE = 'origen-cultural-v8';
 const ASSETS = [
   './',
   './index.html',
