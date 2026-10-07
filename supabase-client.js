@@ -337,6 +337,9 @@
   async function createPost(payload) {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión.');
+    if (cache.profile?.role !== 'creator') {
+      throw new Error('La publicación en el feed cultural está disponible para Agentes Culturales durante esta beta.');
+    }
     const row = {
       cultural_profile_id: payload.cultural_profile_id || null,
       author_id: uid,
