@@ -64,3 +64,25 @@ Arquitectura futura documentada. Partners tendrán perfil institucional, feed, f
 ## Estado de lanzamiento
 **NO-GO público todavía.**
 El PR de lanzamiento está abierto, en borrador y es mergeable. La base funcional está avanzada, pero falta QA real, hardening operativo, Trust actualizado, el perfil de Cultural Provider como producto completo y un despliegue de staging verificado antes de abrir registro público.
+
+
+## Avances añadidos — 7 Oct 2026
+- ✅ Centro de confianza visible dentro de la Web App con resúmenes beta v1.2 alineados al alcance actual.
+- ✅ Registro actualizado para exigir aceptación explícita de Términos, Privacidad, Normas de Comunidad y Derechos Culturales antes de crear cuenta.
+- ✅ Supabase client rechaza el alta si no existe consentimiento explícito.
+- ✅ Métricas del landing ajustadas para no simular actividad real: territorios explorables, perfiles de referencia y estado Beta.
+- ✅ Globo cultural restaurado con textura de Tierra + fondo espacial mediante CSP permitida de forma controlada.
+- ✅ Feed infinito paginado desde Supabase y comportamiento de video visible/pausado.
+- ✅ Bienestar digital con objetivo diario suave de 120 minutos y recordatorio voluntario.
+- ✅ Pasaporte Cultural evolucionado hacia colecciones, países, categorías, niveles e insignias sin premiar tiempo de pantalla.
+- ✅ Smoke tests automatizados añadidos al Quality Gate para Trust, consentimiento, marca, globo, feed, bienestar y ausencia de service-role key en frontend.
+- ✅ Estado de follow/favorite corregido para perfiles reales de Proveedores Culturales.
+
+### Bloqueadores que permanecen antes de Public Beta
+- Configurar y probar CAPTCHA / anti-bot en Supabase Auth.
+- Confirmar email verification y redirect URLs únicamente para dominios aprobados.
+- Probar RLS de extremo a extremo con dos cuentas reales.
+- Probar uploads válidos/maliciosos y ownership.
+- Revisar Trust Center con profesional jurídico antes de quitar el estado beta/draft.
+- QA real mobile/desktop/accessibility y staging.
+- Resolver cualquier conflicto de merge del PR antes de integrar a main.
