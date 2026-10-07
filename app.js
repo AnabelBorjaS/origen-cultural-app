@@ -518,6 +518,23 @@
     </div></footer>`;
   }
 
+  function enhanceAccessibility() {
+    let seq = 0;
+    document.querySelectorAll('.form-field').forEach(field => {
+      const label = field.querySelector(':scope > label');
+      const control = field.querySelector(':scope > input, :scope > textarea, :scope > select');
+      if (!label || !control) return;
+      if (!control.id) control.id = `origen-field-${++seq}`;
+      label.setAttribute('for', control.id);
+    });
+
+    document.querySelectorAll('input[placeholder="Añade un comentario..."]').forEach(input => {
+      if (!input.getAttribute('aria-label')) {
+        input.setAttribute('aria-label', state.lang === 'es' ? 'Añadir comentario' : 'Add comment');
+      }
+    });
+  }
+
   /* ═══════════════════════════════════════════════════════════
      SHELL / NAV
   ═══════════════════════════════════════════════════════════ */
@@ -528,26 +545,38 @@
     const dBottom    = document.querySelector('.bottom-nav');
     const profileBtn = document.getElementById('profile-button');
     const langBtn    = document.getElementById('language-toggle');
-    if (langBtn) langBtn.textContent = state.lang === 'es' ? 'EN' : 'ES';
+    const es         = state.lang === 'es';
+
+    document.documentElement.lang = state.lang;
+    if (langBtn) {
+      langBtn.textContent = es ? 'EN' : 'ES';
+      langBtn.setAttribute('aria-label', es ? 'Cambiar idioma a inglés' : 'Switch language to Spanish');
+    }
+    document.getElementById('menu-button')?.setAttribute('aria-label', es ? 'Abrir menú' : 'Open menu');
+    document.getElementById('close-menu')?.setAttribute('aria-label', es ? 'Cerrar menú' : 'Close menu');
+    document.getElementById('search-button')?.setAttribute('aria-label', es ? 'Buscar' : 'Search');
+    profileBtn?.setAttribute('aria-label', user
+      ? (es ? 'Abrir mi perfil' : 'Open my profile')
+      : (es ? 'Iniciar sesión' : 'Sign in'));
 
     if (user) {
       if (dNav) dNav.innerHTML = `
         <a href="#feed"      data-route-link="feed">Feed</a>
-        <a href="#explorar"  data-route-link="explorar">Explorar</a>
-        <a href="#mundo"     data-route-link="mundo">Mundo Cultural</a>
-        <a href="#crear"     data-route-link="crear">Crear</a>
-        <a href="#guardados" data-route-link="guardados">Guardados</a>`;
+        <a href="#explorar"  data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo"     data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        <a href="#crear"     data-route-link="crear">${es ? 'Crear' : 'Create'}</a>
+        <a href="#guardados" data-route-link="guardados">${es ? 'Guardados' : 'Saved'}</a>`;
       if (dDrawer) dDrawer.innerHTML = `
-        <a href="#feed">Feed</a><a href="#explorar">Explorar</a>
-        <a href="#mundo">Mundo Cultural</a>
-        <a href="#crear">Crear publicación</a>
-        <a href="#guardados">Guardados</a><a href="#mi-perfil">Mi perfil</a>`;
+        <a href="#feed">Feed</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        <a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>
+        <a href="#guardados">${es ? 'Guardados' : 'Saved'}</a><a href="#mi-perfil">${es ? 'Mi perfil' : 'My profile'}</a>`;
       if (dBottom) dBottom.innerHTML = `
-        <a href="#feed"      data-route-link="feed"><span>⌂</span><small>Feed</small></a>
-        <a href="#explorar"  data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
-        <a class="create-action" href="#crear" data-route-link="crear"><span>＋</span><small>Crear</small></a>
-        <a href="#mundo"     data-route-link="mundo"><span>🌍</span><small>Mundo</small></a>
-        <a href="#mi-perfil" data-route-link="mi-perfil"><span>○</span><small>Perfil</small></a>`;
+        <a href="#feed"      data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
+        <a href="#explorar"  data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+        <a class="create-action" href="#crear" data-route-link="crear"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
+        <a href="#mundo"     data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+        <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`;
       if (profileBtn) {
         const init = (user.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
         if (user.avatar) {
@@ -562,22 +591,22 @@
       }
     } else {
       if (dNav) dNav.innerHTML = `
-        <a href="#inicio"   data-route-link="inicio">Inicio</a>
-        <a href="#explorar" data-route-link="explorar">Explorar</a>
-        <a href="#mundo"    data-route-link="mundo">Mundo Cultural</a>
-        <a href="#pasaporte" data-route-link="pasaporte">Pasaporte Cultural</a>
-        <a href="#impacto"  data-route-link="impacto">Impacto</a>`;
+        <a href="#inicio"   data-route-link="inicio">${es ? 'Inicio' : 'Home'}</a>
+        <a href="#explorar" data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo"    data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        <a href="#pasaporte" data-route-link="pasaporte">${es ? 'Pasaporte Cultural' : 'Cultural Passport'}</a>
+        <a href="#impacto"  data-route-link="impacto">${es ? 'Impacto' : 'Impact'}</a>`;
       if (dDrawer) dDrawer.innerHTML = `
-        <a href="#inicio">Inicio</a><a href="#explorar">Explorar</a>
-        <a href="#mundo">Mundo Cultural</a>
-        <a href="#pasaporte">Pasaporte Cultural</a>
-        <a href="#impacto">Impacto</a><a href="#registro">Crear Perfil Cultural</a>`;
+        <a href="#inicio">${es ? 'Inicio' : 'Home'}</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        <a href="#pasaporte">${es ? 'Pasaporte Cultural' : 'Cultural Passport'}</a>
+        <a href="#impacto">${es ? 'Impacto' : 'Impact'}</a><a href="#registro">${es ? 'Crear Perfil Cultural' : 'Create Cultural Profile'}</a>`;
       if (dBottom) dBottom.innerHTML = `
-        <a href="#inicio"   data-route-link="inicio"><span>⌂</span><small>Inicio</small></a>
-        <a href="#explorar" data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
-        <a class="create-action" href="#registro" data-route-link="registro"><span>＋</span><small>Crear</small></a>
-        <a href="#mundo"    data-route-link="mundo"><span>🌍</span><small>Mundo</small></a>
-        <a href="#login"    data-route-link="login"><span>○</span><small>Entrar</small></a>`;
+        <a href="#inicio"   data-route-link="inicio"><span aria-hidden="true">⌂</span><small>${es ? 'Inicio' : 'Home'}</small></a>
+        <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+        <a class="create-action" href="#registro" data-route-link="registro"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
+        <a href="#mundo"    data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+        <a href="#login"    data-route-link="login"><span aria-hidden="true">○</span><small>${es ? 'Entrar' : 'Sign in'}</small></a>`;
       if (profileBtn) {
         profileBtn.style.backgroundImage = '';
         profileBtn.textContent = '○';
@@ -585,11 +614,14 @@
       }
     }
 
-    /* active link */
     const r    = currentRoute();
     const base = r.startsWith('perfil/') || r.startsWith('usuario/') ? 'explorar' : r;
-    document.querySelectorAll('[data-route-link]').forEach(a =>
-      a.classList.toggle('active', a.dataset.routeLink === base));
+    document.querySelectorAll('[data-route-link]').forEach(a => {
+      const active = a.dataset.routeLink === base;
+      a.classList.toggle('active', active);
+      if (active) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -628,9 +660,9 @@
         <div class="hero-globe-popup" id="hero-globe-popup" hidden></div>
         <div class="hero-globe-ui">
           <div class="hero-globe-ctrl-bar">
-            <button id="hero-globe-pause"    class="hero-ctrl-btn" title="Pausar / Reanudar rotación">⏸</button>
-            <button id="hero-globe-zoom-in"  class="hero-ctrl-btn" title="Acercar">+</button>
-            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="Alejar">−</button>
+            <button id="hero-globe-pause" class="hero-ctrl-btn" title="Pausar / Reanudar rotación" aria-label="Pausar o reanudar rotación">⏸</button>
+            <button id="hero-globe-zoom-in" class="hero-ctrl-btn" title="Acercar" aria-label="Acercar globo">+</button>
+            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="Alejar" aria-label="Alejar globo">−</button>
           </div>
           <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
         </div>
@@ -1339,6 +1371,7 @@
 
     $app.innerHTML = html;
     updateShell();
+    enhanceAccessibility();
     bindAll(route);
     if (scroll) window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -1392,10 +1425,10 @@
             </div>
             <div class="globe-ui-bottom">
               <div class="globe-controls">
-                <button id="globe-zoom-in"  class="globe-ctrl" title="Acercar">+</button>
-                <button id="globe-pause"    class="globe-ctrl" title="Pausar rotación">⏸</button>
-                <button id="globe-reset"    class="globe-ctrl" title="Vista inicial">⟳</button>
-                <button id="globe-zoom-out" class="globe-ctrl" title="Alejar">−</button>
+                <button id="globe-zoom-in" class="globe-ctrl" title="Acercar" aria-label="Acercar globo">+</button>
+                <button id="globe-pause" class="globe-ctrl" title="Pausar rotación" aria-label="Pausar o reanudar rotación">⏸</button>
+                <button id="globe-reset" class="globe-ctrl" title="Vista inicial" aria-label="Restablecer vista del globo">⟳</button>
+                <button id="globe-zoom-out" class="globe-ctrl" title="Alejar" aria-label="Alejar globo">−</button>
               </div>
               <p class="globe-hint">Gira · Acerca · Toca un país</p>
             </div>
