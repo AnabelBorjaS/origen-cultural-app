@@ -7,6 +7,9 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Explorer profile rows are not publicly enumerable through the Data API; only Cultural Agent (`creator`) profiles are public, while each authenticated user retains access to their own row.
+- Managed profile media replacement uses UID-scoped Storage paths and can remove the previous owned avatar/cover only after a successful profile save.
+
 - Profile role self-escalation is blocked at the database layer; normal users cannot change their own `role` to `admin`.
 - Post counters/editorial metadata are protected from author manipulation.
 - Social interactions are scoped to published posts/profiles and social table grants follow least privilege.
