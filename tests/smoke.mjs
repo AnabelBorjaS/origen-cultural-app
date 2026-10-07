@@ -20,7 +20,9 @@ const checks = [
   ['Wellbeing target exists', app.includes("origen-wellbeing-minutes") && app.includes('120')],
   ['Brand black is exact', styles.includes('--black: #000000;')],
   ['Brand sand is exact', styles.includes('--sand: #c8a97e;')],
-  ['No service-role key in frontend files', ![index, app, supabase, mundo, trust].join('\n').toLowerCase().includes('service_role')]
+  ['No service-role key in frontend files', ![index, app, supabase, mundo, trust].join('\n').toLowerCase().includes('service_role')],
+  ['Legacy local user database removed', !app.includes('oc-users') && !app.includes('oc-posts') && !mundo.includes('oc-users') && !mundo.includes('oc-posts')],
+  ['Cultural world reads live providers', mundo.includes('ORIGEN_API?.cache?.publicProfiles')]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
