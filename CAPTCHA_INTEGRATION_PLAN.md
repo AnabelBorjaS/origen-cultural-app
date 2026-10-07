@@ -1,6 +1,6 @@
 # ORIGEN Cultural — Cloudflare Turnstile Integration Plan
 
-Status: **provider selected / activation pending staging**
+Status: **frontend prepared / activation pending staging keys + Supabase enforcement**
 Selected provider: **Cloudflare Turnstile**
 Target plan for controlled beta: **Free ($0)**
 Last reviewed: 8 October 2026
@@ -41,14 +41,21 @@ Turning on server-side enforcement first can block legitimate registration, logi
 - [ ] Never commit the Secret Key to GitHub, frontend JavaScript, documentation or screenshots.
 
 ### 3. Frontend integration
-- [ ] Add the official Turnstile client script only after the Site Key exists.
-- [ ] Add only the minimum CSP permissions required for the Cloudflare challenge origin.
-- [ ] Render Turnstile in registration.
-- [ ] Render Turnstile in sign-in.
-- [ ] Render Turnstile in password recovery.
-- [ ] Send the returned token through the existing `captchaToken` parameter.
-- [ ] Reset/refresh the widget after every Auth attempt.
-- [ ] Provide accessible failure/retry states in ES and EN.
+
+Public configuration:
+- Build variable: `ORIGEN_TURNSTILE_SITE_KEY`.
+- The build writes only the public Site Key into `dist/runtime-config.js`.
+- With the variable unset, Turnstile stays disabled and existing Auth behaviour remains unchanged.
+- The release build rejects Turnstile secret-like material in deployable runtime files.
+
+- [x] Frontend loads the official Turnstile client script dynamically **only when a Site Key is configured**.
+- [x] CSP allows only the documented Turnstile challenge origin for `script-src` and `frame-src`.
+- [x] Registration has an explicit-render Turnstile slot when configured.
+- [x] Sign-in has an explicit-render Turnstile slot when configured.
+- [x] Password recovery has an explicit-render Turnstile slot when configured.
+- [x] Returned tokens are passed through the existing `captchaToken` parameter.
+- [x] Widget token/state resets after Auth attempts and handles expiry/error.
+- [x] Accessible live status/failure states are provided in ES and EN.
 
 ### 4. Staging validation before enforcement
 Test:
@@ -84,7 +91,7 @@ Before moving `origencultural.com`:
 
 ## CSP expectation
 
-Turnstile requires Cloudflare challenge resources that are **not currently in ORIGEN's strict CSP**. Do not loosen CSP globally in advance. Add only the origins/directives required by the final official Turnstile embed after the staging widget exists.
+Turnstile CSP preparation is now complete using Cloudflare's documented minimum challenge origin for `script-src` and `frame-src`. The widget remains disabled unless a Site Key is injected at build time.
 
 ## Cost guard
 
