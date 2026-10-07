@@ -9,6 +9,7 @@ const mundo = read('mundo.js');
 const trust = read('trust.js');
 
 const checks = [
+  ['Supabase SDK version is pinned', index.includes('@supabase/supabase-js@2.117.2')],
   ['Trust Center is loaded', index.includes('<script src="trust.js"></script>')],
   ['Trust route exists', app.includes("route === 'confianza'") && app.includes('trustCenterView')],
   ['Signup shows explicit consent', app.includes('name="acceptedLegal" required')],
