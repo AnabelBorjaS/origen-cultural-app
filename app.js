@@ -294,7 +294,7 @@
     const init = (profile.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const src  = profile.avatar || profile.image;
     if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
-    return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" onerror="this.parentElement.classList.add('ava-init');this.parentElement.textContent='${init}';"></div>`;
+    return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" data-avatar-fallback="${encodeURIComponent(init)}"></div>`;
   }
   function verBadge(p) {
     const verified = p && (p.profileStatus === 'verified' || (p.verified && !p.referenceProfile));
@@ -1083,14 +1083,14 @@
         <div class="upload-zone" id="edit-avatar-zone">
           ${user.avatar ? `<img src="${user.avatar}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
           <input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>
+          <button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>
         </div>
         <div class="upload-zone wide" id="edit-cover-zone">
           ${user.cover
             ? `<img src="${user.cover}" class="edit-cover-preview" alt="Portada">`
             : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
           <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>
+          <button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>
         </div>
       </div>
       <form class="form-grid" id="edit-form">
@@ -1176,12 +1176,12 @@
         <div class="upload-zone" id="reg-avatar-zone">
           ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="${L('Foto de perfil','Profile photo')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de perfil','Profile photo')}</p><small>${L('Opcional','Optional')}</small></div>`}
           <input type="file" id="reg-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">${L('Subir foto de perfil','Upload profile photo')}</button>
+          <button class="btn" type="button" data-file-trigger="reg-avatar-input">${L('Subir foto de perfil','Upload profile photo')}</button>
         </div>
         <div class="upload-zone wide" id="reg-cover-zone">
           ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="${L('Portada','Cover image')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de portada','Cover image')}</p><small>${L('Opcional','Optional')}</small></div>`}
           <input type="file" id="reg-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">${L('Subir portada','Upload cover')}</button>
+          <button class="btn secondary" type="button" data-file-trigger="reg-cover-input">${L('Subir portada','Upload cover')}</button>
         </div>
         <p class="form-note" style="width:100%;max-width:760px">${L(
           'Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.',
@@ -2190,7 +2190,7 @@
       state.editAvatar = file;
       const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-avatar-zone');
-      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
+      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`);
     });
 
     /* cover upload */
@@ -2200,7 +2200,7 @@
       state.editCover = file;
       const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-cover-zone');
-      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
+      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
     });
 
     /* form submit */
@@ -2343,6 +2343,36 @@
     }, 30000);
   }
 
+  function bindCspSafeDelegates() {
+    document.addEventListener('click', event => {
+      const target = event.target;
+      const fileTrigger = target?.closest?.('[data-file-trigger]');
+      if (fileTrigger) {
+        const input = document.getElementById(fileTrigger.dataset.fileTrigger);
+        if (input instanceof HTMLInputElement && input.type === 'file') input.click();
+      }
+
+      const searchResult = target?.closest?.('[data-close-search]');
+      if (searchResult) {
+        if ($search?.open) $search.close();
+        if (searchResult.hasAttribute('data-clear-comments')) state.openComments.clear();
+      }
+    });
+
+    document.addEventListener('error', event => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || !img.dataset.avatarFallback) return;
+      const parent = img.parentElement;
+      if (!parent) return;
+      parent.classList.add('ava-init');
+      try {
+        parent.textContent = decodeURIComponent(img.dataset.avatarFallback);
+      } catch {
+        parent.textContent = 'OC';
+      }
+    }, true);
+  }
+
   /* Global search */
   const globalSearch = document.getElementById('global-search');
   if (globalSearch) {
@@ -2360,8 +2390,8 @@
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image || c.avatar || 'assets/logo-mark.svg'}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`; }),
-      ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" onclick="document.getElementById('search-dialog').close();state.openComments.clear()"><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${c.image || c.avatar || 'assets/logo-mark.svg'}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`; }),
+      ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" data-close-search data-clear-comments><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
 
@@ -2424,6 +2454,7 @@
     }
   });
 
+  bindCspSafeDelegates();
   initDigitalWellbeing();
   initApp();
 
