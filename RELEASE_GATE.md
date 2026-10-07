@@ -55,7 +55,7 @@ Public beta remains NO-GO until:
 - Content Security Policy is validated in the deployed environment.
 - GitHub and Supabase administrator accounts use MFA/2FA.
 - No service-role key, database password or private secret exists in frontend code or repository history.
-- A basic incident-response and recovery procedure exists before public launch.
+- A basic incident-response and recovery procedure exists before public launch. **Documented in `INCIDENT_RECOVERY_RUNBOOK.md`; pre-beta backup evidence still required.**
 
 ## Cookies, storage & privacy
 - The beta must not load optional analytics, advertising or cross-site tracking before consent where consent is required.
@@ -69,3 +69,11 @@ Public beta remains NO-GO until:
 - Cultural Agents may publish cultural/educational feed content subject to current media, purpose and moderation rules.
 - Cultural Explorers do not publish feed posts in this beta; they discover, follow, save, comment, learn and connect.
 - Any future Explorer publishing capability requires an explicit privacy/identity design and separate QA before activation.
+
+
+## Recovery evidence before Public Beta
+- [x] Incident-response and code/database rollback procedure documented.
+- [ ] Independent logical database backup created outside the public repository.
+- [ ] Backup date/time and migration version recorded.
+- [ ] Backup file validity checked without restoring over Production.
+- [ ] Storage/media recovery expectations documented for pilot participants.
