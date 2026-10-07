@@ -25,7 +25,7 @@
     query: '',
     regStep: 1,
     regData: {},
-    createData: { type: 'photo', media: [], files: [], tags: [] },
+    createData: { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' },
     openComments: new Set(),
     carIdx: {},
     editAvatar: null,
@@ -333,6 +333,20 @@
     return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noopener noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
   }
 
+  function contentPurposeLabel(value) {
+    return ({
+      education: 'Educación cultural',
+      history: 'Historia y memoria',
+      technique: 'Técnica / proceso',
+      territory: 'Territorio',
+      language: 'Lengua',
+      gastronomy: 'Gastronomía',
+      arts: 'Artes / expresión',
+      heritage: 'Patrimonio',
+      community: 'Comunidad'
+    })[value] || '';
+  }
+
   /* ═══════════════════════════════════════════════════════════
      POST CARD COMPONENT
   ═══════════════════════════════════════════════════════════ */
@@ -393,7 +407,10 @@
       </div>
       ${media}
       <div class="post-body${post.type === 'text' ? ' post-text-body' : ''}">
-        ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
+        <div class="post-context-chips">
+          ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
+          ${post.contentPurpose ? `<span class="post-purpose">${esc(contentPurposeLabel(post.contentPurpose))}</span>` : ''}
+        </div>
         <h3 class="post-title">${esc(post.title)}</h3>
         <p class="post-desc">${esc(post.description)}</p>
         ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
@@ -915,8 +932,22 @@
     const user = me();
     if (!user) { go('login'); return ''; }
     const d = state.createData;
-    const types = [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
+    const isProvider = user.accountType === 'creator';
+    const types = isProvider
+      ? [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video']]
+      : [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
     const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const PURPOSES = [
+      ['education','Educación cultural'],
+      ['history','Historia y memoria'],
+      ['technique','Técnica / proceso'],
+      ['territory','Territorio'],
+      ['language','Lengua'],
+      ['gastronomy','Gastronomía'],
+      ['arts','Artes / expresión'],
+      ['heritage','Patrimonio'],
+      ['community','Comunidad']
+    ];
     const hasMedia = d.media && d.media.length > 0;
 
     return `<section class="page-hero" style="min-height:220px">
@@ -938,9 +969,11 @@
             <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/*' : 'image/*'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
         <form class="form-grid" id="create-form">
+          ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">FEED CULTURAL Y EDUCATIVO</p><p>Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.</p></div>` : ''}
           <div class="form-field full"><label>Título *</label><input name="title" required placeholder="Un título que invite a descubrir" value="${esc(d.title || '')}"></div>
           <div class="form-field full"><label>Descripción *</label><textarea name="description" rows="4" required placeholder="Comparte el contexto, la historia o el significado cultural...">${esc(d.description || '')}</textarea></div>
           <div class="form-field"><label>Categoría cultural</label><select name="category">${CATS.map(c => `<option${d.category === c ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
+          <div class="form-field"><label>Propósito cultural *</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
           <div class="form-field"><label>Territorio</label><input name="territory" placeholder="Ciudad, región o país" value="${esc(d.territory || '')}"></div>
           <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
           <div class="form-field full">
@@ -952,7 +985,7 @@
       <div class="create-preview-wrap">
         <p class="eyebrow" style="margin-bottom:16px">VISTA PREVIA</p>
         ${d.title || hasMedia
-          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
           : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
       </div>
     </div>`;
@@ -1980,7 +2013,7 @@
     /* form inputs → update preview */
     const form = document.getElementById('create-form');
     if (!form) return;
-    ['title','description','category','territory','tags'].forEach(field => {
+    ['title','description','category','contentPurpose','territory','tags'].forEach(field => {
       const el = form.querySelector(`[name="${field}"]`);
       if (el) el.addEventListener('input', () => {
         state.createData[field] = field === 'tags'
@@ -1997,6 +2030,12 @@
       e.preventDefault();
       const user = me(); if (!user) return;
       const fd = Object.fromEntries(new FormData(form));
+      if (user.accountType === 'creator' && state.createData.type === 'text') {
+        showToast('El feed de Proveedores Culturales requiere foto, carrusel o video.'); return;
+      }
+      if (!fd.contentPurpose) {
+        showToast('Selecciona el propósito cultural de la publicación.'); return;
+      }
       if (state.createData.type !== 'text' && (!state.createData.files || !state.createData.files.length)) {
         showToast('Por favor sube al menos una imagen o video.'); return;
       }
@@ -2013,10 +2052,11 @@
           title: fd.title,
           description: fd.description,
           category: fd.category,
+          contentPurpose: fd.contentPurpose,
           territory: fd.territory,
           tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
         });
-        state.createData = { type: 'photo', media: [], files: [], tags: [] };
+        state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
         showToast('¡Publicación creada!');
         go('feed');
       } catch (error) {
