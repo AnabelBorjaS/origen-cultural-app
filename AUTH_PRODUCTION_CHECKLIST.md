@@ -59,12 +59,13 @@ Activation remains pending the exact HTTPS staging hostname, Turnstile Site Key 
 Decision / activation checklist:
 - [x] Select provider: **Cloudflare Turnstile Free**.
 - [ ] Create provider widget/site.
-- [ ] Keep **Secret Key** only in Supabase/provider configuration; never commit it to GitHub.
-- [ ] Site Key may be used by the frontend.
-- [x] Client API accepts CAPTCHA token for sign-up. *(Widget/token source still pending.)*
-- [x] Client API accepts CAPTCHA token for sign-in. *(Widget/token source still pending.)*
-- [x] Client API accepts CAPTCHA token for password recovery. *(Widget/token source still pending.)*
-- [ ] Reset/refresh the challenge after each Auth attempt.
+- [ ] Keep the real **Secret Key** only in Supabase/provider configuration; never commit it to GitHub.
+- [x] Turnstile Secret Key is explicitly excluded from the static build/runtime design.
+- [x] Frontend/build supports the public Site Key through `ORIGEN_TURNSTILE_SITE_KEY`; no real key is committed.
+- [x] Client API accepts CAPTCHA token for sign-up and the Turnstile widget/token source is implemented. *(Real staging Site Key still pending.)*
+- [x] Client API accepts CAPTCHA token for sign-in and the Turnstile widget/token source is implemented. *(Real staging Site Key still pending.)*
+- [x] Client API accepts CAPTCHA token for password recovery and the Turnstile widget/token source is implemented. *(Real staging Site Key still pending.)*
+- [x] Frontend resets/refreshes the Turnstile challenge after Auth attempts.
 - [ ] Test successful human flow.
 - [ ] Test missing/invalid/expired CAPTCHA token.
 - [ ] Test mobile and desktop.
