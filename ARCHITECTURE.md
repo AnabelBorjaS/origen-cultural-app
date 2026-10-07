@@ -15,7 +15,7 @@ La misma experiencia pública debe permitir:
 - crear cuenta e iniciar sesión;
 - editar perfil;
 - seguir y guardar perfiles;
-- publicar contenido;
+- publicar contenido cultural cuando la cuenta es Agente Cultural; los Exploradores no publican en el feed durante la beta;
 - usar Pasaporte Cultural;
 - reclamar perfiles de referencia;
 - reportar contenido o solicitar correcciones.
@@ -72,3 +72,10 @@ Después de validar la Web App:
 
 ## Futuro
 Pagos, experiencias, reservas, mensajería privada y monetización 80/20 no forman parte de la beta inicial y requieren su propia revisión técnica, legal y de seguridad antes de activarse.
+
+
+## Roles de publicación en Beta
+- **Agente Cultural (`creator`)**: perfil público/descubrible y capacidad de publicar contenido cultural/educativo.
+- **Explorador Cultural (`explorer`)**: descubre, sigue, guarda, aprende, comenta y conecta; su perfil no es públicamente enumerable y no publica en el feed durante esta beta.
+- Esta restricción evita exponer una identidad pública parcial de Exploradores solo para sostener publicaciones y mantiene el alcance de la beta alineado con el modelo de producto actual.
+- Una futura fase social puede ampliar la publicación de Exploradores con un modelo de identidad/privacidad diseñado expresamente para ello.
