@@ -957,11 +957,14 @@
 
   function claimProfileView(id) {
     const c = creators.find(x => x.id === id);
-    if (!c) return '<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a href="#explorar" class="btn">Volver</a></div></section>';
+    const es = state.lang === 'es';
+    const L = (esText, enText) => es ? esText : enText;
+    if (!c) return `<section class="section"><div class="section-inner"><h2>${L('Perfil no encontrado','Profile not found')}</h2><a href="#explorar" class="btn">${L('Volver','Back')}</a></div></section>`;
     const user = me();
-    if (!user) return `<div class="auth-page"><div class="auth-card"><a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a><h2>Reclamar ${esc(c.name)}</h2><p class="auth-sub">Para proteger a las comunidades y evitar suplantaciones, primero debes iniciar sesión.</p><a class="btn" href="#login" style="width:100%;text-align:center">Iniciar sesión</a><p class="auth-alt"><a href="#registro">Crear cuenta ORIGEN</a></p></div></div>`;
-    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">RECLAMACIÓN DE PERFIL</p><h1>¿Representas a ${esc(c.name)}?</h1><p class="lead">La gestión no se transfiere automáticamente. ORIGEN revisará que tengas autoridad para representar a esta persona, comunidad, negocio u organización.</p></div></section><section class="section"><div class="section-inner" style="max-width:820px"><form id="claim-form" class="form-grid" data-profile-ref="${c.id}"><div class="form-field"><label>Tu nombre completo *</label><input name="claimant_name" value="${esc(user.name || '')}" required></div><div class="form-field"><label>Cargo o relación *</label><input name="relationship_role" required placeholder="Fundadora, gerente, representante autorizado…"></div><div class="form-field"><label>Correo oficial *</label><input type="email" name="official_email" value="${esc(user.email || '')}" required></div><div class="form-field"><label>Web o red social oficial</label><input name="official_url" placeholder="https://"></div><div class="form-field full"><label>¿Cómo podemos verificar tu autoridad? *</label><textarea name="explanation" rows="4" required></textarea></div><div class="form-field full"><label><input type="checkbox" name="authority" required> Declaro que estoy autorizado/a para solicitar la gestión de este perfil.</label></div><div id="claim-status" class="form-field full" aria-live="polite"></div><div class="form-field full"><button class="btn" type="submit" style="width:100%">Enviar solicitud para revisión</button></div></form></div></section>${footer()}`;
+    if (!user) return `<div class="auth-page"><div class="auth-card"><a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a><h2>${L('Reclamar','Claim')} ${esc(c.name)}</h2><p class="auth-sub">${L('Para proteger a las comunidades y evitar suplantaciones, primero debes iniciar sesión.','To protect communities and prevent impersonation, you must sign in first.')}</p><a class="btn" href="#login" style="width:100%;text-align:center">${L('Iniciar sesión','Sign in')}</a><p class="auth-alt"><a href="#registro">${L('Crear cuenta ORIGEN','Create an ORIGEN account')}</a></p></div></div>`;
+    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">${L('RECLAMACIÓN DE PERFIL','PROFILE CLAIM')}</p><h1>${L('¿Representas a','Do you represent')} ${esc(c.name)}?</h1><p class="lead">${L('La gestión no se transfiere automáticamente. ORIGEN revisará que tengas autoridad para representar a esta persona, comunidad, negocio u organización.','Management is not transferred automatically. ORIGEN will review whether you have authority to represent this person, community, business or organisation.')}</p></div></section><section class="section"><div class="section-inner" style="max-width:820px"><form id="claim-form" class="form-grid" data-profile-ref="${esc(c.id)}"><div class="form-field"><label>${L('Tu nombre completo *','Your full name *')}</label><input name="claimant_name" value="${esc(user.name || '')}" required autocomplete="name"></div><div class="form-field"><label>${L('Cargo o relación *','Role or relationship *')}</label><input name="relationship_role" required placeholder="${L('Fundadora, gerente, representante autorizado…','Founder, manager, authorised representative…')}"></div><div class="form-field"><label>${L('Correo oficial *','Official email *')}</label><input type="email" name="official_email" value="${esc(user.email || '')}" required autocomplete="email"></div><div class="form-field"><label>${L('Web o red social oficial','Official website or social profile')}</label><input name="official_url" inputmode="url" placeholder="https://"></div><div class="form-field full"><label>${L('¿Cómo podemos verificar tu autoridad? *','How can we verify your authority? *')}</label><textarea name="explanation" rows="4" required maxlength="6000"></textarea></div><div class="form-field full"><label><input type="checkbox" name="authority" required> ${L('Declaro que estoy autorizado/a para solicitar la gestión de este perfil.','I declare that I am authorised to request management of this profile.')}</label></div><div id="claim-status" class="form-field full" role="status" aria-live="polite"></div><div class="form-field full"><button class="btn" type="submit" style="width:100%">${L('Enviar solicitud para revisión','Submit claim for review')}</button></div></form></div></section>${footer()}`;
   }
+
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
     const user    = me();
@@ -1922,18 +1925,18 @@
       e.preventDefault();
       const status = document.getElementById('claim-status');
       const submit = form.querySelector('button[type="submit"]');
-      if (submit) { submit.disabled = true; submit.textContent = 'Enviando…'; }
+      if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Enviando…' : 'Submitting…'; }
       try {
         const profileId = await culturalProfileId(form.dataset.profileRef);
-        if (!profileId) throw new Error('No encontramos el perfil de referencia en la base de datos.');
+        if (!profileId) throw new Error(state.lang === 'es' ? 'No encontramos el perfil de referencia en la base de datos.' : 'We could not find the reference profile in the database.');
         const fd = Object.fromEntries(new FormData(form));
-        await window.ORIGEN_API.submitClaim({ cultural_profile_id: profileId, claimant_name: fd.claimant_name, relationship_role: fd.relationship_role, official_email: fd.official_email, official_url: fd.official_url, explanation: fd.explanation });
-        if (status) status.textContent = 'Solicitud recibida. Estado: pendiente de revisión.';
-        if (submit) submit.textContent = 'Solicitud enviada';
-        showToast('Solicitud de reclamación enviada.');
+        await window.ORIGEN_API.submitClaim({ cultural_profile_id: profileId, claimant_name: fd.claimant_name, relationship_role: fd.relationship_role, official_email: fd.official_email, official_url: fd.official_url, explanation: fd.explanation, authority_declaration: fd.authority === 'on' });
+        if (status) status.textContent = state.lang === 'es' ? 'Solicitud recibida. Estado: pendiente de revisión.' : 'Claim received. Status: pending review.';
+        if (submit) submit.textContent = state.lang === 'es' ? 'Solicitud enviada' : 'Claim submitted';
+        showToast(state.lang === 'es' ? 'Solicitud de reclamación enviada.' : 'Profile claim submitted.');
       } catch (error) {
-        if (status) status.textContent = error.message || 'No pudimos enviar la solicitud.';
-        if (submit) { submit.disabled = false; submit.textContent = 'Enviar solicitud para revisión'; }
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos enviar la solicitud.' : 'We could not submit the claim.');
+        if (submit) { submit.disabled = false; submit.textContent = state.lang === 'es' ? 'Enviar solicitud para revisión' : 'Submit claim for review'; }
       }
     });
   }
