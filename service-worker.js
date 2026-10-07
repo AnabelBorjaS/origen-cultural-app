@@ -1,4 +1,4 @@
-const CACHE = 'origen-cultural-v6';
+const CACHE = 'origen-cultural-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './app.js?v=20261007-2',
   './mundo.js?v=20261007-2',
   './data.js',
+  './backend-runtime.js?v=20261007-1',
   './manifest.webmanifest',
   './assets/logo-mark.svg',
   './assets/logo-lockup.svg',
