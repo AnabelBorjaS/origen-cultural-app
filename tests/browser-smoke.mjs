@@ -71,8 +71,11 @@ async function desktopChecks() {
   await page.evaluate(() => { location.hash = '#login'; });
   await page.waitForSelector('#login-form');
   await page.waitForFunction(() => (document.querySelector('#login-form')?.innerText || '').includes('Email address'));
-  check((await page.locator('#login-form').innerText()).includes('Email address'), 'Login should render English copy');
-  check((await page.locator('#login-form').innerText()).includes('Password'), 'Login should render password label');
+  const loginLabels = await page.locator('#login-form input').evaluateAll(inputs =>
+    inputs.map(input => [...input.labels].map(label => label.textContent.trim()).join(' '))
+  );
+  check(loginLabels.some(label => label.includes('Email address')), 'Login email input should have an English programmatic label');
+  check(loginLabels.some(label => label.includes('Password')), 'Login password input should have an English programmatic label');
 
   check(pageErrors.length === 0, 'Desktop page should have no uncaught JavaScript errors: ' + pageErrors.join(' | '));
   await page.close();
