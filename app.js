@@ -684,7 +684,7 @@
     <section class="cta-panel">
       <img src="assets/images/mural.jpg" alt="Mural cultural">
       <div class="cta-content">
-        <p class="eyebrow">PROVEEDORES CULTURALES</p>
+        <p class="eyebrow">AGENTES CULTURALES</p>
         <h2>Tu historia cultural merece ser encontrada.</h2>
         <p>Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.</p>
         <a class="btn light" href="#registro">Empezar ahora</a>
@@ -709,14 +709,14 @@
         <div id="feed-posts">
           ${posts.length
             ? posts.map(postCard).join('')
-            : `<div class="empty-feed"><p>Sigue proveedores para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar proveedores</a></div>`}
+            : `<div class="empty-feed"><p>Sigue agentes culturales para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar agentes culturales</a></div>`}
           ${posts.length ? `<div id="feed-sentinel" class="feed-sentinel${window.ORIGEN_API?.cache?.postsExhausted ? ' done' : ''}" aria-live="polite"></div>` : ''}
         </div>
       </div>
       <aside class="feed-aside">
         <div class="aside-card">
           <p class="eyebrow">DESCUBRIR</p>
-          <h3>Proveedores culturales</h3>
+          <h3>Agentes culturales</h3>
           ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
@@ -1062,7 +1062,7 @@
       body = `<div class="atype-grid">
         <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
           <span class="atype-icon">◈</span>
-          <h3>Proveedor Cultural</h3>
+          <h3>Agente Cultural</h3>
           <p>Persona, comunidad, negocio u organización que preserva, enseña, comparte u ofrece servicios vinculados a la cultura.</p>
         </button>
         <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
@@ -1272,7 +1272,7 @@
       <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Proveedores Culturales</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Agentes Culturales</span></div>
         <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
         <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
       </div>
@@ -1380,7 +1380,7 @@
         <div class="mundo-header">
           <p class="eyebrow">EXPLORACIÓN CULTURAL</p>
           <h1 class="mundo-title">Mundo Cultural</h1>
-          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus proveedores.</p>
+          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus agentes culturales.</p>
         </div>
         <div class="mundo-body">
           <div class="mundo-globe-wrap">
@@ -1404,7 +1404,7 @@
             <div class="panel-welcome">
               <div class="panel-welcome-icon">◎</div>
               <h3>Selecciona un territorio</h3>
-              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los proveedores registrados en Origen Cultural.</p>
+              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.</p>
               <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
               <div class="featured-countries">
                 ${featured.map(f => `<button class="featured-country" data-fc="${f.key}"><span>${f.flag}</span><span>${f.name}</span></button>`).join('')}
@@ -2031,7 +2031,7 @@
       const user = me(); if (!user) return;
       const fd = Object.fromEntries(new FormData(form));
       if (user.accountType === 'creator' && state.createData.type === 'text') {
-        showToast('El feed de Proveedores Culturales requiere foto, carrusel o video.'); return;
+        showToast('El feed de Agentes Culturales requiere foto, carrusel o video.'); return;
       }
       if (!fd.contentPurpose) {
         showToast('Selecciona el propósito cultural de la publicación.'); return;
