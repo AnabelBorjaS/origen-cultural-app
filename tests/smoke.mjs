@@ -8,6 +8,7 @@ const styles = read('styles.css');
 const mundo = read('mundo.js');
 const trust = read('trust.js');
 const headers = read('_headers');
+const serviceWorker = read('service-worker.js');
 
 const checks = [
   ['Supabase SDK version is pinned', index.includes('@supabase/supabase-js@2.117.2')],
@@ -39,6 +40,10 @@ const checks = [
   ['No legacy local profile-follow map remains in Mundo', !mundo.includes("localStorage.getItem('oc-follows')") && !mundo.includes("localStorage.setItem('oc-follows')")],
   ['Public Spanish copy uses Agente Cultural terminology', !app.includes('Proveedor Cultural') && !app.includes('PROVEEDORES CULTURALES')],
   ['Trust disclosure includes Cache Storage', trust.includes('Cache Storage')],
+  ['Service worker bypasses cross-origin traffic', serviceWorker.includes("url.origin !== self.location.origin")],
+  ['Service worker bypasses Authorization requests', serviceWorker.includes("req.headers.has('authorization')")],
+  ['Service worker caches only navigation/static assets', serviceWorker.includes('if (!isNavigation && !isStatic) return;')],
+  ['Service worker rejects private/no-store/error responses', serviceWorker.includes('response.ok') && serviceWorker.includes('no-store|private')],
   ['App sanitizes persisted media URLs', app.includes('function safeMediaUrl(value)') && app.includes('safeMediaUrl(post.media[cidx])') && app.includes('safeMediaUrl(profile.cover)')],
   ['Directory profile copy is escaped before innerHTML', app.includes('esc(c.short)') && app.includes('esc(c.location)') && app.includes('esc(c.category)')],
   ['Mundo sanitizes live Cultural Agent fields', mundo.includes('function _esc(value)') && mundo.includes('function _safeMediaUrl(value)') && mundo.includes('_esc(c.name)')],
