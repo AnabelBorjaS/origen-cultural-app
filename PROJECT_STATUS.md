@@ -63,7 +63,7 @@ Arquitectura futura documentada. Partners tendrán perfil institucional, feed, f
 
 ## Estado de lanzamiento
 **NO-GO público todavía.**
-El PR de lanzamiento está abierto, en borrador y es mergeable. La base funcional está avanzada, pero falta QA real, hardening operativo, Trust actualizado, el perfil de Cultural Provider como producto completo y un despliegue de staging verificado antes de abrir registro público.
+El PR de lanzamiento está abierto y en borrador. El Quality Gate está pasando, pero el PR no es mergeable actualmente porque `main` y `launch-beta-supabase` han divergido; deben reconciliarse antes de cualquier integración. La base funcional está avanzada, pero falta QA real, hardening operativo, Trust actualizado y un despliegue de staging verificado antes de abrir registro público.
 
 
 ## Avances añadidos — 7 Oct 2026
@@ -96,3 +96,12 @@ El PR de lanzamiento está abierto, en borrador y es mergeable. La base funciona
 - ✅ El feed muestra la etiqueta de propósito junto a la categoría.
 - ✅ Quality Gate y smoke tests pasan después de estos cambios.
 - ✅ Supabase Security Advisor continúa con 0 lints de seguridad después de la migración.
+
+
+## Estado GitHub verificado — 7 Oct 2026
+- Rama pública principal: `main`.
+- Rama de lanzamiento: `launch-beta-supabase`.
+- El Quality Gate del commit más reciente de la beta finalizó correctamente (`success`).
+- `launch-beta-supabase` y `main` están divergidas; la beta contiene trabajo nuevo y `main` también recibió cambios independientes.
+- El PR #2 permanece en draft y actualmente no es mergeable.
+- Acción obligatoria antes de release: reconciliar las ramas sin perder cambios de producción, volver a ejecutar Quality Gate y repetir QA/staging.
