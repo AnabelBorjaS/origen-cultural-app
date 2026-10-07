@@ -136,8 +136,8 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Release build now uses explicit runtime whitelist via `npm run build:static`.
 - ✅ `dist/` excludes Markdown, SQL, GitHub/agent/Replit development files.
 - ✅ Release build rejects any `service_role` reference in deployable runtime text.
-- ✅ GitHub Quality Gate #153 passed with the current deployable runtime + deterministic release evidence artifacts.
-- ✅ Artifacts `origen-static-153` and `origen-release-evidence-153` generated: 25 public runtime files, 6.65 MB.
+- ✅ GitHub Quality Gate #154 passed with the current deployable runtime + deterministic release evidence artifacts.
+- ✅ Artifacts `origen-static-154` and `origen-release-evidence-154` generated: 25 public runtime files, 6.65 MB.
 - ✅ Deterministic runtime content digest: `sha256:07c669ffa2f24065d718ca6926c238ad096787ab8033297381a1efa1a681bdcc`.
 - ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
 - ⛔ No custom domain changes and no merge to `main` yet.
@@ -187,7 +187,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 
 ### Automated browser QA — 7 Oct 2026
 - ✅ Separate GitHub workflow `ORIGEN Browser QA` added with pinned Playwright/Chromium.
-- ✅ Browser QA #17 passed on the release candidate in real headless Chromium.
+- ✅ Browser QA #19 passed on the release candidate in real headless Chromium.
 - ✅ Desktop anonymous checks cover home render, search dialog, Trust Center, ES/EN switching, persistent language preference, login labels and absence of uncaught JavaScript errors.
 - ✅ Mobile checks cover drawer semantics, focus transfer, Escape close, focus restoration and registration rendering.
 - ✅ PWA/cache browser checks verify service-worker activation, expected cache creation, same-origin-only cache entries and no Supabase/CDN/Auth responses in Cache Storage.
@@ -204,3 +204,6 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Browser QA #17 and #18 passed after the initial workflow issues were corrected; the workflow is now part of release validation.
 - ✅ Trigger-only `touch_updated_at()` direct RPC execution removed from browser roles; triggers remain active.
 - ✅ Supabase Security Advisor remains at 0 active security lints after migration `20261007143630`.
+
+- ✅ `touch_updated_at` direct execution restricted: `anon` and `authenticated` cannot invoke the trigger helper directly.
+- ✅ Current release evidence: Quality Gate #154 + Browser QA #19 both SUCCESS; runtime content fingerprint remains `sha256:07c669ffa2f24065d718ca6926c238ad096787ab8033297381a1efa1a681bdcc`.
