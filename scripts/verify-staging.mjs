@@ -34,9 +34,11 @@ const csp = home.headers.get('content-security-policy') || '';
 record('CSP present', Boolean(csp), csp);
 record('CSP prevents framing', csp.includes("frame-ancestors 'none'"), csp);
 record('CSP blocks objects', csp.includes("object-src 'none'"), csp);
-record('ORIGEN app shell present', html.includes('app.js') && html.includes('supabase-client.js') && html.includes('trust.js'));
+record('Turnstile CSP script origin', csp.includes('script-src') && csp.includes('https://challenges.cloudflare.com'), csp);
+record('Turnstile CSP frame origin', csp.includes('frame-src https://challenges.cloudflare.com'), csp);
+record('ORIGEN app shell present', html.includes('runtime-config.js') && html.includes('app.js') && html.includes('supabase-client.js') && html.includes('trust.js'));
 
-for (const file of ['app.js','supabase-client.js','styles.css','manifest.webmanifest','service-worker.js','_headers']) {
+for (const file of ['runtime-config.js','app.js','supabase-client.js','styles.css','manifest.webmanifest','service-worker.js','_headers']) {
   const response = await get('/' + file);
   record(`Public runtime available: ${file}`, response.ok, String(response.status));
 }
