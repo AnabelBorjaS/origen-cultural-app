@@ -7,6 +7,7 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Privileged cultural-profile fields (ownership, verification status/source and follower counters) are protected from owner self-modification by a database trigger.
 - Supabase Auth instead of locally stored passwords.
 - PostgreSQL Row Level Security on public application tables.
 - User-controlled fields separated from privileged verification/ownership fields.
