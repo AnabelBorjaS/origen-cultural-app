@@ -180,3 +180,6 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Globe supply-chain hardening: `globe.gl@2.30.0`, `world-atlas@2.0.2` and `three-globe@2.45.3` resources are pinned; mutable `@master` fallback removed.
 - ✅ CSP no longer allows the unused `raw.githubusercontent.com` origin.
 - ⏳ Globe rendering/fallback still requires staging/browser verification across devices.
+
+- ✅ Globe XSS hardening: country labels, cultural point labels, micro-story copy and cultural-card fields are escaped before HTML rendering; micro-story hrefs use a safe-scheme allow-list.
+- ⏳ Visual globe behaviour remains part of browser/staging QA.
