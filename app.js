@@ -590,6 +590,7 @@
     );
     document.querySelector('.desktop-nav')?.setAttribute('aria-label', es ? 'Navegación principal' : 'Primary navigation');
     document.querySelector('.mobile-drawer nav')?.setAttribute('aria-label', es ? 'Navegación móvil' : 'Mobile navigation');
+    document.getElementById('mobile-drawer')?.setAttribute('aria-label', es ? 'Menú de navegación' : 'Navigation menu');
     document.querySelector('.bottom-nav')?.setAttribute('aria-label', es ? 'Navegación inferior' : 'Bottom navigation');
   }
 
@@ -2260,12 +2261,56 @@
   const menuBtn  = document.getElementById('menu-button');
   const closeBtn = document.getElementById('close-menu');
 
-  function openDrawer()  { drawer.classList.add('open'); overlay.classList.add('open'); drawer.setAttribute('aria-hidden','false'); menuBtn.setAttribute('aria-expanded','true'); }
-  function closeDrawer() { drawer.classList.remove('open'); overlay.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); menuBtn.setAttribute('aria-expanded','false'); }
+  let drawerPreviousFocus = null;
+  const drawerFocusable = () => [...drawer.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.hasAttribute('inert'));
+
+  function openDrawer() {
+    drawerPreviousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : menuBtn;
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    drawer.removeAttribute('inert');
+    drawer.setAttribute('aria-hidden','false');
+    menuBtn.setAttribute('aria-expanded','true');
+    requestAnimationFrame(() => (closeBtn || drawerFocusable()[0])?.focus());
+  }
+
+  function closeDrawer(restoreFocus = true) {
+    const wasOpen = drawer.classList.contains('open');
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    drawer.setAttribute('aria-hidden','true');
+    drawer.setAttribute('inert','');
+    menuBtn.setAttribute('aria-expanded','false');
+    if (restoreFocus && wasOpen) (drawerPreviousFocus || menuBtn)?.focus();
+  }
 
   menuBtn.addEventListener('click', openDrawer);
-  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-  if (overlay)  overlay.addEventListener('click', closeDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', () => closeDrawer(true));
+  if (overlay) overlay.addEventListener('click', () => closeDrawer(true));
+
+  drawer.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeDrawer(true);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = drawerFocusable();
+    if (!focusable.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   document.getElementById('language-toggle').addEventListener('click', () => {
     state.lang = state.lang === 'es' ? 'en' : 'es';
@@ -2411,7 +2456,7 @@
      HASH CHANGE → RENDER
   ═══════════════════════════════════════════════════════════ */
   window.addEventListener('hashchange', () => {
-    closeDrawer();
+    closeDrawer(false);
     render(currentRoute());
   });
 
