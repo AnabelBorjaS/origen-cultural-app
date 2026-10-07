@@ -7,6 +7,10 @@ Last reviewed: 6 October 2026
 No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
 
 ## Controls already implemented
+- Profile role self-escalation is blocked at the database layer; normal users cannot change their own `role` to `admin`.
+- Post counters/editorial metadata are protected from author manipulation.
+- Social interactions are scoped to published posts/profiles and social table grants follow least privilege.
+
 - Runtime JavaScript does not rely on inline event attributes, inline script blocks, `eval`, `new Function` or `javascript:` URLs; this remains compatible with the strict script CSP.
 - User-editable profile text is HTML-escaped in dynamic directory/search/Mundo surfaces.
 - Dynamic persisted media URLs are protocol-allow-listed before being inserted into image/video attributes.
