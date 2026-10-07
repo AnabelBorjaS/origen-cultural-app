@@ -85,3 +85,11 @@ Public beta remains NO-GO until:
 - [ ] Complete one end-to-end test-account deletion lifecycle in staging, including Storage cleanup and Cultural Agent profile handling.
 - [ ] Confirm no deleted test-user personal data remains publicly visible after the lifecycle test.
 - [ ] Confirm final retention/deletion wording with proportional legal/privacy review before public launch.
+
+
+## GitHub release controls
+- [ ] Confirm `main` rejects accidental direct/force pushes or has an equivalent protected release rule.
+- [ ] Confirm GitHub administrator account has 2FA enabled.
+- [ ] Review GitHub Secret Scanning / security alerts before GO.
+- [ ] Review Dependabot/code-scanning alerts where available.
+- [x] Current default-branch code search shows no obvious `service_role`, `sb_secret_`, Turnstile Secret, legacy JWT or Postgres connection-string patterns.
