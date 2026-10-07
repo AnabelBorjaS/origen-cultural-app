@@ -129,3 +129,15 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Supabase Auth client prepared to accept CAPTCHA tokens for signup, login and password recovery.
 - ⏳ CAPTCHA provider/widget + server-side enforcement remain blocked until an approved staging URL and provider keys exist.
 - ⏳ Public Beta remains NO-GO; `main` and `origencultural.com` remain untouched.
+
+
+### Staging package readiness — 7 Oct 2026
+- ✅ Cloudflare Pages Free re-verified as suitable for static staging; Git integration supports branch/PR previews.
+- ✅ Release build now uses explicit runtime whitelist via `npm run build:static`.
+- ✅ `dist/` excludes Markdown, SQL, GitHub/agent/Replit development files.
+- ✅ Release build rejects any `service_role` reference in deployable runtime text.
+- ✅ GitHub Quality Gate #86 passed on the current PR head.
+- ✅ Artifact `origen-static-86` generated: 25 public files, 6.63 MB.
+- ✅ Artifact digest: `sha256:2c2b3996e50ed22265ca949607e4b316b0fcfbe80538deaebe55a29a3edc53b8`.
+- ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
+- ⛔ No custom domain changes and no merge to `main` yet.
