@@ -435,6 +435,9 @@
   async function submitClaim(payload) {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión para reclamar un perfil.');
+    if (payload?.authority_declaration !== true) {
+      throw new Error('Authority declaration is required before submitting a profile claim.');
+    }
     const { data, error } = await client.from('profile_claims').insert({
       cultural_profile_id: payload.cultural_profile_id,
       claimant_user_id: uid,
@@ -443,7 +446,7 @@
       official_email: payload.official_email,
       official_url: payload.official_url || null,
       explanation: payload.explanation || null,
-      authority_declaration: true
+      authority_declaration: payload.authority_declaration
     }).select('id,status,created_at').single();
     if (error) throw error;
     return data;
