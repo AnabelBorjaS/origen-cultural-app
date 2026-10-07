@@ -1,30 +1,107 @@
-# Estado del proyecto
+# Estado del proyecto — ORIGEN Cultural
 
-## Entregado en este MVP
+Última actualización: 6 de octubre de 2026
 
-- Sistema visual aplicado a interfaz web y móvil.
-- Isotipo oficial vectorizado desde el archivo de marca, integrado como SVG transparente y aplicado al logotipo horizontal, favicon e iconos PWA.
-- Home, Explorar, Perfil Cultural, Pasaporte Cultural, Impacto y Registro.
-- Datos piloto de cinco perfiles culturales.
-- Búsqueda, filtros, favoritos, seguimiento e idioma ES/EN.
-- Persistencia de demostración en el navegador.
-- PWA, GitHub Pages y esquema inicial de Supabase.
+## Fuente de trabajo actual
+**GitHub es la fuente oficial del código.**
+Repositorio: `AnabelBorjaS/origen-cultural-app`
 
-## Funciones de demostración
+Replit no es la fuente principal.
 
-Estas funciones trabajan en el navegador y todavía no usan una base de datos compartida:
+## Infraestructura completada
+- Organización Supabase: ORIGEN Cultural.
+- Proyecto: ORIGEN Cultural Production.
+- Plan: Free.
+- Región: ap-southeast-2 (Sydney, Australia).
+- Supabase Auth integrado.
+- RLS habilitado en las tablas públicas.
+- Storage para avatars, covers y post-media.
+- Publicaciones, comentarios, likes y guardados conectados a Supabase.
+- Follows y favoritos de perfiles culturales conectados a Supabase.
+- Recuperación/cambio de contraseña integrado.
+- Aceptación legal v1.2 registrada desde el alta.
+- Flujo de reclamación de perfiles conectado a Supabase.
+- Perfiles piloto tratados como referencias no reclamadas.
+- Límites anti-spam y límites de contenido añadidos.
+- Content Security Policy y validación de enlaces externos añadidas.
+- Security Advisor de Supabase: 0 lints de seguridad activos tras el último hardening.
 
-- Favoritos y seguimiento.
-- Pasaporte Cultural.
-- Formulario de solicitud de perfil.
-- Perfil de usuario.
+## Producto actual
+La beta está diseñada como una única plataforma:
+- web pública + web app;
+- una sola cuenta ORIGEN;
+- datos persistentes/sincronizados mediante Supabase;
+- futura PWA;
+- futuras apps Android/iOS sobre el mismo backend.
 
-## Pendiente para una versión pública real
+## Modelo aprobado
+### Cultural Providers
+El perfil público debe permitir identidad, territorio, historia cultural, servicios/oferta, web/contacto, redes sociales y feed cultural/educativo con fotos y videos.
 
-- Conectar dominio y repositorio oficial.
-- Supabase Auth, base de datos y almacenamiento.
-- Panel de administración y verificación manual.
-- Consentimiento de imágenes y documentos legales actualizados.
-- Analítica, moderación, reportes y notificaciones.
-- Contenido real aprobado por cada Creador Cultural.
-- Pruebas con usuarios del piloto Ecuador.
+### Explorers
+Descubren, siguen, guardan, aprenden y contactan a Cultural Providers.
+
+### Partners / Academia ORIGEN
+Arquitectura futura documentada. Partners tendrán perfil institucional, feed, follows, programas, solicitudes, enrolments, credenciales/badges verificables y métricas de impacto. No es requisito construir toda Academia para la primera beta pública, pero debe comunicarse como roadmap y no prometer funciones todavía inactivas.
+
+## Bloqueadores actuales de Public Beta
+1. ✅ Perfil profesional de Proveedor Cultural incorporado en la Web App: historia, servicios/oferta, web/contacto, redes y feed cultural. Los datos profesionales se guardan en el perfil y las cuentas de Proveedor se preparan para ser públicas/descubribles.
+2. Confirmar y probar Auth real: email confirmation, login/logout, password reset y sesión entre dispositivos.
+3. Configurar únicamente URLs/redirecciones aprobadas para el dominio de ORIGEN.
+4. Activar y probar protección anti-bot/CAPTCHA para registro, login y recuperación.
+5. Probar RLS con al menos dos cuentas separadas y verificar que una cuenta no pueda editar/leer información privada de otra.
+6. Probar uploads válidos y maliciosos, límites de tamaño/MIME, ownership y borrado.
+7. Probar anti-spam, reportes y reclamación de perfil de principio a fin.
+8. Actualizar Trust Center/Privacy/Cookies para reflejar Supabase, Storage y el inventario técnico real.
+9. Confirmar que no se cargan analytics/ads opcionales antes de consentimiento.
+10. QA móvil/desktop, accesibilidad, ES/EN, enlaces, errores/empty/loading states y navegadores principales.
+11. ✅ CI/check automático mínimo activo en GitHub y passing.
+12. Desplegar una beta/staging de la rama de lanzamiento y validar CSP, Auth redirects y flujos reales.
+13. Resolver bugs Critical/High.
+14. Hacer revisión final de Trust/legal proporcional al mercado inicial.
+15. Solo después: merge a `main` y migración intencional de `origencultural.com`.
+
+## Estado de lanzamiento
+**NO-GO público todavía.**
+El PR de lanzamiento está abierto y en borrador. El Quality Gate está pasando, pero el PR no es mergeable actualmente porque `main` y `launch-beta-supabase` han divergido; deben reconciliarse antes de cualquier integración. La base funcional está avanzada, pero falta QA real, hardening operativo, Trust actualizado y un despliegue de staging verificado antes de abrir registro público.
+
+
+## Avances añadidos — 7 Oct 2026
+- ✅ Centro de confianza visible dentro de la Web App con resúmenes beta v1.2 alineados al alcance actual.
+- ✅ Registro actualizado para exigir aceptación explícita de Términos, Privacidad, Normas de Comunidad y Derechos Culturales antes de crear cuenta.
+- ✅ Supabase client rechaza el alta si no existe consentimiento explícito.
+- ✅ Métricas del landing ajustadas para no simular actividad real: territorios explorables, perfiles de referencia y estado Beta.
+- ✅ Globo cultural restaurado con textura de Tierra + fondo espacial mediante CSP permitida de forma controlada.
+- ✅ Feed infinito paginado desde Supabase y comportamiento de video visible/pausado.
+- ✅ Bienestar digital con objetivo diario suave de 120 minutos y recordatorio voluntario.
+- ✅ Pasaporte Cultural evolucionado hacia colecciones, países, categorías, niveles e insignias sin premiar tiempo de pantalla.
+- ✅ Smoke tests automatizados añadidos al Quality Gate para Trust, consentimiento, marca, globo, feed, bienestar y ausencia de service-role key en frontend.
+- ✅ Estado de follow/favorite corregido para perfiles reales de Proveedores Culturales.
+
+### Bloqueadores que permanecen antes de Public Beta
+- Configurar y probar CAPTCHA / anti-bot en Supabase Auth.
+- Confirmar email verification y redirect URLs únicamente para dominios aprobados.
+- Probar RLS de extremo a extremo con dos cuentas reales.
+- Probar uploads válidos/maliciosos y ownership.
+- Revisar Trust Center con profesional jurídico antes de quitar el estado beta/draft.
+- QA real mobile/desktop/accessibility y staging.
+- Resolver cualquier conflicto de merge del PR antes de integrar a main.
+
+
+### Feed cultural de Proveedores — 7 Oct 2026
+- ✅ Campo backend `content_purpose` añadido a publicaciones culturales con valores controlados: education, history, technique, territory, language, gastronomy, arts, heritage y community.
+- ✅ El formulario obliga a seleccionar un propósito cultural.
+- ✅ Los Proveedores Culturales solo pueden elegir Foto, Carrusel o Video; la opción Texto se reserva para otros tipos de cuenta.
+- ✅ El frontend bloquea de forma explícita publicaciones de texto-only para Proveedores.
+- ✅ El feed muestra la etiqueta de propósito junto a la categoría.
+- ✅ Quality Gate y smoke tests pasan después de estos cambios.
+- ✅ Supabase Security Advisor continúa con 0 lints de seguridad después de la migración.
+
+
+## Estado GitHub verificado — 7 Oct 2026
+- Rama pública principal: `main`.
+- Rama de lanzamiento: `launch-beta-supabase`.
+- El Quality Gate del commit más reciente de la beta finalizó correctamente (`success`).
+- `launch-beta-supabase` y `main` están divergidas; la beta contiene trabajo nuevo y `main` también recibió cambios independientes.
+- El PR #2 permanece en draft y actualmente no es mergeable.
+- Acción obligatoria antes de release: reconciliar las ramas sin perder cambios de producción, volver a ejecutar Quality Gate y repetir QA/staging.
