@@ -493,6 +493,32 @@
     }
   }
 
+  function parseManagedMediaUrl(publicUrl) {
+    try {
+      const raw = String(publicUrl || '').trim();
+      if (!raw) return null;
+      const url = new URL(raw);
+      const match = url.pathname.match(/\/storage\/v1\/object\/public\/(avatars|covers|post-media)\/(.+)$/);
+      if (!match) return null;
+      return { bucket: match[1], path: decodeURIComponent(match[2]) };
+    } catch {
+      return null;
+    }
+  }
+
+  async function removeOwnMedia(publicUrl) {
+    const uid = cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+    const parsed = parseManagedMediaUrl(publicUrl);
+    if (!parsed) return false;
+    if (!parsed.path.startsWith(uid + '/')) {
+      throw new Error('No puedes eliminar archivos que no pertenecen a tu cuenta.');
+    }
+    const { error } = await client.storage.from(parsed.bucket).remove([parsed.path]);
+    if (error) throw error;
+    return true;
+  }
+
   async function upload(bucket, file, nameHint='media') {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión.');
@@ -534,6 +560,6 @@
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
     listPosts, loadMorePosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
-    submitClaim, report, upload, validateUpload, authRedirect, normaliseUser
+    submitClaim, report, upload, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
   };
 })();
