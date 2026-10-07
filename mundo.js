@@ -690,7 +690,7 @@ window.MundoCultural = (() => {
     /* ─ suggest / correction ─ */
     document.getElementById('mc-suggest')?.addEventListener('click', e => {
       e.preventDefault();
-      const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      const session = window.ORIGEN_API?.cache?.session || null;
       if (!session) {
         _toast('Inicia sesión para sugerir datos o solicitar correcciones.');
         setTimeout(() => { window.location.hash = '#login'; }, 1400);
@@ -708,9 +708,12 @@ window.MundoCultural = (() => {
       ? `<img src="${src}" alt="${c.name}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
       : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${init}</div>`;
 
-    const followsMap = (() => { try { return JSON.parse(localStorage.getItem('oc-follows') || '{}'); } catch { return {}; } })();
-    const session    = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
-    const isFollowing = session && (followsMap[session.id] || []).includes(c.id);
+    const api = window.ORIGEN_API;
+    const session = api?.cache?.session || null;
+    const culturalProfile = c._kind === 'user'
+      ? api?.cache?.culturalProfiles?.find(p => p.owner_id === c.id)
+      : api?.cache?.culturalProfiles?.find(p => p.id === c.id || p.slug === c.id);
+    const isFollowing = !!session && !!culturalProfile && (api?.cache?.follows || []).includes(culturalProfile.id);
 
     return `<div class="creator-mini">
       <a href="${href}">${avHtml}</a>
@@ -745,16 +748,39 @@ window.MundoCultural = (() => {
       btn.addEventListener('click', () => selectCountry(btn.dataset.fc));
     });
     _panel.querySelectorAll('[data-mundo-follow]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      btn.addEventListener('click', async () => {
+        const api = window.ORIGEN_API;
+        const session = api?.cache?.session || null;
         if (!session) { window.location.hash = '#login'; return; }
-        const tid = btn.dataset.mundoFollow;
-        const follows = (() => { try { return JSON.parse(localStorage.getItem('oc-follows') || '{}'); } catch { return {}; } })();
-        if (!follows[session.id]) follows[session.id] = [];
-        const idx = follows[session.id].indexOf(tid);
-        if (idx === -1) { follows[session.id].push(tid); btn.textContent = 'Siguiendo'; btn.classList.add('on'); }
-        else            { follows[session.id].splice(idx, 1); btn.textContent = '+ Seguir';  btn.classList.remove('on'); }
-        localStorage.setItem('oc-follows', JSON.stringify(follows));
+
+        const ref = btn.dataset.mundoFollow;
+        const kind = btn.dataset.kind;
+        let culturalProfile = kind === 'user'
+          ? api?.cache?.culturalProfiles?.find(p => p.owner_id === ref)
+          : api?.cache?.culturalProfiles?.find(p => p.id === ref || p.slug === ref);
+
+        try {
+          if (!culturalProfile && kind === 'creator') {
+            culturalProfile = await api.findCulturalProfile(ref);
+          } else if (!culturalProfile && kind === 'user') {
+            const { data, error } = await api.client.from('cultural_profiles')
+              .select('*').eq('owner_id', ref).maybeSingle();
+            if (error) throw error;
+            culturalProfile = data;
+          }
+
+          if (!culturalProfile) {
+            _toast('Este seguimiento todavía no está disponible para este perfil.');
+            return;
+          }
+
+          const wasFollowing = (api.cache.follows || []).includes(culturalProfile.id);
+          await api.toggleFollow(culturalProfile.id);
+          btn.textContent = wasFollowing ? '+ Seguir' : 'Siguiendo';
+          btn.classList.toggle('on', !wasFollowing);
+        } catch (error) {
+          _toast(error?.message || 'No pudimos actualizar el seguimiento.');
+        }
       });
     });
   }
