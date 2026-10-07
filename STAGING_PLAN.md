@@ -98,3 +98,18 @@ GitHub Quality Gate now runs `npm run check:release`, which:
 - uploads the resulting static bundle as a GitHub Actions artifact for 7 days.
 
 This artifact is release evidence only. Cloudflare should build from the same `npm run build:static` command and `dist` output directory.
+
+
+## Automated deployed-staging audit
+
+After Cloudflare creates the HTTPS `*.pages.dev` URL, run the GitHub Actions workflow **ORIGEN Staging Audit** with that exact URL.
+
+The workflow executes `npm run audit:staging` and verifies:
+- homepage returns HTTP 200 over HTTPS;
+- response headers include anti-framing, `nosniff`, Referrer Policy, Permissions Policy and CSP;
+- CSP includes `frame-ancestors 'none'` and `object-src 'none'`;
+- core ORIGEN runtime assets are publicly available;
+- internal Markdown, SQL, package metadata and GitHub workflow files are not publicly served;
+- service worker is available with a JavaScript-compatible content type.
+
+A failed staging audit is a **NO-GO** for Auth QA or release.
