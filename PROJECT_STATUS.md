@@ -63,8 +63,9 @@ Arquitectura futura documentada. Partners tendrán perfil institucional, feed, f
 
 ## Estado de lanzamiento
 **NO-GO público todavía.**
-El PR de lanzamiento está abierto y en borrador. El Quality Gate está pasando, pero el PR no es mergeable actualmente porque `main` y `launch-beta-supabase` han divergido; deben reconciliarse antes de cualquier integración. La base funcional está avanzada, pero falta QA real, hardening operativo, Trust actualizado y un despliegue de staging verificado antes de abrir registro público.
-
+La reconciliación de ramas ya fue resuelta en una rama nueva creada desde el `main` actual: `reconcile-main-beta-2026-10-07`.
+El PR #3 (`Release candidate: reconciled ORIGEN Supabase beta`) está abierto en borrador, GitHub lo reporta como mergeable y el Quality Gate del PR terminó en `success`.
+No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPTCHA, QA de seguridad con cuentas reales, staging y revisión final de Trust/legal.
 
 ## Avances añadidos — 7 Oct 2026
 - ✅ Centro de confianza visible dentro de la Web App con resúmenes beta v1.2 alineados al alcance actual.
@@ -105,3 +106,14 @@ El PR de lanzamiento está abierto y en borrador. El Quality Gate está pasando,
 - `launch-beta-supabase` y `main` están divergidas; la beta contiene trabajo nuevo y `main` también recibió cambios independientes.
 - El PR #2 permanece en draft y actualmente no es mergeable.
 - Acción obligatoria antes de release: reconciliar las ramas sin perder cambios de producción, volver a ejecutar Quality Gate y repetir QA/staging.
+
+
+### Reconciliación de ramas completada — 7 Oct 2026
+- ✅ Backup del `main` actual creado: `backup-main-2026-10-07-pre-reconcile`.
+- ✅ Nueva rama de release creada desde `main`: `reconcile-main-beta-2026-10-07`.
+- ✅ Funcionalidad beta Supabase portada sobre la historia actual de producción.
+- ✅ Nomenclatura pública `Agente Cultural / Cultural Agent` preservada.
+- ✅ Runtime antiguo `backend-runtime.js` retirado por quedar reemplazado por la integración beta.
+- ✅ PR #3 abierto en draft y mergeable.
+- ✅ ORIGEN Quality Gate del PR #3 finalizó con éxito.
+- ⛔ Merge a `main` sigue bloqueado hasta completar el release gate.
