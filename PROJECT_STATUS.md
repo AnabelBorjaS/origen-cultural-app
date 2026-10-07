@@ -86,3 +86,13 @@ El PR de lanzamiento está abierto, en borrador y es mergeable. La base funciona
 - Revisar Trust Center con profesional jurídico antes de quitar el estado beta/draft.
 - QA real mobile/desktop/accessibility y staging.
 - Resolver cualquier conflicto de merge del PR antes de integrar a main.
+
+
+### Feed cultural de Proveedores — 7 Oct 2026
+- ✅ Campo backend `content_purpose` añadido a publicaciones culturales con valores controlados: education, history, technique, territory, language, gastronomy, arts, heritage y community.
+- ✅ El formulario obliga a seleccionar un propósito cultural.
+- ✅ Los Proveedores Culturales solo pueden elegir Foto, Carrusel o Video; la opción Texto se reserva para otros tipos de cuenta.
+- ✅ El frontend bloquea de forma explícita publicaciones de texto-only para Proveedores.
+- ✅ El feed muestra la etiqueta de propósito junto a la categoría.
+- ✅ Quality Gate y smoke tests pasan después de estos cambios.
+- ✅ Supabase Security Advisor continúa con 0 lints de seguridad después de la migración.
