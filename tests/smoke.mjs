@@ -7,6 +7,7 @@ const supabase = read('supabase-client.js');
 const styles = read('styles.css');
 const mundo = read('mundo.js');
 const trust = read('trust.js');
+const headers = read('_headers');
 
 const checks = [
   ['Supabase SDK version is pinned', index.includes('@supabase/supabase-js@2.117.2')],
@@ -27,7 +28,14 @@ const checks = [
   ['Provider feed requires cultural purpose', app.includes('name="contentPurpose" required') && supabase.includes('content_purpose')],
   ['Provider text-only post option is removed', app.includes("const types = isProvider") && app.includes("state.createData.type === 'text'")],
   ['Upload type/size preflight exists', supabase.includes('UPLOAD_RULES') && supabase.includes('validateUpload(bucket, file)')],
-  ['Upload pickers use supported MIME types', app.includes('image/jpeg,image/png,image/webp') && app.includes('video/mp4,video/webm,video/quicktime')]
+  ['Upload pickers use supported MIME types', app.includes('image/jpeg,image/png,image/webp') && app.includes('video/mp4,video/webm,video/quicktime')],
+  ['No legacy local auth session remains in Mundo', !mundo.includes("localStorage.getItem('oc-session')")],
+  ['No legacy local profile-follow map remains in Mundo', !mundo.includes("localStorage.getItem('oc-follows')") && !mundo.includes("localStorage.setItem('oc-follows')")],
+  ['Public Spanish copy uses Agente Cultural terminology', !app.includes('Proveedor Cultural') && !app.includes('PROVEEDORES CULTURALES')],
+  ['Trust disclosure includes Cache Storage', trust.includes('Cache Storage')],
+  ['Hosting headers prevent framing', headers.includes('X-Frame-Options: DENY') && headers.includes("frame-ancestors 'none'")],
+  ['Hosting headers disable MIME sniffing', headers.includes('X-Content-Type-Options: nosniff')],
+  ['Hosting headers restrict sensitive browser capabilities', headers.includes('Permissions-Policy:') && headers.includes('camera=()') && headers.includes('microphone=()')]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
