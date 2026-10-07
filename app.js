@@ -966,7 +966,7 @@
             ${hasMedia
               ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${src}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
-            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/*' : 'image/*'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
+            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
         <form class="form-grid" id="create-form">
           ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">FEED CULTURAL Y EDUCATIVO</p><p>Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.</p></div>` : ''}
@@ -1007,14 +1007,14 @@
       <div class="upload-section">
         <div class="upload-zone" id="edit-avatar-zone">
           ${user.avatar ? `<img src="${user.avatar}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
-          <input type="file" id="edit-avatar-input" accept="image/*" style="display:none">
+          <input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>
         </div>
         <div class="upload-zone wide" id="edit-cover-zone">
           ${user.cover
             ? `<img src="${user.cover}" class="edit-cover-preview" alt="Portada">`
             : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
-          <input type="file" id="edit-cover-input" accept="image/*" style="display:none">
+          <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>
         </div>
       </div>
@@ -1082,12 +1082,12 @@
       body = `<div class="upload-section">
         <div class="upload-zone" id="reg-avatar-zone">
           ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="Foto de perfil">` : `<div class="upload-placeholder"><span>+</span><p>Foto de perfil</p><small>Opcional</small></div>`}
-          <input type="file" id="reg-avatar-input" accept="image/*" style="display:none">
+          <input type="file" id="reg-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">Subir foto de perfil</button>
         </div>
         <div class="upload-zone wide" id="reg-cover-zone">
           ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="Portada">` : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p><small>Opcional</small></div>`}
-          <input type="file" id="reg-cover-input" accept="image/*" style="display:none">
+          <input type="file" id="reg-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">Subir portada</button>
         </div>
         <p class="form-note" style="width:100%;max-width:760px">Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.</p>
@@ -2086,7 +2086,7 @@
       state.editAvatar = file;
       const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-avatar-zone');
-      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/*" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
+      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${preview}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
     });
 
     /* cover upload */
@@ -2096,7 +2096,7 @@
       state.editCover = file;
       const preview = URL.createObjectURL(file);
       const zone = document.getElementById('edit-cover-zone');
-      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/*" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
+      if (zone) zone.innerHTML = `<img src="${preview}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
     });
 
     /* form submit */
