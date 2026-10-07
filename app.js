@@ -1117,76 +1117,100 @@
   function registerView() {
     const step  = state.regStep;
     const d     = state.regData;
-    const steps = ['Tipo de cuenta','Datos básicos','Foto y portada','Tu historia','Redes sociales'];
-    const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const es    = state.lang === 'es';
+    const L     = (esText, enText) => es ? esText : enText;
+    const steps = es
+      ? ['Tipo de cuenta','Datos básicos','Foto y portada','Tu historia','Redes sociales']
+      : ['Account type','Basic details','Photo and cover','Your story','Social links'];
+    const CATS  = [
+      ['Artesanía y tradición','Crafts and tradition'],
+      ['Gastronomía ancestral','Ancestral gastronomy'],
+      ['Música y danza','Music and dance'],
+      ['Territorio y patrimonio','Territory and heritage'],
+      ['Arte y cultura','Art and culture'],
+      ['Educación cultural','Cultural education'],
+      ['Comunidad','Community']
+    ];
 
-    const progress = `<div class="wizard-progress">
+    const progress = `<div class="wizard-progress" aria-label="${L('Progreso de registro','Registration progress')}">
       <div class="wizard-steps">
         ${steps.map((_, i) => `
-          <div class="wstep${i + 1 === step ? ' active' : i + 1 < step ? ' done' : ''}">
+          <div class="wstep${i + 1 === step ? ' active' : i + 1 < step ? ' done' : ''}" ${i + 1 === step ? 'aria-current="step"' : ''}>
             ${i + 1 < step ? '✓' : i + 1}
           </div>
           ${i < steps.length - 1 ? `<div class="wline${i + 1 < step ? ' done' : ''}"></div>` : ''}
         `).join('')}
       </div>
-      <p class="wizard-label">Paso ${step} de ${steps.length} · ${steps[step - 1]}</p>
+      <p class="wizard-label">${L('Paso','Step')} ${step} ${L('de','of')} ${steps.length} · ${steps[step - 1]}</p>
     </div>`;
 
     let body = '';
     if (step === 1) {
       body = `<div class="atype-grid">
-        <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
-          <span class="atype-icon">◈</span>
-          <h3>Agente Cultural</h3>
-          <p>Persona, comunidad, negocio u organización que preserva, enseña, comparte u ofrece servicios vinculados a la cultura.</p>
+        <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator" aria-pressed="${d.accountType === 'creator'}">
+          <span class="atype-icon" aria-hidden="true">◈</span>
+          <h3>${L('Agente Cultural','Cultural Agent')}</h3>
+          <p>${L(
+            'Persona, comunidad, negocio u organización que preserva, enseña, comparte u ofrece servicios vinculados a la cultura.',
+            'A person, community, business or organisation that preserves, teaches, shares or offers culture-related services.'
+          )}</p>
         </button>
-        <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
-          <span class="atype-icon">◎</span>
-          <h3>Explorador Cultural</h3>
-          <p>Persona interesada en descubrir, aprender y conectar con culturas vivas del mundo.</p>
+        <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer" aria-pressed="${d.accountType === 'explorer'}">
+          <span class="atype-icon" aria-hidden="true">◎</span>
+          <h3>${L('Explorador Cultural','Cultural Explorer')}</h3>
+          <p>${L(
+            'Persona interesada en descubrir, aprender y conectar con culturas vivas del mundo.',
+            'A person interested in discovering, learning about and connecting with living cultures around the world.'
+          )}</p>
         </button>
       </div>`;
     } else if (step === 2) {
       body = `<form class="form-grid" id="reg-basic">
-        <div class="form-field"><label>Nombre completo *</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
-        <div class="form-field"><label>Correo electrónico *</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
-        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
-        <div class="form-field"><label>País y ciudad *</label><input name="location" required placeholder="Quito, Ecuador" value="${esc(d.location || '')}"></div>
+        <div class="form-field"><label>${L('Nombre completo *','Full name *')}</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
+        <div class="form-field"><label>${L('Correo electrónico *','Email address *')}</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
+        <div class="form-field"><label>${L('Contraseña *','Password *')}</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
+        <div class="form-field"><label>${L('País y ciudad *','Country and city *')}</label><input name="location" required placeholder="${L('Quito, Ecuador','Brisbane, Australia')}" value="${esc(d.location || '')}"></div>
       </form>`;
     } else if (step === 3) {
       body = `<div class="upload-section">
         <div class="upload-zone" id="reg-avatar-zone">
-          ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="Foto de perfil">` : `<div class="upload-placeholder"><span>+</span><p>Foto de perfil</p><small>Opcional</small></div>`}
+          ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="${L('Foto de perfil','Profile photo')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de perfil','Profile photo')}</p><small>${L('Opcional','Optional')}</small></div>`}
           <input type="file" id="reg-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">Subir foto de perfil</button>
+          <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">${L('Subir foto de perfil','Upload profile photo')}</button>
         </div>
         <div class="upload-zone wide" id="reg-cover-zone">
-          ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="Portada">` : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p><small>Opcional</small></div>`}
+          ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="${L('Portada','Cover image')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de portada','Cover image')}</p><small>${L('Opcional','Optional')}</small></div>`}
           <input type="file" id="reg-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">Subir portada</button>
+          <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">${L('Subir portada','Upload cover')}</button>
         </div>
-        <p class="form-note" style="width:100%;max-width:760px">Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.</p>
+        <p class="form-note" style="width:100%;max-width:760px">${L(
+          'Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.',
+          'Images are optional. If your email requires confirmation before sign-in, you can safely add them from “Edit profile” after confirming your account.'
+        )}</p>
       </div>`;
     } else if (step === 4) {
       body = `<form class="form-grid" id="reg-story">
-        <div class="form-field full"><label>Tu historia cultural</label><textarea name="story" rows="4" placeholder="¿Quién eres, qué representas y qué deseas compartir con el mundo?">${esc(d.story || '')}</textarea></div>
+        <div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir con el mundo?','Who are you, what do you represent, and what would you like to share with the world?')}">${esc(d.story || '')}</textarea></div>
         <div class="form-field full">
-          <label>Categorías culturales</label>
-          <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${(d.categories || []).includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
+          <label>${L('Categorías culturales','Cultural categories')}</label>
+          <div class="cat-chips">${CATS.map(([value,enLabel]) => `<button type="button" class="chip${(d.categories || []).includes(value) ? ' active' : ''}" data-cat="${value}" aria-pressed="${(d.categories || []).includes(value)}">${es ? value : enLabel}</button>`).join('')}</div>
         </div>
-        ${d.accountType === 'creator' ? `<div class="form-field full"><label>¿Qué ofreces como Agente Cultural?</label><input name="providerHeadline" maxlength="180" value="${esc(d.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((d.services || []).join(', '))}" placeholder="Talleres, artesanía, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de tus servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Describe cómo aportas valor cultural y cómo pueden conocerte o contratarte.">${esc(d.serviceDescription || '')}</textarea></div>` : ''}
+        ${d.accountType === 'creator' ? `<div class="form-field full"><label>${L('¿Qué ofreces como Agente Cultural?','What do you offer as a Cultural Agent?')}</label><input name="providerHeadline" maxlength="180" value="${esc(d.providerHeadline || '')}" placeholder="${L('Ej. Talleres de bordado tradicional y educación cultural','e.g. Traditional embroidery workshops and cultural education')}"></div><div class="form-field full"><label>${L('Servicios / oferta cultural','Services / cultural offering')}</label><input name="services" value="${esc((d.services || []).join(', '))}" placeholder="${L('Talleres, artesanía, demostraciones, charlas','Workshops, crafts, demonstrations, talks')}"></div><div class="form-field full"><label>${L('Descripción de tus servicios','Service description')}</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="${L('Describe cómo aportas valor cultural y cómo pueden conocerte o contratarte.','Describe the cultural value you provide and how people can learn more or work with you.')}">${esc(d.serviceDescription || '')}</textarea></div>` : ''}
       </form>`;
     } else if (step === 5) {
+      const socialLabels = [['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email',L('Correo electrónico','Email address')],['web',L('Sitio web','Website')]];
       body = `<form class="form-grid" id="reg-social">
-        <p class="form-note full" style="grid-column:1/-1">Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.</p>
-        ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo electrónico'],['web','Sitio web']].map(([k, label]) =>
-          `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+        <p class="form-note full" style="grid-column:1/-1">${L(
+          'Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.',
+          'Add social links so people can contact you directly. Everything here is optional.'
+        )}</p>
+        ${socialLabels.map(([k, label]) => `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="${L('URL o usuario','URL or username')}"></div>`).join('')}
         <div class="form-field full legal-consent">
           <label class="legal-check">
             <input type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
-            <span>Acepto los <a href="#confianza">Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2</a> de ORIGEN.</span>
+            <span>${L('Acepto los','I accept ORIGEN’s')} <a href="#confianza">${L('Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2','Terms of Use, Privacy, Community Guidelines and Cultural Rights v1.2')}</a>${es ? ' de ORIGEN.' : '.'}</span>
           </label>
-          <p class="form-note">Puedes revisar el Centro de confianza antes de crear tu cuenta.</p>
+          <p class="form-note">${L('Puedes revisar el Centro de confianza antes de crear tu cuenta.','You can review the Trust Center before creating your account.')}</p>
         </div>
       </form>`;
     }
@@ -1196,12 +1220,12 @@
         <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
         ${progress}
         <div class="wizard-body">${body}</div>
-        <div id="reg-error" class="form-error" style="display:none"></div>
+        <div id="reg-error" class="form-error" role="alert" aria-live="assertive" style="display:none"></div>
         <div class="wizard-nav">
-          ${step > 1 ? `<button class="btn secondary" id="reg-back">← Atrás</button>` : '<div></div>'}
-          <button class="btn" id="reg-next">${step < 5 ? 'Siguiente →' : 'Crear mi perfil'}</button>
+          ${step > 1 ? `<button class="btn secondary" id="reg-back">← ${L('Atrás','Back')}</button>` : '<div></div>'}
+          <button class="btn" id="reg-next">${step < 5 ? L('Siguiente →','Next →') : L('Crear mi perfil','Create my profile')}</button>
         </div>
-        <p class="auth-alt">¿Ya tienes cuenta? <a href="#login">Iniciar sesión</a></p>
+        <p class="auth-alt">${L('¿Ya tienes cuenta?','Already have an account?')} <a href="#login">${L('Iniciar sesión','Sign in')}</a></p>
       </div>
     </div>`;
   }
@@ -1934,8 +1958,9 @@
     /* account type selection */
     document.querySelectorAll('[data-atype]').forEach(card => {
       card.addEventListener('click', () => {
-        document.querySelectorAll('[data-atype]').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('[data-atype]').forEach(c => { c.classList.remove('selected'); c.setAttribute('aria-pressed','false'); });
         card.classList.add('selected');
+        card.setAttribute('aria-pressed','true');
         state.regData.accountType = card.dataset.atype;
       });
     });
@@ -1944,6 +1969,7 @@
     document.querySelectorAll('[data-cat]').forEach(chip => {
       chip.addEventListener('click', () => {
         chip.classList.toggle('active');
+        chip.setAttribute('aria-pressed', chip.classList.contains('active') ? 'true' : 'false');
         const cat  = chip.dataset.cat;
         if (!state.regData.categories) state.regData.categories = [];
         const idx  = state.regData.categories.indexOf(cat);
@@ -1984,7 +2010,7 @@
       const errEl = document.getElementById('reg-error');
 
       if (step === 1) {
-        if (!state.regData.accountType) { if (errEl) { errEl.textContent = 'Selecciona un tipo de cuenta.'; errEl.style.display = 'block'; } return; }
+        if (!state.regData.accountType) { if (errEl) { errEl.textContent = state.lang === 'es' ? 'Selecciona un tipo de cuenta.' : 'Select an account type.'; errEl.style.display = 'block'; } return; }
         if (errEl) errEl.style.display = 'none';
         state.regStep++; render('registro', false);
       } else if (step === 2) {
@@ -2012,26 +2038,26 @@
         state.regData.links = links;
         state.regData.acceptedLegal = fd.acceptedLegal === 'on';
         if (!state.regData.acceptedLegal) {
-          if (errEl) { errEl.textContent = 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.'; errEl.style.display = 'block'; }
+          if (errEl) { errEl.textContent = state.lang === 'es' ? 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.' : 'You must accept ORIGEN’s essential documents to create your account.'; errEl.style.display = 'block'; }
           return;
         }
         nextBtn.disabled = true;
-        nextBtn.textContent = 'Creando cuenta…';
+        nextBtn.textContent = state.lang === 'es' ? 'Creando cuenta…' : 'Creating account…';
         const result = await doRegister(state.regData);
         if (result.ok) {
           const requiresConfirmation = result.requiresEmailConfirmation;
           state.regStep = 1; state.regData = {};
           if (requiresConfirmation) {
-            showToast('Revisa tu correo para confirmar tu cuenta.');
+            showToast(state.lang === 'es' ? 'Revisa tu correo para confirmar tu cuenta.' : 'Check your email to confirm your account.');
             go('login');
           } else {
-            showToast('¡Bienvenida/o a ORIGEN Cultural!');
+            showToast(state.lang === 'es' ? '¡Bienvenida/o a ORIGEN Cultural!' : 'Welcome to ORIGEN Cultural!');
             updateShell(); go('feed');
           }
         } else {
           if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
           nextBtn.disabled = false;
-          nextBtn.textContent = 'Crear mi perfil';
+          nextBtn.textContent = state.lang === 'es' ? 'Crear mi perfil' : 'Create my profile';
         }
       }
     });
