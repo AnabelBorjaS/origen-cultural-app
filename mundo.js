@@ -24,6 +24,18 @@ window.MundoCultural = (() => {
     }
   }
 
+  function _safeHref(value, fallback = '#explorar') {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return fallback;
+      if (raw.startsWith('#')) return raw;
+      const u = new URL(raw, window.location.href);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   /* ── BASE DE DATOS CULTURAL ─────────────────────────────────── */
   const CULTURAL_DB = {
     ecuador: {
@@ -480,7 +492,7 @@ window.MundoCultural = (() => {
       : `<div class="card-section card-section-creators">
           <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
           <div class="card-empty-creators">
-            <p>Sé el primero en registrarte desde ${data.name}.</p>
+            <p>Sé el primero en registrarte desde ${_esc(data.name)}.</p>
             <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
           </div>
         </div>`;
@@ -490,10 +502,10 @@ window.MundoCultural = (() => {
 
         <!-- HEADER -->
         <div class="card-header">
-          <div class="card-flag">${data.flag}</div>
+          <div class="card-flag">${_esc(data.flag)}</div>
           <div class="card-header-info">
-            <p class="eyebrow">${data.continent}</p>
-            <h2 class="card-country-name">${data.name}</h2>
+            <p class="eyebrow">${_esc(data.continent)}</p>
+            <h2 class="card-country-name">${_esc(data.name)}</h2>
           </div>
           <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
         </div>
@@ -501,7 +513,7 @@ window.MundoCultural = (() => {
         <!-- DISCLAIMER: múltiples identidades -->
         <p class="territory-disclaimer">
           <span class="td-icon">◈</span>
-          ${data.name} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
+          ${_esc(data.name)} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
         </p>
 
         <!-- MICRO-STORY CAROUSEL -->
@@ -539,7 +551,7 @@ window.MundoCultural = (() => {
         <!-- LENGUAS -->
         <div class="card-section">
           <p class="card-section-label">LENGUAS DE ESTE TERRITORIO</p>
-          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${l}</span>`).join('')}</div>
+          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${_esc(l)}</span>`).join('')}</div>
         </div>
 
         <!-- SUGGEST / CORRECTION -->
@@ -580,15 +592,15 @@ window.MundoCultural = (() => {
 
     card.innerHTML = `
       <div class="mc-inner">
-        <p class="mc-category">${h.cat}</p>
+        <p class="mc-category">${_esc(h.cat)}</p>
         <h3 class="mc-sabias">¿Sabías que…?</h3>
-        <blockquote class="mc-text">${h.txt}</blockquote>
-        <a href="${h.href || '#explorar'}" class="mc-discover-btn">
+        <blockquote class="mc-text">${_esc(h.txt)}</blockquote>
+        <a href="${_esc(_safeHref(h.href))}" class="mc-discover-btn">
           Descubre su origen <span aria-hidden="true">→</span>
         </a>
       </div>
       <footer class="mc-footer">
-        <p class="mc-source">Fuente: <em>${h.src}</em></p>
+        <p class="mc-source">Fuente: <em>${_esc(h.src)}</em></p>
       </footer>`;
 
     // Update dots
@@ -804,7 +816,7 @@ window.MundoCultural = (() => {
     _panel.innerHTML = `<div class="cultural-card">
       <div class="card-header">
         <div class="card-flag">🌍</div>
-        <div><h2 class="card-country-name">${name}</h2><p class="card-meta">Territorio sin datos culturales registrados aún.</p></div>
+        <div><h2 class="card-country-name">${_esc(name)}</h2><p class="card-meta">Territorio sin datos culturales registrados aún.</p></div>
         <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
       </div>
       <div class="card-section">
@@ -843,7 +855,7 @@ window.MundoCultural = (() => {
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
-        return `<div class="globe-tooltip">${feat === _selected ? '◈ ' : key ? '⭐ ' : ''}${n}</div>`;
+        return `<div class="globe-tooltip">${feat === _selected ? '◈ ' : key ? '⭐ ' : ''}${_esc(n)}</div>`;
       })
       .onPolygonHover(poly => {
         if (_destroyed) return;
@@ -869,7 +881,7 @@ window.MundoCultural = (() => {
       .pointAltitude('size')
       .pointRadius(0.35)
       .pointColor('color')
-      .pointLabel(d => `<div class="globe-tooltip">🏛 ${d.label}</div>`)
+      .pointLabel(d => `<div class="globe-tooltip">🏛 ${_esc(d.label)}</div>`)
       .onPointClick(d => {
         if (d.countryKey) selectCountry(d.countryKey);
       })
@@ -1074,9 +1086,9 @@ window.HeroGlobe = (() => {
     const { creators, posts } = stats(key);
     _popup.innerHTML = `
       <button class="hpop-close" id="hpop-close" aria-label="Cerrar historia">×</button>
-      <div class="hpop-flag">${db.flag}</div>
-      <h3 class="hpop-name">${db.name}</h3>
-      <p class="hpop-cont">${db.continent}</p>
+      <div class="hpop-flag">${_esc(db.flag)}</div>
+      <h3 class="hpop-name">${_esc(db.name)}</h3>
+      <p class="hpop-cont">${_esc(db.continent)}</p>
       <div class="hpop-stats">
         <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Agentes culturales</span></div>
         <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
@@ -1141,7 +1153,7 @@ window.HeroGlobe = (() => {
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
-          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${n}</div>`;
+          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${_esc(n)}</div>`;
         })
         .onPolygonHover(poly => {
           if (_destroyed) return;
