@@ -176,3 +176,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ PWA/cache hardening: service worker caches only same-origin public static assets/navigation, bypasses cross-origin/Auth requests and respects private/no-store/error responses.
 - ✅ Smoke tests now fail if future commits reintroduce broad service-worker caching.
 - ⏳ Installed-PWA/offline behaviour still requires staging/browser verification.
+
+- ✅ Globe supply-chain hardening: `globe.gl@2.30.0`, `world-atlas@2.0.2` and `three-globe@2.45.3` resources are pinned; mutable `@master` fallback removed.
+- ✅ CSP no longer allows the unused `raw.githubusercontent.com` origin.
+- ⏳ Globe rendering/fallback still requires staging/browser verification across devices.
