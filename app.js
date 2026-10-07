@@ -15,6 +15,7 @@
   const $app    = document.getElementById('main-content');
   const $toast  = document.getElementById('toast');
   const $search = document.getElementById('search-dialog');
+  const $report = document.getElementById('report-dialog');
 
   /* ═══════════════════════════════════════════════════════════
      STATE
@@ -564,6 +565,15 @@
       'Culture is not just another product. It is identity, memory, knowledge and future.');
     setText('#search-eyebrow', 'DESCUBRIR', 'DISCOVER');
     setText('#search-title', 'Busca cultura viva', 'Search living culture');
+    setText('#report-eyebrow', 'SEGURIDAD Y COMUNIDAD', 'SAFETY & COMMUNITY');
+    setText('#report-title', 'Reportar contenido', 'Report content');
+    setText('#report-copy',
+      'Cuéntanos qué ocurre. ORIGEN revisará el reporte sin transferir automáticamente ninguna sanción.',
+      'Tell us what happened. ORIGEN will review the report without automatically applying a penalty.');
+    setText('#report-reason-label', 'Motivo *', 'Reason *');
+    setText('#report-details-label', 'Contexto adicional (opcional)', 'Additional context (optional)');
+    setText('#report-cancel', 'Cancelar', 'Cancel');
+    setText('#report-submit', 'Enviar reporte', 'Submit report');
     setText('#wellbeing-eyebrow', 'BIENESTAR DIGITAL', 'DIGITAL WELLBEING');
     setText('#wellbeing-title', 'Una pausa también es parte del viaje.', 'A pause is part of the journey too.');
     setText('#wellbeing-copy',
@@ -575,6 +585,30 @@
     setText('#wellbeing-note',
       'ORIGEN no usa rachas ni recompensas por permanecer conectado.',
       'ORIGEN does not use streaks or rewards for staying connected.');
+
+    const reportReason = document.getElementById('report-reason');
+    if (reportReason) {
+      const labels = state.lang === 'es'
+        ? {
+            '': 'Selecciona un motivo',
+            cultural_rights: 'Derechos culturales / conocimiento sensible',
+            harassment: 'Acoso, odio o amenazas',
+            impersonation: 'Suplantación o identidad falsa',
+            spam: 'Spam, fraude o contenido engañoso',
+            copyright: 'Copyright / propiedad intelectual',
+            other: 'Otro'
+          }
+        : {
+            '': 'Select a reason',
+            cultural_rights: 'Cultural rights / sensitive knowledge',
+            harassment: 'Harassment, hate or threats',
+            impersonation: 'Impersonation or false identity',
+            spam: 'Spam, fraud or misleading content',
+            copyright: 'Copyright / intellectual property',
+            other: 'Other'
+          };
+      [...reportReason.options].forEach(option => { option.textContent = labels[option.value] || option.value; });
+    }
 
     const search = document.getElementById('global-search');
     if (search) {
@@ -1646,26 +1680,22 @@
 
     /* report */
     document.querySelectorAll('[data-report]').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         if (!isAuth()) {
-          showToast('Inicia sesión para enviar un reporte.');
+          showToast(state.lang === 'es' ? 'Inicia sesión para enviar un reporte.' : 'Sign in to submit a report.');
           go('login');
           return;
         }
-        const reason = window.prompt('¿Cuál es el motivo del reporte? Describe el problema brevemente.');
-        if (!reason || !reason.trim()) return;
-        const details = window.prompt('Puedes añadir más contexto (opcional).') || '';
-        try {
-          await window.ORIGEN_API.report({
-            target_type: 'post',
-            target_id: btn.dataset.report,
-            reason: reason.trim().slice(0, 500),
-            details: details.trim().slice(0, 6000)
-          });
-          showToast('Reporte recibido. Gracias por ayudarnos a cuidar ORIGEN.');
-        } catch (error) {
-          showToast(error.message || 'No pudimos enviar el reporte.');
-        }
+        if (!$report) return;
+        const form = document.getElementById('report-form');
+        form?.reset();
+        $report.dataset.targetType = 'post';
+        $report.dataset.targetId = btn.dataset.report || '';
+        const status = document.getElementById('report-status');
+        if (status) status.textContent = '';
+        updateStaticLanguage();
+        $report.showModal();
+        requestAnimationFrame(() => document.getElementById('report-reason')?.focus());
       });
     });
 
@@ -2400,6 +2430,57 @@
     }, 30000);
   }
 
+  function initReportDialog() {
+    if (!$report) return;
+    const form = document.getElementById('report-form');
+    const close = () => {
+      if ($report.open) $report.close();
+      const status = document.getElementById('report-status');
+      if (status) status.textContent = '';
+    };
+
+    document.getElementById('report-close')?.addEventListener('click', close);
+    document.getElementById('report-cancel')?.addEventListener('click', close);
+
+    form?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const reason = document.getElementById('report-reason')?.value || '';
+      const details = document.getElementById('report-details')?.value || '';
+      const status = document.getElementById('report-status');
+      const submit = document.getElementById('report-submit');
+      if (!reason) {
+        if (status) status.textContent = state.lang === 'es' ? 'Selecciona un motivo.' : 'Select a reason.';
+        return;
+      }
+
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = state.lang === 'es' ? 'Enviando…' : 'Submitting…';
+      }
+      try {
+        await window.ORIGEN_API.report({
+          target_type: $report.dataset.targetType || 'post',
+          target_id: $report.dataset.targetId || '',
+          reason,
+          details: details.trim().slice(0, 6000)
+        });
+        close();
+        showToast(state.lang === 'es'
+          ? 'Reporte recibido. Gracias por ayudarnos a cuidar ORIGEN.'
+          : 'Report received. Thank you for helping keep ORIGEN safe.');
+      } catch (error) {
+        if (status) status.textContent = error?.message || (state.lang === 'es'
+          ? 'No pudimos enviar el reporte.'
+          : 'We could not submit the report.');
+      } finally {
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = state.lang === 'es' ? 'Enviar reporte' : 'Submit report';
+        }
+      }
+    });
+  }
+
   function bindCspSafeDelegates() {
     document.addEventListener('click', event => {
       const target = event.target;
@@ -2511,6 +2592,7 @@
     }
   });
 
+  initReportDialog();
   bindCspSafeDelegates();
   initDigitalWellbeing();
   initApp();
