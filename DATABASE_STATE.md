@@ -19,6 +19,7 @@ Production reports these migrations:
 9. `20261007135902_harden_claim_report_insert_integrity_and_grants`
 10. `20261007140601_harden_social_privileged_fields_and_grants`
 11. `20261007140657_scope_social_interactions_to_published_content`
+12. `20261007141841_limit_public_profiles_to_creators`
 
 ## Security verification
 
@@ -58,3 +59,11 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 - Likes, saves, follows, favourites and new comments can target published content/profiles only.
 - Social-table privileges were reduced to the operations actually required by the Beta client.
 - Supabase Security Advisor after both migrations: **0 active security lints**.
+
+
+## Explorer profile privacy hardening verified — 7 October 2026
+- Public Data API reads from `profiles` are limited to `role = creator`.
+- An authenticated user can still read their own profile row.
+- Admin moderation access remains available through `private.is_admin()`.
+- At migration time Production contained 0 Explorer profiles, 0 creator profiles and 0 published user posts, so the change affected no real user data.
+- Supabase Security Advisor after migration: **0 active security lints**.
