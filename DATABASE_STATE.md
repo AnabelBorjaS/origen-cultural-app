@@ -20,6 +20,7 @@ Production reports these migrations:
 10. `20261007140601_harden_social_privileged_fields_and_grants`
 11. `20261007140657_scope_social_interactions_to_published_content`
 12. `20261007141841_limit_public_profiles_to_creators`
+13. `20261007143630_restrict_touch_updated_at_execution`
 
 ## Security verification
 
@@ -66,4 +67,12 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 - An authenticated user can still read their own profile row.
 - Admin moderation access remains available through `private.is_admin()`.
 - At migration time Production contained 0 Explorer profiles, 0 creator profiles and 0 published user posts, so the change affected no real user data.
+- Supabase Security Advisor after migration: **0 active security lints**.
+
+
+## Function execution surface hardening verified — 7 October 2026
+- `public.touch_updated_at()` is used only by UPDATE triggers on `profiles`, `cultural_profiles` and `cultural_posts`.
+- Direct EXECUTE is revoked from `PUBLIC`, `anon` and `authenticated`.
+- Trigger associations remain present after the revoke.
+- Sensitive private trigger/admin functions remain inaccessible directly to browser roles.
 - Supabase Security Advisor after migration: **0 active security lints**.
