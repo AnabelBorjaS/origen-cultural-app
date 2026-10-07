@@ -230,3 +230,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ⚠️ Supabase Free should not be treated as guaranteed PITR/dashboard recovery. A logical database backup must be created and verified outside the public repository before Public Beta.
 - ⚠️ Database backups do not restore deleted physical Storage objects; media recovery/retention expectations remain a separate pilot requirement.
 - ⏳ Actual pre-beta logical backup export and validation are still pending.
+
+- ✅ Privacy-request/account-deletion baseline: Trust Center + own-profile contact route + `PRIVACY_REQUEST_RUNBOOK.md` are in place.
+- ✅ Account deletion process accounts for Storage-owner cleanup first, Auth JWT/session caveat, database cascades and separate Cultural Agent profile review.
+- ⏳ One full staging test-account deletion lifecycle remains required before Public Beta.
