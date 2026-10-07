@@ -1,10 +1,10 @@
-const CACHE = 'origen-cultural-v4';
+const CACHE = 'origen-cultural-v5';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20261007-1',
-  './app.js?v=20261007-1',
-  './mundo.js?v=20261007-1',
+  './styles.css?v=20261007-2',
+  './app.js?v=20261007-2',
+  './mundo.js?v=20261007-2',
   './data.js',
   './manifest.webmanifest',
   './assets/logo-mark.svg',
