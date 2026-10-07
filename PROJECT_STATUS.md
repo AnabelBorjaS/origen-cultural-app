@@ -158,3 +158,7 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ⏳ XSS attack-string testing with real persisted records remains a staging QA requirement.
 
 - ✅ Mobile drawer focus management: dialog semantics, focus trap, Escape close and opener-focus restoration.
+
+- ✅ Claim/report database integrity hardening: claims cannot self-declare approved, reports cannot self-declare resolved, anonymous inserts are denied, and least-privilege table grants are applied.
+- ✅ Negative RLS verification executed against Production without persisting test rows.
+- ✅ Supabase Security Advisor remains at 0 active security lints after the hardening migration.
