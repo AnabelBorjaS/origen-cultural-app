@@ -15,7 +15,7 @@ Why:
 - integrates with GitHub;
 - provides HTTPS `*.pages.dev` URLs;
 - supports branch/PR preview deployments;
-- ORIGEN's current frontend is static HTML/CSS/JavaScript and does not require a server build.
+- ORIGEN's current frontend is static HTML/CSS/JavaScript. A whitelist build copies only public runtime files into `dist/`, preventing internal Markdown, SQL and development files from being deployed.
 
 ### Not selected for Auth staging
 
@@ -36,8 +36,8 @@ Release branch to deploy:
 
 Static build configuration:
 - Framework preset: None
-- Build command: `exit 0`
-- Build output directory: repository root / appropriate static output root
+- Build command: `npm run build:static`
+- Build output directory: `dist`
 - Production DNS: **do not connect `origencultural.com`**
 - Use the generated `*.pages.dev` URL for controlled testing.
 
@@ -86,3 +86,15 @@ Staging is complete only when:
 - 0 Critical and 0 High bugs remain.
 
 Only then can ORIGEN consider merging PR #3 into `main` and intentionally migrating the public domain.
+
+
+## Pre-deployment artifact
+
+GitHub Quality Gate now runs `npm run check:release`, which:
+- validates JavaScript and smoke checks;
+- builds a clean `dist/` directory from an explicit runtime whitelist;
+- rejects Markdown, SQL, GitHub/agent/Replit files inside the deployable bundle;
+- rejects any `service_role` reference in deployable runtime text;
+- uploads the resulting static bundle as a GitHub Actions artifact for 7 days.
+
+This artifact is release evidence only. Cloudflare should build from the same `npm run build:static` command and `dist` output directory.
