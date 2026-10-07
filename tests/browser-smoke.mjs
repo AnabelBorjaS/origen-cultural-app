@@ -15,7 +15,7 @@ async function desktopChecks() {
   page.on('pageerror', error => pageErrors.push(error.message));
 
   await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForSelector('#main-content', { timeout: 15000 });
+  await page.waitForFunction(() => (document.querySelector('#main-content')?.innerText || '').trim().length > 40, null, { timeout: 20000 });
 
   check(await page.title() === 'Origen Cultural', 'Document title should be Origen Cultural');
   check(await page.locator('html').getAttribute('lang') === 'es', 'Default document language should be es');
@@ -26,7 +26,7 @@ async function desktopChecks() {
   check(await page.locator('#global-search').getAttribute('aria-label') === 'Buscar cultura viva', 'Search input should have an accessible name');
   await page.keyboard.press('Escape');
 
-  await page.goto(baseURL + '#confianza', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { location.hash = '#confianza'; });
   await page.waitForSelector('#main-content h1');
   check((await page.locator('#main-content h1').innerText()).includes('Centro de confianza'), 'Trust Center route should render');
   check(await page.locator('#main-content').innerText().then(t => t.includes('v1.2')), 'Trust Center should expose legal version v1.2');
@@ -36,8 +36,10 @@ async function desktopChecks() {
   check(await page.locator('html').getAttribute('lang') === 'en', 'Language toggle should update html lang to en');
   check((await page.locator('#language-toggle').innerText()).trim() === 'ES', 'Language toggle should offer ES after switching to English');
 
-  await page.goto(baseURL + '#login', { waitUntil: 'domcontentloaded' });
+  check(await page.evaluate(() => localStorage.getItem('origen-lang')) === 'en', 'English preference should persist in localStorage');
+  await page.evaluate(() => { location.hash = '#login'; });
   await page.waitForSelector('#login-form');
+  await page.waitForFunction(() => (document.querySelector('#login-form')?.innerText || '').includes('Email address'));
   check((await page.locator('#login-form').innerText()).includes('Email address'), 'Login should render English copy');
   check((await page.locator('#login-form').innerText()).includes('Password'), 'Login should render password label');
 
@@ -51,6 +53,7 @@ async function mobileChecks() {
   page.on('pageerror', error => pageErrors.push(error.message));
 
   await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => (document.querySelector('#main-content')?.innerText || '').trim().length > 40, null, { timeout: 20000 });
   await page.waitForSelector('#menu-button');
 
   await page.locator('#menu-button').click();
@@ -63,7 +66,7 @@ async function mobileChecks() {
   check(await page.locator('#mobile-drawer').getAttribute('aria-hidden') === 'true', 'Closed drawer should be hidden from assistive tech');
   check(await page.locator('#menu-button').evaluate(el => document.activeElement === el), 'Focus should return to menu opener');
 
-  await page.goto(baseURL + '#registro', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { location.hash = '#registro'; });
   await page.waitForSelector('.auth-card');
   check(await page.locator('.auth-card').innerText().then(t => t.includes('Agente Cultural')), 'Registration should render Cultural Agent option');
   check(await page.locator('.auth-card').innerText().then(t => t.includes('Explorador Cultural')), 'Registration should render Cultural Explorer option');
