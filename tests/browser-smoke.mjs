@@ -125,12 +125,13 @@ async function mobileChecks() {
   await page.waitForSelector('#menu-button');
 
   await page.locator('#menu-button').click();
+  await page.waitForFunction(() => document.activeElement?.id === 'close-menu');
   check(await page.locator('#menu-button').getAttribute('aria-expanded') === 'true', 'Menu button should expose expanded state');
   check(await page.locator('#mobile-drawer').getAttribute('aria-hidden') === 'false', 'Mobile drawer should become visible');
   check(await page.locator('#close-menu').evaluate(el => document.activeElement === el), 'Focus should move into opened drawer');
 
   await page.keyboard.press('Escape');
-  check(await page.locator('#menu-button').getAttribute('aria-expanded') === 'false', 'Escape should close drawer');
+  await page.waitForFunction(() => document.querySelector('#menu-button')?.getAttribute('aria-expanded') === 'false');
   check(await page.locator('#mobile-drawer').getAttribute('aria-hidden') === 'true', 'Closed drawer should be hidden from assistive tech');
   check(await page.locator('#menu-button').evaluate(el => document.activeElement === el), 'Focus should return to menu opener');
 
