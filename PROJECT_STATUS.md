@@ -141,3 +141,18 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Deterministic runtime content digest: `sha256:bcbebdc778a897d90fd1854708bc11f2ae886be2cf46ca8f0e45f8c5d2fb5952`.
 - ⏳ External Cloudflare Git authorization/project creation is the remaining step before a real HTTPS staging URL exists.
 - ⛔ No custom domain changes and no merge to `main` yet.
+
+
+### Accessibility, i18n and CSP hardening — 7 Oct 2026
+- ✅ Critical Auth views (login, password recovery and reset) have ES/EN copy.
+- ✅ Registration wizard and legal-consent flow have ES/EN copy while preserving canonical cultural-category values.
+- ✅ Persistent shell/navigation/search/wellbeing copy updates with ES/EN and document language follows the active locale.
+- ✅ Programmatic form label associations, visible keyboard focus, accessible icon controls and `aria-current` navigation baseline added.
+- ✅ Runtime inline event handlers removed; strict CSP does not require `unsafe-inline` for scripts.
+- ✅ No inline script blocks, `eval`, `new Function` or `javascript:` runtime schemes found in the source audit.
+- ✅ Runtime file triggers/search actions/avatar fallback now use CSP-safe event listeners.
+- ✅ User-editable profile text is escaped before HTML rendering in directory/search surfaces.
+- ✅ Persisted media URLs pass through protocol allow-list sanitizers before rendering.
+- ✅ Mundo Cultural live-agent mini cards now escape user data and sanitize media URLs.
+- ⏳ Browser-level accessibility, keyboard, mobile/desktop and full ES/EN review still require deployed staging.
+- ⏳ XSS attack-string testing with real persisted records remains a staging QA requirement.
