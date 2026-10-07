@@ -52,8 +52,12 @@ Supabase recommends exact redirect paths in production; wildcards are mainly use
 
 Supabase supports hCaptcha and Cloudflare Turnstile for Auth.
 
-Decision required before activation:
-- [ ] Select provider: **Cloudflare Turnstile** or **hCaptcha**.
+Provider selected for controlled beta: **Cloudflare Turnstile Free**.
+
+Activation remains pending the exact HTTPS staging hostname, Turnstile Site Key and Secret Key. See `CAPTCHA_INTEGRATION_PLAN.md`.
+
+Decision / activation checklist:
+- [x] Select provider: **Cloudflare Turnstile Free**.
 - [ ] Create provider widget/site.
 - [ ] Keep **Secret Key** only in Supabase/provider configuration; never commit it to GitHub.
 - [ ] Site Key may be used by the frontend.
