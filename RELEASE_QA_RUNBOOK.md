@@ -27,6 +27,20 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — Identidad durante subida y guardado
+
+| Escenario | Resultado esperado | Evidencia |
+|---|---|---|
+| A inicia edición de perfil y B inicia sesión antes de guardar | No se envía la edición de A sobre el perfil de B | ✅ cliente aislado; ⬜ staging real |
+| A inicia publicación, B reemplaza sesión durante la subida | Ninguna publicación de A aparece bajo B por reuso accidental de caché | ✅ validación y pruebas aisladas; ⬜ staging |
+| Guardado de perfil de A ya confirmado pero responde tras login de B | Resultado de A no reemplaza caché de B; no se presenta como guardado fallido si el servidor lo confirmó | ✅ cliente aislado; ⬜ staging |
+| Inserción válida de A responde tras login de B | No refresca listas desde la sesión anterior ni sugiere duplicar la publicación | ✅ cliente aislado; ⬜ staging |
+| Subida avatar exitosa + portada fallida | Eliminación del avatar temporal sin referencia, sin actualizar perfil | ✅ navegador simulado #129; ⬜ Storage real |
+| Error de permisos/RLS al limpiar medio temporal | Conservar error para soporte y revisar limpieza de huérfanos; nunca eliminar archivos de terceros | ⬜ staging |
+| Fallo de guardado tras dos subidas válidas | Se intenta limpiar los dos medios recién cargados; nunca fotos antiguas aún referenciadas | ✅ lógica de recuperación; ⬜ staging |
+
+Estas pruebas **no** prueban permisos de Storage ni RLS en una cuenta real. La revisión de backend sigue bloqueando la beta pública.
+
 ## P0 — Privacidad entre cuentas en dispositivos compartidos
 
 | Prueba | Resultado esperado | Evidencia |
