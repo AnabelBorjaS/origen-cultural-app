@@ -88,8 +88,16 @@ Public beta remains NO-GO until:
 
 
 ## GitHub release controls
-- [ ] Confirm `main` rejects accidental direct/force pushes or has an equivalent protected release rule.
+- [ ] Confirm `main` rejects accidental direct/force pushes or has an equivalent protected release rule. **Current repository rulesets endpoint returns no rulesets; manual GitHub admin action still required.**
 - [ ] Confirm GitHub administrator account has 2FA enabled.
 - [ ] Review GitHub Secret Scanning / security alerts before GO.
-- [ ] Review Dependabot/code-scanning alerts where available.
+- [ ] Review Dependabot/code-scanning alerts where available. **Dependabot GitHub-Actions monitoring and ORIGEN CodeQL workflow are now configured; first clean review must be confirmed before GO.**
 - [x] Current default-branch code search shows no obvious `service_role`, `sb_secret_`, Turnstile Secret, legacy JWT or Postgres connection-string patterns.
+
+
+## Automated repository security controls
+- [x] Weekly Dependabot version monitoring configured for GitHub Actions.
+- [x] CodeQL JavaScript/TypeScript `security-extended` workflow configured for PRs to `main`, pushes to `main` and weekly schedule.
+- [x] Existing Quality Gate and Browser QA remain separate required evidence during release review.
+- [ ] Repository admin must add/confirm a `main` branch ruleset or equivalent protection before Public Beta.
+- [ ] Repository owner/admin 2FA must be confirmed manually; this connector cannot inspect account-level 2FA state.
