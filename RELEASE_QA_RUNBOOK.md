@@ -3,7 +3,7 @@
 Status: **NO-GO until Critical/High checks pass**
 Candidate branch: `reconcile-main-beta-2026-10-07`
 Release PR: **#3**
-Last updated: 7 October 2026
+Last updated: 8 October 2026
 
 ## Test accounts
 
@@ -26,6 +26,21 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Password recovery | Approved recovery link works | ⬜ |
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
+
+## P0 — Registro completado vs fallos posteriores
+
+Una cuenta creada con éxito no debe registrarse por segunda vez si fallan una imagen opcional o un paso de configuración.
+
+| Prueba | Resultado esperado | Estado |
+|---|---|---|
+| Signup sin imágenes | Cuenta creada y redirección correcta | ⬜ staging |
+| Signup con avatar y portada válidos (sin email confirmation pendiente) | Medios guardados y asociados únicamente al nuevo usuario | ⬜ staging |
+| Signup con avatar inválido/error de Storage | Cuenta existente; aviso de foto opcional; no se vuelve a llamar a signup | ✅ navegador simulado #85; ⬜ staging real |
+| Avatar se sube y luego falla portada o guardado de perfil | Archivos subidos sin asociar se limpian o se registra incidencia; cuenta sigue existente | ⬜ staging |
+| Email confirmation requerida | No intentar uploads antes de confirmar; explicar cómo añadir fotos después | ⬜ staging |
+| Cargar perfil tras signup falla | Mostrar cuenta creada sin prometer perfil preparado; permitir iniciar sesión | ⬜ staging |
+
+La prueba de navegador `tests/browser-smoke.mjs` usa un cliente simulado: **no** equivale a un test de Storage/RLS real.
 
 ## P0 — CAPTCHA / bot protection
 
