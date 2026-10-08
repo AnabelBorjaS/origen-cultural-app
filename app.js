@@ -1309,7 +1309,7 @@
         ${d.type !== 'text' ? `
           <div class="upload-zone wide" id="post-media-zone">
             ${hasMedia
-              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb">${d.type === 'video'
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb${d.type === 'video' ? ' preview-video' : ''}">${d.type === 'video'
                 ? `<video src="${esc(safeMediaUrl(src))}" controls muted playsinline preload="metadata" aria-label="Vista previa del video"></video>`
                 : `<img src="${esc(safeMediaUrl(src))}" alt="Vista previa de imagen ${i + 1}">`}
                 <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
