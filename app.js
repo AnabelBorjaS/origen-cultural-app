@@ -32,6 +32,8 @@
     carIdx: {},
     editAvatar: null,
     editCover: null,
+    editAvatarPreview: null,
+    editCoverPreview: null,
     user: null,
     authReady: false,
     feedLoading: false,
@@ -40,6 +42,35 @@
     wellbeingLastTick: Date.now(),
     wellbeingNextPromptMs: null,
   };
+
+  // Account-specific drafts must never survive a successful sign-out or
+  // a switch to another user on the same browser/device.
+  function releasePreview(url) {
+    if (typeof url === 'string' && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function clearAccountDrafts() {
+    for (const url of [
+      ...(state.createData.media || []),
+      state.regData.avatar,
+      state.regData.cover,
+      state.editAvatarPreview,
+      state.editCoverPreview
+    ]) releasePreview(url);
+
+    clearTimeout(bindCreatePost._prev);
+    state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
+    state.regStep = 1;
+    state.regData = {}; // includes the unpersisted signup password
+    state.editAvatar = null;
+    state.editCover = null;
+    state.editAvatarPreview = null;
+    state.editCoverPreview = null;
+    state.openComments.clear();
+    state.carIdx = {};
+  }
 
   /* ═══════════════════════════════════════════════════════════
      COPY / i18n
@@ -274,7 +305,9 @@
 
   async function doLogin(email, pw, captchaToken = null) {
     if (!window.ORIGEN_API) throw new Error('Servicio de autenticación no disponible.');
+    const previousUid = state.user?.id || null;
     const user = await window.ORIGEN_API.signIn(email, pw, captchaToken);
+    if (user?.id && user.id !== previousUid) clearAccountDrafts();
     state.user = user;
     await Promise.allSettled([
       window.ORIGEN_API.listCulturalProfiles(),
@@ -375,6 +408,7 @@
         : 'Could not sign out. Please try again.');
       return;
     }
+    clearAccountDrafts();
     state.user = null;
     updateShell();
     go('inicio');
@@ -2228,6 +2262,7 @@
     if (regAvatarInput) {
       regAvatarInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
+        releasePreview(state.regData.avatar);
         state.regData.avatarFile = file;
         state.regData.avatar = URL.createObjectURL(file);
         render('registro', false);
@@ -2237,6 +2272,7 @@
     if (regCoverInput) {
       regCoverInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
+        releasePreview(state.regData.cover);
         state.regData.coverFile = file;
         state.regData.cover = URL.createObjectURL(file);
         render('registro', false);
@@ -2298,6 +2334,8 @@
         if (result.ok) {
           resetTurnstile('signup');
           const requiresConfirmation = result.requiresEmailConfirmation;
+          releasePreview(state.regData.avatar);
+          releasePreview(state.regData.cover);
           state.regStep = 1; state.regData = {};
           if (requiresConfirmation) {
             showToast(state.lang === 'es' ? 'Revisa tu correo para confirmar tu cuenta.' : 'Check your email to confirm your account.');
@@ -2332,8 +2370,10 @@
     /* type buttons */
     document.querySelectorAll('[data-ctype]').forEach(btn => {
       btn.addEventListener('click', () => {
-        state.createData.type  = btn.dataset.ctype;
+        for (const url of state.createData.media || []) releasePreview(url);
+        state.createData.type = btn.dataset.ctype;
         state.createData.media = [];
+        state.createData.files = [];
         render('crear', false);
       });
     });
@@ -2350,12 +2390,14 @@
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
         if (state.createData.type === 'video') {
+          for (const url of state.createData.media || []) releasePreview(url);
           state.createData.files = [files[0]];
           state.createData.media = [URL.createObjectURL(files[0])];
         } else if (state.createData.type === 'carousel') {
           state.createData.files = [...(state.createData.files || []), ...files];
           state.createData.media = [...(state.createData.media || []), ...files.map(file => URL.createObjectURL(file))];
         } else {
+          for (const url of state.createData.media || []) releasePreview(url);
           state.createData.files = [files[0]];
           state.createData.media = [URL.createObjectURL(files[0])];
         }
@@ -2372,7 +2414,8 @@
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const idx = parseInt(btn.dataset.rmidx, 10);
-        state.createData.media.splice(idx, 1);
+        const [preview] = state.createData.media.splice(idx, 1);
+        releasePreview(preview);
         if (state.createData.files) state.createData.files.splice(idx, 1);
         render('crear', false);
       });
@@ -2424,6 +2467,7 @@
           territory: fd.territory,
           tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
         });
+        for (const url of state.createData.media || []) releasePreview(url);
         state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
         showToast('¡Publicación creada!');
         go('feed');
@@ -2459,8 +2503,10 @@
     if (avaZone) avaZone.addEventListener('change', e => {
       if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'edit-avatar-input') return;
       const file = e.target.files?.[0]; if (!file) return;
+      releasePreview(state.editAvatarPreview);
       state.editAvatar = file;
       const preview = URL.createObjectURL(file);
+      state.editAvatarPreview = preview;
       avaZone.innerHTML = `<img src="${esc(safeMediaUrl(preview))}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`;
     });
 
@@ -2468,8 +2514,10 @@
     if (covZone) covZone.addEventListener('change', e => {
       if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'edit-cover-input') return;
       const file = e.target.files?.[0]; if (!file) return;
+      releasePreview(state.editCoverPreview);
       state.editCover = file;
       const preview = URL.createObjectURL(file);
+      state.editCoverPreview = preview;
       covZone.innerHTML = `<img src="${esc(safeMediaUrl(preview))}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
     });
 
@@ -2519,7 +2567,10 @@
           });
         }
 
+        releasePreview(state.editAvatarPreview);
+        releasePreview(state.editCoverPreview);
         state.editAvatar = null; state.editCover = null;
+        state.editAvatarPreview = null; state.editCoverPreview = null;
         showToast('¡Perfil actualizado!');
         go('mi-perfil');
       } catch (error) {
