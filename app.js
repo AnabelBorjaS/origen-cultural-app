@@ -16,6 +16,7 @@
   const $toast  = document.getElementById('toast');
   const $search = document.getElementById('search-dialog');
   const $report = document.getElementById('report-dialog');
+  const $deletePost = document.getElementById('delete-post-dialog');
 
   /* ═══════════════════════════════════════════════════════════
      STATE
@@ -674,6 +675,13 @@
       'Culture is not just another product. It is identity, memory, knowledge and future.');
     setText('#search-eyebrow', 'DESCUBRIR', 'DISCOVER');
     setText('#search-title', 'Busca cultura viva', 'Search living culture');
+    setText('#delete-post-eyebrow', 'PUBLICACIÓN', 'POST');
+    setText('#delete-post-title', 'Eliminar publicación', 'Delete post');
+    setText('#delete-post-copy',
+      'Esta acción eliminará la publicación de ORIGEN y limpiará su media gestionada cuando pertenezca a tu cuenta.',
+      'This will remove the post from ORIGEN and clean its managed media when it belongs to your account.');
+    setText('#delete-post-cancel', 'Cancelar', 'Cancel');
+    setText('#delete-post-confirm', 'Eliminar publicación', 'Delete post');
     setText('#report-eyebrow', 'SEGURIDAD Y COMUNIDAD', 'SAFETY & COMMUNITY');
     setText('#report-title', 'Reportar contenido', 'Report content');
     setText('#report-copy',
@@ -1841,11 +1849,13 @@
         const user = me();
         const post = allPosts().find(p => p.id === pid);
         if (user && post && post.authorId === user.id) {
-          if (confirm('¿Eliminar esta publicación?')) {
-            window.ORIGEN_API.deletePost(pid)
-              .then(() => { showToast('Publicación eliminada.'); render(currentRoute(), false); })
-              .catch(error => showToast(error.message || 'No pudimos eliminar la publicación.'));
-          }
+          if (!$deletePost) return;
+          $deletePost.dataset.postId = pid;
+          const status = document.getElementById('delete-post-status');
+          if (status) status.textContent = '';
+          updateStaticLanguage();
+          $deletePost.showModal();
+          requestAnimationFrame(() => document.getElementById('delete-post-cancel')?.focus());
         } else {
           showToast('Reportar o guardar este perfil para no ver más contenido similar.');
         }
@@ -2610,6 +2620,44 @@
     }, 30000);
   }
 
+  function initDeletePostDialog() {
+    if (!$deletePost) return;
+    const close = () => {
+      if ($deletePost.open) $deletePost.close();
+      $deletePost.dataset.postId = '';
+      const status = document.getElementById('delete-post-status');
+      if (status) status.textContent = '';
+    };
+
+    document.getElementById('delete-post-close')?.addEventListener('click', close);
+    document.getElementById('delete-post-cancel')?.addEventListener('click', close);
+    document.getElementById('delete-post-confirm')?.addEventListener('click', async () => {
+      const postId = $deletePost.dataset.postId || '';
+      const status = document.getElementById('delete-post-status');
+      const confirmBtn = document.getElementById('delete-post-confirm');
+      if (!postId) return;
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = state.lang === 'es' ? 'Eliminando…' : 'Deleting…';
+      }
+      try {
+        await window.ORIGEN_API.deletePost(postId);
+        close();
+        showToast(state.lang === 'es' ? 'Publicación eliminada.' : 'Post deleted.');
+        render(currentRoute(), false);
+      } catch (error) {
+        if (status) status.textContent = error?.message || (state.lang === 'es'
+          ? 'No pudimos eliminar la publicación.'
+          : 'We could not delete the post.');
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = state.lang === 'es' ? 'Eliminar publicación' : 'Delete post';
+        }
+      }
+    });
+  }
+
   function initReportDialog() {
     if (!$report) return;
     const form = document.getElementById('report-form');
@@ -2772,6 +2820,7 @@
     }
   });
 
+  initDeletePostDialog();
   initReportDialog();
   bindCspSafeDelegates();
   initDigitalWellbeing();
