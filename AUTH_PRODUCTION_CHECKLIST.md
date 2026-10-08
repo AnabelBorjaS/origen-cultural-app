@@ -73,6 +73,19 @@ Decision / activation checklist:
 
 **Important:** do not enable server-side CAPTCHA enforcement before the current frontend can supply the token, otherwise legitimate users can be locked out.
 
+## Server-side legal acknowledgement (P0 — NOT IMPLEMENTED)
+
+An 8 October 2026 Production catalog review confirmed that `private.handle_new_user()` creates the Auth user/profile without rejecting absent legal acknowledgement. The user-facing form alone cannot enforce consent against direct API callers.
+
+- [x] Browser client requires strict `acceptedLegal === true`; automated negative tests added.
+- [ ] Implement and review backend enforcement for unsupported/absent/invalid consent on new signup.
+- [ ] Server-approved version identifiers must be authoritative, rather than untrusted caller-provided version strings.
+- [ ] Document and test explicit alternatives for admin invitations and future identity providers.
+- [ ] Prove direct API no-consent requests fail with **no persisted Auth user**, profile or acceptance.
+- [ ] Document acceptance evidence, privacy retention and proportional legal review before public activation.
+
+**Do not implement in Production before staging and validation.** See `BACKEND_CONSENT_REVIEW.md` and GitHub issue #6.
+
 ## Auth abuse / rate limits
 
 - [ ] Review hosted Auth rate limits before Public Beta.
