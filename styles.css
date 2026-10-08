@@ -1,5 +1,5 @@
 :root {
-  --black: #0d0d0d;
+  --black: #000000;
   --white: #ffffff;
   --sand: #c8a97e;
   --sand-soft: #efe5d8;
@@ -174,10 +174,9 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 /* ── Right: globe ───────────────────────────────────────────── */
 .hero-globe-right {
   position: relative;
-  background: #020205;
+  background: #040408;
   overflow: hidden;
   min-height: 560px;
-  isolation: isolate;
 }
 
 .hero-globe-container {
@@ -185,22 +184,8 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
 }
-.hero-globe-container canvas {
-  display: block;
-  filter: brightness(1.14) contrast(1.08) saturate(0.92);
-}
-.hero-globe-right::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 46%, rgba(200,169,126,0.08) 0%, rgba(0,0,0,0) 45%),
-    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 58%, rgba(2,2,5,0.38) 100%);
-}
+.hero-globe-container canvas { display: block; }
 
 /* Loading ring inside hero */
 .hero-globe-loading {
@@ -321,30 +306,19 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 
 /* Territory pills at the bottom of globe column */
 .hero-globe-territories {
-  position: absolute; top: 18px; left: 18px; right: 18px; z-index: 15;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
-  padding: 10px 12px;
-  background: linear-gradient(180deg, rgba(4,4,8,0.78) 0%, rgba(4,4,8,0.28) 72%, transparent 100%);
-  border-radius: 10px;
-  pointer-events: auto;
-}
-.hgt-title {
-  width: 100%;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: rgba(200,169,126,0.92);
-  margin-bottom: 1px;
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 15;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 12px 18px 14px;
+  background: linear-gradient(0deg, rgba(4,4,8,0.92) 0%, transparent 100%);
 }
 .hgt-pill {
-  background: rgba(13,13,13,0.72);
-  border: 1px solid rgba(200,169,126,0.34);
+  background: rgba(13,13,13,0.75);
+  border: 1px solid rgba(200,169,126,0.18);
   border-radius: 100px;
-  padding: 5px 12px; font-size: 11px;
-  color: rgba(255,255,255,0.86);
+  padding: 4px 12px; font-size: 11px;
+  color: rgba(255,255,255,0.55);
   cursor: pointer; transition: all .2s;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
   white-space: nowrap;
 }
 .hgt-pill:hover { border-color: var(--sand); color: var(--sand); background: rgba(20,18,8,0.85); }
@@ -1463,34 +1437,85 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 }
 
 
-/* ORIGEN — Globe contrast & persistent cultural labels */
-.mundo-globe-wrap,
-.hero-globe-right {
-  background:
-    radial-gradient(circle at 52% 46%, rgba(61,86,102,.18) 0%, rgba(6,8,12,.18) 40%, rgba(2,3,7,.96) 78%),
-    #020307;
+/* ── CULTURAL PROVIDER PROFESSIONAL PROFILE ─────────────── */
+.provider-professional { margin: 28px 0 0; padding: 28px; border: 1px solid var(--grey); background: var(--grey-2); border-radius: var(--radius); }
+.provider-prof-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.provider-prof-head h2 { margin: 4px 0 0; font-family: var(--serif); font-size: clamp(26px, 3vw, 40px); line-height: 1.05; }
+.provider-prof-copy { max-width: 760px; color: var(--ink-soft); line-height: 1.7; margin: 18px 0; }
+.service-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.service-chip { border: 1px solid #d7c7b2; background: #fff; padding: 10px 14px; border-radius: 999px; font-size: 13px; }
+.provider-contact-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; font-size: 13px; }
+.provider-contact-row a { text-decoration: underline; text-underline-offset: 3px; }
+.reference-notice { border-radius: var(--radius-sm); }
+@media (max-width: 720px) {
+  .provider-professional { padding: 20px; }
+  .provider-prof-head { flex-direction: column; }
+  .provider-prof-head .btn { width: 100%; text-align: center; }
 }
-#globe-container,
-.hero-globe-container {
-  filter: saturate(1.08) contrast(1.12) brightness(1.08);
+
+
+/* ── INFINITE CULTURAL FEED / DIGITAL WELLBEING ──────────── */
+.feed-sentinel { min-height: 72px; display: grid; place-items: center; color: var(--ink-soft); font-size: 12px; letter-spacing: .08em; }
+.feed-sentinel::after { content: "Cargando más cultura…"; }
+.feed-sentinel.done::after { content: "Estás al día con este feed."; }
+.post-media video { width: 100%; display: block; max-height: 72vh; background: var(--black); object-fit: contain; }
+.wellbeing-modal { border: 0; padding: 0; max-width: min(92vw, 620px); background: transparent; }
+.wellbeing-modal::backdrop { background: rgba(0,0,0,.58); backdrop-filter: blur(5px); }
+.wellbeing-card { background: var(--white); padding: clamp(28px, 5vw, 46px); border-top: 4px solid var(--sand); }
+.wellbeing-card h2 { font-size: clamp(30px, 5vw, 46px); }
+.wellbeing-card > p:not(.eyebrow) { color: var(--ink-soft); line-height: 1.7; }
+.wellbeing-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.wellbeing-actions .text-button { width: auto; padding: 0 12px; }
+.wellbeing-note { margin: 18px 0 0; font-size: 12px; }
+@media (max-width: 600px) {
+  .wellbeing-actions { flex-direction: column; }
+  .wellbeing-actions .btn, .wellbeing-actions .text-button { width: 100%; }
 }
-#globe-container canvas,
-.hero-globe-container canvas {
-  position: relative;
-  z-index: 1;
+
+
+/* ── CULTURAL PASSPORT COLLECTION GAME ───────────────────── */
+.collection-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:28px 0; }
+.collection-strip > div { padding:18px; border:1px solid var(--grey); background:var(--white); }
+.collection-strip strong { display:block; font-family:var(--serif); font-size:30px; }
+.collection-strip span { display:block; margin-top:4px; color:var(--ink-soft); font-size:12px; }
+.passport-stamps { margin:28px 0; }
+.badge.locked { opacity:.48; filter:grayscale(1); }
+.badge.unlocked .badge-mark { border-color:var(--sand); background:var(--sand-soft); }
+.passport-philosophy { margin-top:28px; padding:20px; border-left:3px solid var(--sand); background:var(--grey-2); }
+.passport-philosophy p:last-child { margin-bottom:0; color:var(--ink-soft); line-height:1.65; }
+@media (max-width:640px){ .collection-strip{grid-template-columns:1fr;} }
+
+
+/* ── TRUST CENTER ───────────────────────────────────────────── */
+.trust-hero { background: var(--black); color: var(--white); }
+.trust-hero .lead { color: #d8d8d8; }
+.trust-meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+.trust-meta span { border:1px solid rgba(255,255,255,.22); padding:8px 11px; font-size:11px; letter-spacing:.08em; }
+.trust-section { padding-top:64px; }
+.trust-layout { display:grid; grid-template-columns:minmax(180px,260px) minmax(0,1fr); gap:clamp(28px,5vw,70px); align-items:start; }
+.trust-nav { position:sticky; top:100px; display:grid; gap:8px; }
+.trust-nav a { padding:10px 0; border-bottom:1px solid var(--grey); font-size:13px; }
+.trust-content { min-width:0; }
+.trust-status { border-left:3px solid var(--sand); background:var(--sand-soft); padding:18px 20px; margin-bottom:28px; }
+.trust-status p { margin:6px 0 0; color:var(--ink-soft); }
+.trust-card { scroll-margin-top:110px; padding:30px 0; border-bottom:1px solid var(--grey); }
+.trust-card p:not(.eyebrow) { max-width:780px; line-height:1.75; color:#353535; }
+.trust-card a { text-decoration:underline; text-underline-offset:3px; }
+.trust-contact h2 { font-size:clamp(30px,4vw,48px); }
+.legal-consent { margin-top:12px; padding:18px; background:var(--grey-2); border:1px solid var(--grey); }
+.legal-check { display:flex; align-items:flex-start; gap:12px; line-height:1.5; }
+.legal-check input { width:20px; height:20px; flex:0 0 auto; margin-top:2px; }
+.legal-check a { text-decoration:underline; text-underline-offset:3px; }
+@media (max-width:760px){
+  .trust-layout { grid-template-columns:1fr; }
+  .trust-nav { position:static; display:flex; overflow:auto; gap:14px; padding-bottom:8px; }
+  .trust-nav a { white-space:nowrap; }
 }
-.hero-globe-territories {
-  z-index: 26;
-  padding-bottom: 16px;
-  background: linear-gradient(0deg, rgba(2,3,7,.96) 0%, rgba(2,3,7,.72) 48%, transparent 100%);
-}
-.hgt-pill {
-  color: rgba(255,255,255,.88);
-  border-color: rgba(200,169,126,.48);
-  background: rgba(7,8,12,.84);
-  box-shadow: 0 4px 18px rgba(0,0,0,.24);
-}
-.globe-tooltip {
-  border-color: rgba(200,169,126,.4);
-  box-shadow: 0 8px 28px rgba(0,0,0,.35);
-}
+
+
+/* ── CULTURAL FEED PURPOSE ─────────────────────────────────── */
+.cultural-feed-note { padding:18px 20px; border-left:3px solid var(--sand); background:var(--sand-soft); }
+.cultural-feed-note .eyebrow { margin-bottom:7px; }
+.cultural-feed-note p:last-child { margin-bottom:0; color:#3f3a34; line-height:1.6; }
+.post-context-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+.post-purpose { display:inline-flex; align-items:center; min-height:25px; padding:4px 9px; border:1px solid #d9c6aa; background:var(--sand-soft); color:#6f5434; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
