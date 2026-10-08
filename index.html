@@ -70,6 +70,21 @@
     </form>
   </dialog>
 
+  <dialog id="delete-post-dialog" class="modal" aria-labelledby="delete-post-title">
+    <form method="dialog" class="modal-card">
+      <div class="modal-header">
+        <div><p class="eyebrow" id="delete-post-eyebrow">PUBLICACIÓN</p><h2 id="delete-post-title">Eliminar publicación</h2></div>
+        <button class="icon-button" id="delete-post-close" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <p id="delete-post-copy">Esta acción eliminará la publicación de ORIGEN y limpiará su media gestionada cuando pertenezca a tu cuenta.</p>
+      <div id="delete-post-status" role="status" aria-live="polite"></div>
+      <div class="modal-actions" style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+        <button class="btn secondary" id="delete-post-cancel" type="button">Cancelar</button>
+        <button class="btn" id="delete-post-confirm" type="button">Eliminar publicación</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="report-dialog" class="modal" aria-labelledby="report-title">
     <form id="report-form" class="modal-card">
       <div class="modal-header">
