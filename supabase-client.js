@@ -44,6 +44,9 @@
     cache.comments = [];
   }
 
+  let authStateRevision = 0;
+  let restoreRequestId = 0;
+
   const normaliseUser = (authUser, profile) => {
     if (!authUser) return null;
     const p = profile || {};
@@ -81,7 +84,12 @@
   }
 
   async function restoreSession() {
+    const requestedRevision = authStateRevision;
+    const requestId = ++restoreRequestId;
     const { data, error } = await client.auth.getSession();
+    // An older getSession response cannot overwrite a newer auth event or
+    // restore request (particularly after cross-tab sign-out).
+    if (requestedRevision !== authStateRevision || requestId !== restoreRequestId) return null;
     if (error) throw error;
     const previousUid = cache.session?.user?.id || null;
     const nextUid = data.session?.user?.id || null;
@@ -604,6 +612,7 @@
   }
 
   client.auth.onAuthStateChange((event, session) => {
+    authStateRevision++;
     // Never call Supabase APIs inside this callback: an async query here can
     // deadlock subsequent Auth/database calls while Supabase holds its lock.
     const previousUid = cache.session?.user?.id || null;
