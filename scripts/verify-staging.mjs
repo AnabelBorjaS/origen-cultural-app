@@ -1,3 +1,5 @@
+import { accessHeaders } from './staging-access.mjs';
+
 const raw = process.argv[2] || process.env.ORIGEN_STAGING_URL;
 if (!raw) {
   console.error('Usage: node scripts/verify-staging.mjs https://your-project.pages.dev');
@@ -12,15 +14,27 @@ if (!/\.pages\.dev$/i.test(base.hostname) && !['localhost','127.0.0.1'].includes
   console.warn('Warning: staging host is not a pages.dev hostname. Confirm this is intentional.');
 }
 
+const cloudflareAccessHeaders = accessHeaders();
 const checks = [];
 const record = (name, ok, detail='') => checks.push({ name, ok, detail });
 
 async function get(pathname='/', options={}) {
   const url = new URL(pathname, base);
-  return fetch(url, { redirect: 'follow', ...options });
+  if (url.origin !== base.origin) throw new Error('Staging audit refuses cross-origin requests.');
+
+  // Do not auto-follow Cloudflare Access redirects with service credentials.
+  // The same-origin restriction and manual redirect handling protect tokens.
+  return fetch(url, {
+    ...options,
+    headers: { ...cloudflareAccessHeaders, ...(options.headers || {}) },
+    redirect: 'manual'
+  });
 }
 
 const home = await get('/');
+if (home.status >= 300 && home.status < 400) {
+  throw new Error('Staging redirected instead of serving ORIGEN. If Cloudflare Access is enabled, configure a Service Auth policy and add the two ORIGEN_CF_ACCESS_* GitHub Actions secrets.');
+}
 const html = await home.text();
 
 record('Homepage responds 200', home.status === 200, String(home.status));
