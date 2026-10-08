@@ -45,6 +45,8 @@ const checks = [
   ['Post client rejects non-Cultural-Agent authors', supabase.includes("cache.profile?.role !== 'creator'")],
   ['Upload type/size preflight exists', supabase.includes('UPLOAD_RULES') && supabase.includes('validateUpload(bucket, file)')],
   ['Managed media cleanup enforces current-user folder ownership', supabase.includes('function parseManagedMediaUrl(publicUrl)') && supabase.includes('function removeOwnMedia(publicUrl)') && supabase.includes("parsed.path.startsWith(uid + '/')")],
+  ['Deleted posts trigger owned post-media cleanup', supabase.includes("select('id,author_id,media_urls')") && supabase.includes('removeOwnMedia(url)')],
+  ['Failed post creation cleans newly uploaded media', app.includes('const uploaded = []') && app.includes('removeOwnMedia(url)') && app.includes('post upload cleanup incomplete')],
   ['Profile media is cleaned only after successful profile update', app.includes('const updated = await window.ORIGEN_API.updateMyProfile') && app.includes('Promise.allSettled(cleanup)') && app.includes('removeOwnMedia(previousAvatar)')],
   ['Upload pickers use supported MIME types', app.includes('image/jpeg,image/png,image/webp') && app.includes('video/mp4,video/webm,video/quicktime')],
   ['No legacy local auth session remains in Mundo', !mundo.includes("localStorage.getItem('oc-session')")],
