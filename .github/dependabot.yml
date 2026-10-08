@@ -8,5 +8,3 @@ updates:
       time: "08:00"
       timezone: "Australia/Brisbane"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
