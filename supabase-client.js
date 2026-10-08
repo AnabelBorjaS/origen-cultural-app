@@ -361,8 +361,28 @@
   }
 
   async function deletePost(postId) {
+    const uid = cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+
+    const { data: existing, error: readError } = await client.from('cultural_posts')
+      .select('id,author_id,media_urls')
+      .eq('id', postId)
+      .maybeSingle();
+    if (readError) throw readError;
+
     const { error } = await client.from('cultural_posts').delete().eq('id', postId);
     if (error) throw error;
+
+    const media = existing?.author_id === uid && Array.isArray(existing?.media_urls)
+      ? existing.media_urls.filter(Boolean)
+      : [];
+    if (media.length) {
+      Promise.allSettled(media.map(url => removeOwnMedia(url))).then(results => {
+        if (results.some(result => result.status === 'rejected')) {
+          console.warn('ORIGEN post-media cleanup incomplete after post deletion.');
+        }
+      });
+    }
     await listPosts();
   }
 
