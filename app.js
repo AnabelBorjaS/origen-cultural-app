@@ -2537,6 +2537,8 @@
       btn.addEventListener('click', () => {
         for (const url of state.createData.media || []) releasePreview(url);
         state.createData.type = btn.dataset.ctype;
+        state.createData.rightsAcknowledged = false;
+        state.createData.culturalAcknowledged = false;
         state.createData.media = [];
         state.createData.files = [];
         render('crear', false);
