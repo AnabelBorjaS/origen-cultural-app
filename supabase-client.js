@@ -114,7 +114,7 @@
   }
 
   async function signUp(payload) {
-    if (!payload?.acceptedLegal) throw new Error('Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.');
+    if (payload?.acceptedLegal !== true) throw new Error('Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.');
     const metadata = {
       display_name: payload.name || '',
       account_type: payload.accountType === 'creator' ? 'creator' : 'explorer',
