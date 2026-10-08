@@ -2,6 +2,16 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Transparencia de perfiles culturales — 8 Oct 2026
+
+- ✅ Cada tarjeta del directorio indica si su perfil es una **referencia editorial de ORIGEN**, una **cuenta autogestionada no verificada**, o un perfil con verificación registrada si existe evidencia autoritativa. El mero rol Agente Cultural no entrega un sello de verificación.
+- ✅ Los cuatro perfiles de referencia del piloto publican claramente que ORIGEN los preparó como muestras editoriales, no que exista representación, alianza o gestión oficial por las entidades nombradas.
+- ✅ Los perfiles de referencia ofrecen una solicitud de gestión/reclamación con revisión humana; crear una cuenta no transfiere ninguna representación automáticamente.
+- ✅ Los perfiles autogestionados señalan que ORIGEN aún no ha verificado la identidad ni la autoridad de representación del titular. Los avisos están disponibles en español e inglés, en móvil y escritorio.
+- ✅ La sección roadmap visible en la web quedó alineada con el piloto de **hasta 10 Agentes Culturales voluntarios** únicamente tras superar seguridad, consentimiento y Release Gate; la cifra 20–50 ya no se presenta como primera etapa.
+- ✅ Quality Gate del código **#282 PASS** y CodeQL **#87 PASS**. Browser QA **#146** se encontraba en ejecución al registrar esta mejora.
+- ⚠️ Estos textos y tests no constituyen verificación real de identidad, propiedad intelectual ni consentimiento de terceros. La beta pública sigue **NO-GO**, sin modificaciones en `main` o `origencultural.com`.
+
 ## Registro móvil de Agentes Culturales — 8 Oct 2026
 
 - ✅ Los cinco pasos del asistente guardan los campos escritos al retroceder: datos básicos, historia, categorías, oferta cultural, enlaces y aceptación legal marcada expresamente.
