@@ -2236,8 +2236,38 @@
     });
   }
 
+  // Preserve unfinished registration inputs when people move backwards on
+  // mobile. No localStorage/sessionStorage persistence for passwords or files.
+  function saveRegisterStepDraft(step) {
+    const formId = step === 2 ? 'reg-basic' : step === 4 ? 'reg-story' : step === 5 ? 'reg-social' : null;
+    const form = formId && document.getElementById(formId);
+    if (!form) return;
+    const fields = Object.fromEntries(new FormData(form));
+    if (step === 2) {
+      for (const key of ['name', 'email', 'password', 'location']) {
+        if (key in fields) state.regData[key] = fields[key];
+      }
+    } else if (step === 4) {
+      Object.assign(state.regData, fields);
+      state.regData.services = fields.services
+        ? fields.services.split(',').map(item => item.trim()).filter(Boolean)
+        : [];
+    } else if (step === 5) {
+      const links = {};
+      for (const key of ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web']) {
+        if (fields[key]) links[key] = fields[key];
+      }
+      state.regData.links = links;
+      state.regData.acceptedLegal = fields.acceptedLegal === 'on';
+    }
+  }
+
   /* Register wizard */
   function bindRegister() {
+    // Password is kept only in the current in-memory wizard, not in the HTML
+    // template, URL or persistent browser storage.
+    const previousPassword = document.querySelector('#reg-basic [name="password"]');
+    if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
     if (state.regStep === 5) void mountTurnstile('signup');
     /* account type selection */
     document.querySelectorAll('[data-atype]').forEach(card => {
@@ -2267,6 +2297,14 @@
     if (regAvatarInput) {
       regAvatarInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
+        try {
+          window.ORIGEN_API.validateUpload('avatars', file);
+        } catch (error) {
+          const message = document.getElementById('reg-error');
+          if (message) { message.textContent = error.message; message.style.display = 'block'; }
+          e.target.value = '';
+          return;
+        }
         releasePreview(state.regData.avatar);
         state.regData.avatarFile = file;
         state.regData.avatar = URL.createObjectURL(file);
@@ -2277,6 +2315,14 @@
     if (regCoverInput) {
       regCoverInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
+        try {
+          window.ORIGEN_API.validateUpload('covers', file);
+        } catch (error) {
+          const message = document.getElementById('reg-error');
+          if (message) { message.textContent = error.message; message.style.display = 'block'; }
+          e.target.value = '';
+          return;
+        }
         releasePreview(state.regData.cover);
         state.regData.coverFile = file;
         state.regData.cover = URL.createObjectURL(file);
@@ -2286,43 +2332,48 @@
 
     /* back */
     const backBtn = document.getElementById('reg-back');
-    if (backBtn) backBtn.addEventListener('click', () => { state.regStep--; render('registro', false); });
+    if (backBtn) backBtn.addEventListener('click', () => {
+      saveRegisterStepDraft(state.regStep);
+      state.regStep--;
+      render('registro');
+    });
 
     /* next / submit */
     const nextBtn = document.getElementById('reg-next');
     if (!nextBtn) return;
+    // Enter on a mobile keyboard should advance the wizard, not submit the
+    // native form and reload the page (which would discard private drafts).
+    for (const formId of ['reg-basic', 'reg-story', 'reg-social']) {
+      const form = document.getElementById(formId);
+      if (form) form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (!nextBtn.disabled) nextBtn.click();
+      });
+    }
     nextBtn.addEventListener('click', async () => {
+      if (nextBtn.disabled) return;
       const step = state.regStep;
       const errEl = document.getElementById('reg-error');
 
       if (step === 1) {
         if (!state.regData.accountType) { if (errEl) { errEl.textContent = state.lang === 'es' ? 'Selecciona un tipo de cuenta.' : 'Select an account type.'; errEl.style.display = 'block'; } return; }
         if (errEl) errEl.style.display = 'none';
-        state.regStep++; render('registro', false);
+        state.regStep++; render('registro');
       } else if (step === 2) {
         const form = document.getElementById('reg-basic');
         if (!form || !form.reportValidity()) return;
-        const fd = Object.fromEntries(new FormData(form));
-        Object.assign(state.regData, fd);
-        state.regStep++; render('registro', false);
+        saveRegisterStepDraft(2);
+        state.regStep++; render('registro');
       } else if (step === 3) {
-        state.regStep++; render('registro', false);
+        state.regStep++; render('registro');
       } else if (step === 4) {
         const form = document.getElementById('reg-story');
-        if (form) {
-          const fd = Object.fromEntries(new FormData(form));
-          Object.assign(state.regData, fd);
-          state.regData.services = fd.services ? fd.services.split(',').map(s => s.trim()).filter(Boolean) : [];
-        }
-        state.regStep++; render('registro', false);
+        if (form) saveRegisterStepDraft(4);
+        state.regStep++; render('registro');
       } else if (step === 5) {
         const form = document.getElementById('reg-social');
         if (!form || !form.reportValidity()) return;
-        const fd = Object.fromEntries(new FormData(form));
-        const links = {};
-        ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-        state.regData.links = links;
-        state.regData.acceptedLegal = fd.acceptedLegal === 'on';
+        saveRegisterStepDraft(5);
         if (!state.regData.acceptedLegal) {
           if (errEl) { errEl.textContent = state.lang === 'es' ? 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.' : 'You must accept ORIGEN’s essential documents to create your account.'; errEl.style.display = 'block'; }
           return;
