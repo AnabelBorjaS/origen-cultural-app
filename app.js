@@ -326,7 +326,16 @@
   }
 
   async function doLogout() {
-    try { await window.ORIGEN_API?.signOut(); } catch (_) {}
+    try {
+      if (!window.ORIGEN_API) throw new Error('Authentication service unavailable.');
+      await window.ORIGEN_API.signOut();
+    } catch (error) {
+      console.error('[ORIGEN] Sign-out failed:', error);
+      showToast(state.lang === 'es'
+        ? 'No se pudo cerrar sesión. Inténtalo de nuevo.'
+        : 'Could not sign out. Please try again.');
+      return;
+    }
     state.user = null;
     updateShell();
     go('inicio');
