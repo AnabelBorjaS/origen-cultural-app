@@ -7,7 +7,7 @@
 **Fase:** beta controlada pre-staging. **Decisión de lanzamiento:** NO-GO público.
 
 - GitHub PR #3: `reconcile-main-beta-2026-10-07` hacia `main`, abierto en borrador y mergeable; no fusionar todavía.
-- CI verificada tras hardening: ORIGEN Quality Gate **#211 PASS**, Browser QA **#75 PASS**, CodeQL **#16 PASS**.
+- CI verificada en rama beta después del fix de registro: **Quality Gate #221 PASS · Browser QA #85 PASS · CodeQL #26 PASS**. La QA de navegador incluye el fallo simulado de subida de foto después de crear la cuenta; las pruebas no usan cuentas reales.
 - Prueba nueva `tests/client-ownership.mjs`: confirma aislamiento de eliminación entre autores, control de borrados de cero filas, limpieza de media solo tras eliminación confirmada y rechazo de URL externa/traversal. Corre en `npm run check:release` sin conexión a la base de datos.
 - Supabase Production: proyecto activo, 11 tablas `public` con RLS activado y Security Advisor con 0 lints (revisión de 8 Oct). 4 perfiles culturales de referencia; todavía 0 cuentas de usuario y 0 publicaciones reales según el resumen de tablas.
 - **Cloudflare Pages staging aún no desplegado.** Paso de autorización/conexión y checklist: [issue #5](https://github.com/AnabelBorjaS/origen-cultural-app/issues/5).
@@ -24,6 +24,15 @@
 - ✅ Calidad del código verificada en commit de aplicación `a4f2a1159d86f59d1421a158724628f8aa20b71e`: Quality Gate **#216 PASS** y CodeQL **#21 PASS**. Browser QA de ese commit estaba en ejecución al documentar; no contarla como aprobación hasta su resultado definitivo.
 - ✅ Guía operativa interna `PILOT_ECUADOR_PLAYBOOK.md` creada para 10 Agentes Culturales potenciales con consentimiento, límites beta, métricas propuestas, ética cultural y controles de costos. No representa participantes confirmados.
 - ⛔ Cloudflare Pages staging / Auth end-to-end con dos cuentas, Turnstile server-side, recuperación y revisión legal siguen pendientes. No merge a `main` ni cambio de dominio público.
+
+## Avance confirmado — registro resiliente (8 Oct 2026)
+
+- ✅ `doRegister` separa la creación de cuenta Supabase del upload opcional de avatar/portada.
+- ✅ Si falla una imagen después de crear la cuenta, la interfaz confirma que la cuenta sí existe y ofrece editar la foto después, sin pedir otro registro.
+- ✅ Los medios recién subidos se intentan limpiar si falla la configuración posterior; si el perfil no termina de cargar, se comunica el registro exitoso y se sugiere iniciar sesión para completarlo.
+- ✅ `tests/browser-smoke.mjs` ahora simula en Chromium una subida fallida de avatar durante el registro y comprueba **una sola llamada a signup**, navegación y mensaje correcto.
+- ⛔ La prueba usa APIs simuladas: Auth real, registros con correo confirmado, límites Storage y limpieza de archivos en Supabase requieren staging y dos cuentas de QA.
+- ⛔ [Issue #5](https://github.com/AnabelBorjaS/origen-cultural-app/issues/5) para desplegar Cloudflare Pages Free sigue abierto. No se ha desplegado staging, hecho merge a `main` ni migrado `origencultural.com`.
 
 ## Fuente de trabajo actual
 **GitHub es la fuente oficial del código.**
