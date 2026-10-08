@@ -1,6 +1,18 @@
 # Estado del proyecto — ORIGEN Cultural
 
-Última actualización: 6 de octubre de 2026
+Última actualización: 8 de octubre de 2026
+
+## Resumen ejecutivo verificado — 8 Oct 2026
+
+**Fase:** beta controlada pre-staging. **Decisión de lanzamiento:** NO-GO público.
+
+- GitHub PR #3: `reconcile-main-beta-2026-10-07` hacia `main`, abierto en borrador y mergeable; no fusionar todavía.
+- CI verificada tras hardening: ORIGEN Quality Gate **#211 PASS**, Browser QA **#75 PASS**, CodeQL **#16 PASS**.
+- Prueba nueva `tests/client-ownership.mjs`: confirma aislamiento de eliminación entre autores, control de borrados de cero filas, limpieza de media solo tras eliminación confirmada y rechazo de URL externa/traversal. Corre en `npm run check:release` sin conexión a la base de datos.
+- Supabase Production: proyecto activo, 11 tablas `public` con RLS activado y Security Advisor con 0 lints (revisión de 8 Oct). 4 perfiles culturales de referencia; todavía 0 cuentas de usuario y 0 publicaciones reales según el resumen de tablas.
+- **Cloudflare Pages staging aún no desplegado.** Paso de autorización/conexión y checklist: [issue #5](https://github.com/AnabelBorjaS/origen-cultural-app/issues/5).
+- El consentimiento, Auth real con dos cuentas, CAPTCHA server-side, Storage negativo, solicitudes de privacidad, backup lógico validado, revisión legal y pruebas de staging siguen siendo bloqueadores antes de una beta pública.
+- `main` y el dominio `origencultural.com` permanecen fuera de estos cambios. No aprobar gasto ni suscripciones durante este paso.
 
 ## Fuente de trabajo actual
 **GitHub es la fuente oficial del código.**
