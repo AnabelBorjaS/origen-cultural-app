@@ -2,6 +2,16 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Sesiones concurrentes y aislamiento entre cuentas — 8 Oct 2026
+
+- ✅ `app.js` descarta callbacks de autenticación anteriores si llega un evento de sesión más reciente; también cubre `INITIAL_SESSION` mientras la aplicación se está iniciando.
+- ✅ `supabase-client.js` rechaza respuestas antiguas de `auth.getSession()` después de cerrar sesión, cambiar de cuenta o iniciar una restauración más reciente.
+- ✅ Las lecturas tardías de `follows`, `favorites`, `post_likes` y `post_saves` ya no pueden rellenar el estado privado de otra cuenta.
+- ✅ Una renovación habitual de token para la misma identidad no invalida por error la restauración de sesión.
+- ✅ Pruebas aisladas de concurrencia añadidas a `tests/auth-session.mjs` y prueba de eventos fuera de orden en Chromium en `tests/browser-smoke.mjs`.
+- ✅ Quality Gate del código #258 aprobado; CodeQL #63 y Browser QA #122 pendientes al registrar este avance.
+- ⛔ La verificación utiliza cuentas simuladas. Falta ejecutar pruebas reales de sesión entre dispositivos con dos cuentas en staging protegido; no se ha abierto registro público ni modificado `main` o el dominio.
+
 ## Protección de borradores en dispositivos compartidos — 8 Oct 2026
 
 - ✅ Corregido `app.js` para borrar borradores de publicaciones, contraseñas temporales del registro, imágenes y archivos en edición, y selecciones de comentarios al cerrar sesión correctamente o pasar de cuenta A a cuenta B.
