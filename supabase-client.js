@@ -528,10 +528,21 @@
     try {
       const raw = String(publicUrl || '').trim();
       if (!raw) return null;
+
+      // URL() normalises dot segments before pathname checks. Reject encoded
+      // separators/dots and traversal in the raw input before parsing.
+      if (/(?:^|\\/)\\.{1,2}(?:\\/|$)/.test(raw) || /%(?:2e|2f|5c)/i.test(raw)) return null;
+
       const url = new URL(raw);
-      const match = url.pathname.match(/\/storage\/v1\/object\/public\/(avatars|covers|post-media)\/(.+)$/);
+      if (url.origin !== new URL(PROJECT_URL).origin || url.username || url.password) return null;
+      const match = url.pathname.match(/^\\/storage\\/v1\\/object\\/public\\/(avatars|covers|post-media)\\/(.+)$/);
       if (!match) return null;
-      return { bucket: match[1], path: decodeURIComponent(match[2]) };
+
+      // Managed uploads use exactly: user-id/timestamp-safe-name.extension.
+      const path = decodeURIComponent(match[2]);
+      const segments = path.split('/');
+      if (segments.length !== 2 || segments.some(segment => !segment || segment === '.' || segment === '..' || segment.includes('\\\\'))) return null;
+      return { bucket: match[1], path };
     } catch {
       return null;
     }
