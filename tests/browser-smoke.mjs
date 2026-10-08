@@ -236,6 +236,77 @@ async function roleChecks(role) {
   await page.close();
 }
 
+async function profileMediaRollbackChecks() {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page.addInitScript(() => {
+    const user = {
+      id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      email: 'profile-qa@example.invalid',
+      name: 'Profile QA Creator', accountType: 'creator', role: 'creator',
+      location: 'QA Territory', story: '', avatar: '', cover: '', links: {},
+      categories: [], services: []
+    };
+    window.__origenProfileQA = { uploads: [], removed: [], saved: 0 };
+    let currentApi;
+    Object.defineProperty(window, 'ORIGEN_API', {
+      configurable: true,
+      get() { return currentApi; },
+      set(api) {
+        currentApi = api;
+        api.cache.session = { user: { id: user.id, email: user.email } };
+        api.cache.profile = { id: user.id, role: 'creator', display_name: user.name };
+        api.restoreSession = async () => user;
+        api.ensureCreatorCulturalProfile = async () => null;
+        api.listCulturalProfiles = async () => [];
+        api.listPublicProfiles = async () => [];
+        api.listPosts = async () => [];
+        api.myFollows = async () => [];
+        api.myFavorites = async () => [];
+        api.loadPostInteractions = async () => null;
+        api.upload = async (bucket) => {
+          window.__origenProfileQA.uploads.push(bucket);
+          if (bucket === 'covers') throw new Error('Simulated cover upload failure');
+          return 'https://xwkjvoyicrrwjybjolld.supabase.co/storage/v1/object/public/avatars/' + user.id + '/qa-avatar.webp';
+        };
+        api.removeOwnMedia = async url => {
+          window.__origenProfileQA.removed.push(url);
+          return true;
+        };
+        api.updateMyProfile = async () => {
+          window.__origenProfileQA.saved++;
+          return user;
+        };
+      }
+    });
+  });
+
+  try {
+    await page.goto(baseURL + '#editar-perfil', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.locator('#edit-form').waitFor({ timeout: 12000 });
+    await page.locator('#edit-avatar-input').setInputFiles({
+      name: 'avatar.webp', mimeType: 'image/webp',
+      buffer: Buffer.from([0x52, 0x49, 0x46, 0x46, 0x01, 0, 0, 0])
+    });
+    await page.locator('#edit-cover-input').setInputFiles({
+      name: 'cover.webp', mimeType: 'image/webp',
+      buffer: Buffer.from([0x52, 0x49, 0x46, 0x46, 0x01, 0, 0, 0])
+    });
+    await page.locator('#edit-form button[type="submit"]').click();
+    await page.waitForFunction(() => window.__origenProfileQA.removed.length === 1, null, { timeout: 12000 });
+    const result = await page.evaluate(() => window.__origenProfileQA);
+    check(result.uploads.join(',') === 'avatars,covers', 'Profile QA must attempt both media uploads');
+    check(result.saved === 0, 'Failed cover upload must not save an incomplete profile');
+    check(result.removed.length === 1 && result.removed[0].includes('/avatars/'),
+      'Failed cover upload must remove previously uploaded avatar');
+    check(await page.locator('#edit-form').count() === 1,
+      'Failed profile media upload should keep edit form available for retry');
+  } catch (error) {
+    failures.push('Profile media rollback regression: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 async function sessionDraftIsolationChecks() {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
@@ -479,6 +550,7 @@ try {
   await roleChecks('explorer');
   await roleChecks('creator');
   await registrationUploadFailureChecks();
+  await profileMediaRollbackChecks();
   await sessionDraftIsolationChecks();
 } finally {
   await browser.close();
