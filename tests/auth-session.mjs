@@ -167,7 +167,7 @@ async function testStalePrivateRead(method, table, testData, cacheKey) {
   authListener('SIGNED_IN', makeSession(B));
   releaseRead({ data: testData, error: null });
   await pendingRead;
-  assert.deepEqual(api.cache[cacheKey], [], method + ' must not leak A into B');
+  assert.equal(api.cache[cacheKey].length, 0, method + ' must not leak A into B');
   deferredPrivateQueries.delete(table);
   flushEvents();
 }
