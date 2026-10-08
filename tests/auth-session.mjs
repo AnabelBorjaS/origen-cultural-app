@@ -12,6 +12,7 @@ let activeSession = null;
 let profileReads = 0;
 let failSignOut = false;
 let deferredProfile = null;
+let deferredSession = null;
 let signupCalls = 0;
 let lastSignupRequest = null;
 const deferredPrivateQueries = new Map();
@@ -26,7 +27,7 @@ const client = {
       lastSignupRequest = request;
       return { data: { user: { id: A }, session: null }, error: null };
     },
-    async getSession() { return { data: { session: activeSession }, error: null }; },
+    async getSession() { return deferredSession ? deferredSession.promise : { data: { session: activeSession }, error: null }; },
     async signOut() {
       if (failSignOut) return { error: new Error('Auth unavailable') };
       activeSession = null;
@@ -191,6 +192,37 @@ assertPrivateEmpty();
 deferredPrivateQueries.clear();
 flushEvents();
 console.log('✓ Account-switch guard rejects late follows, favorites, likes and saves');
+
+// A stale getSession result from an older tab must not resurrect a user
+// after SIGNED_OUT has already fired.
+let releaseSession;
+deferredSession = { promise: new Promise(resolve => { releaseSession = resolve; }) };
+api.cache.session = makeSession(A);
+const oldRestore = api.restoreSession();
+await new Promise(resolve => setImmediate(resolve));
+authListener('SIGNED_OUT', null);
+releaseSession({ data: { session: makeSession(A) }, error: null });
+assert.equal(await oldRestore, null);
+assert.equal(api.cache.session, null, 'Late getSession must never revive signed-out account');
+assertPrivateEmpty();
+deferredSession = null;
+flushEvents();
+
+// Two overlapping getSession calls: the first must not replace the second.
+let finishFirst;
+deferredSession = { promise: new Promise(resolve => { finishFirst = resolve; }) };
+const firstRestore = api.restoreSession();
+await new Promise(resolve => setImmediate(resolve));
+deferredSession = null;
+activeSession = makeSession(B);
+const secondRestore = await api.restoreSession();
+assert.equal(secondRestore.id, B);
+finishFirst({ data: { session: makeSession(A) }, error: null });
+assert.equal(await firstRestore, null);
+assert.equal(api.cache.session.user.id, B);
+assert.equal(api.cache.profile.id, B);
+flushEvents();
+console.log('✓ Auth restore rejects stale session responses and overlapping requests');
 
 // The browser client only accepts a real boolean consent, not truthy strings.
 // These checks mock signUp and never create Supabase Production accounts.
