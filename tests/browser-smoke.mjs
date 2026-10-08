@@ -231,6 +231,49 @@ async function roleChecks(role) {
     check(await page.locator('#create-form').count() === 1, 'Cultural Agent should receive the create-post form');
     check(await page.locator('.desktop-nav a[href="#crear"]').count() === 1, 'Cultural Agent desktop navigation should expose Create');
     check(await page.locator('[data-ctype="text"]').count() === 0, 'Cultural Agent should not receive a text-only post type');
+
+    // A live preview must not destroy the text input when the creator pauses.
+    const title = page.locator('#create-form [name="title"]');
+    await title.fill('Memoria del tejido');
+    await page.waitForTimeout(460);
+    check(await title.evaluate(el => el === document.activeElement),
+      'Typing pause must retain title focus instead of re-rendering the form');
+    await page.keyboard.type(' en Ecuador');
+    check(await title.inputValue() === 'Memoria del tejido en Ecuador',
+      'Cultural Agent must be able to keep writing after preview refresh');
+
+    const story = page.locator('#create-form [name="description"]');
+    await story.fill('Una historia de nuestras raíces.');
+    await page.waitForTimeout(460);
+    check(await story.evaluate(el => el === document.activeElement),
+      'Typing pause must retain cultural story textarea focus');
+    check((await page.locator('#create-live-preview').innerText()).includes('Una historia de nuestras raíces.'),
+      'Non-destructive live preview should update with cultural story');
+
+    // Video uploads must display a playable element, not a broken img tag.
+    await page.locator('[data-ctype="video"]').click();
+    await page.locator('#post-media-input').setInputFiles({
+      name: 'qa-culture.webm', mimeType: 'video/webm',
+      buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x9f])
+    });
+    check(await page.locator('#post-media-zone video[controls]').count() === 1,
+      'Video upload should display video controls in upload preview');
+    check(await page.locator('#create-live-preview video').count() === 1,
+      'Video upload should display a video in live post preview');
+    check(await page.locator('#post-media-zone img').count() === 0,
+      'Video upload must not render a broken image thumbnail');
+    check(await page.locator('#create-form [name="title"]').inputValue() === 'Memoria del tejido en Ecuador',
+      'Switching media type must preserve the unsaved cultural story title');
+
+    const pickerTriggers = await page.evaluate(() => {
+      const input = document.getElementById('post-media-input');
+      let calls = 0;
+      input.click = () => { calls++; };
+      document.querySelector('#post-media-zone video')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      return calls;
+    });
+    check(pickerTriggers === 0, 'Interacting with video playback must not open the file chooser');
   }
 
   await page.close();
