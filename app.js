@@ -2453,10 +2453,13 @@
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
       const uploaded = [];
+      const filesToUpload = [...(state.createData.files || [])];
       try {
-        for (let i = 0; i < (state.createData.files || []).length; i++) {
-          uploaded.push(await window.ORIGEN_API.upload('post-media', state.createData.files[i], `post-${i+1}`));
+        for (let i = 0; i < filesToUpload.length; i++) {
+          if (me()?.id !== user.id) throw new Error('La sesión cambió durante la subida.');
+          uploaded.push(await window.ORIGEN_API.upload('post-media', filesToUpload[i], `post-${i+1}`));
         }
+        if (me()?.id !== user.id) throw new Error('La sesión cambió; publicación cancelada antes de enviarse.');
         await window.ORIGEN_API.createPost({
           type: state.createData.type,
           media: uploaded,
@@ -2466,7 +2469,8 @@
           contentPurpose: fd.contentPurpose,
           territory: fd.territory,
           tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
-        });
+        }, user.id);
+        if (me()?.id !== user.id) return; // Do not mutate another account's draft or UI.
         for (const url of state.createData.media || []) releasePreview(url);
         state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
         showToast('¡Publicación creada!');
@@ -2530,11 +2534,23 @@
       const fd   = Object.fromEntries(new FormData(form));
       const links = {};
       ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
+      const newAvatarFile = state.editAvatar instanceof File ? state.editAvatar : null;
+      const newCoverFile = state.editCover instanceof File ? state.editCover : null;
+      const uploaded = [];
       try {
         let avatar = user.avatar;
         let cover = user.cover;
-        if (state.editAvatar instanceof File) avatar = await window.ORIGEN_API.upload('avatars', state.editAvatar, 'avatar');
-        if (state.editCover instanceof File) cover = await window.ORIGEN_API.upload('covers', state.editCover, 'cover');
+        if (newAvatarFile) {
+          if (me()?.id !== user.id) throw new Error('La sesión cambió durante la edición.');
+          avatar = await window.ORIGEN_API.upload('avatars', newAvatarFile, 'avatar');
+          uploaded.push(avatar);
+        }
+        if (newCoverFile) {
+          if (me()?.id !== user.id) throw new Error('La sesión cambió durante la edición.');
+          cover = await window.ORIGEN_API.upload('covers', newCoverFile, 'cover');
+          uploaded.push(cover);
+        }
+        if (me()?.id !== user.id) throw new Error('La sesión cambió; no se guardaron los cambios del perfil.');
         const previousAvatar = user.avatar;
         const previousCover = user.cover;
         const updated = await window.ORIGEN_API.updateMyProfile({
@@ -2549,14 +2565,15 @@
           serviceDescription: fd.serviceDescription || '',
           avatar,
           cover
-        });
+        }, user.id);
+        if (me()?.id !== user.id) return; // Save may have succeeded for the prior user.
         state.user = updated;
 
         const cleanup = [];
-        if (state.editAvatar instanceof File && previousAvatar && previousAvatar !== avatar) {
+        if (newAvatarFile && previousAvatar && previousAvatar !== avatar) {
           cleanup.push(window.ORIGEN_API.removeOwnMedia(previousAvatar));
         }
-        if (state.editCover instanceof File && previousCover && previousCover !== cover) {
+        if (newCoverFile && previousCover && previousCover !== cover) {
           cleanup.push(window.ORIGEN_API.removeOwnMedia(previousCover));
         }
         if (cleanup.length) {
@@ -2574,7 +2591,15 @@
         showToast('¡Perfil actualizado!');
         go('mi-perfil');
       } catch (error) {
-        showToast(error.message || 'No pudimos actualizar tu perfil.');
+        // If one upload succeeded but the second upload/save failed, prevent
+        // storage from accumulating unreferenced profile photos/cover images.
+        if (uploaded.length) {
+          const results = await Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url)));
+          if (results.some(item => item.status === 'rejected')) {
+            console.warn('[ORIGEN] Unreferenced profile media cleanup incomplete.');
+          }
+        }
+        if (me()?.id === user.id) showToast(error.message || 'No pudimos actualizar tu perfil.');
       }
     });
   }
