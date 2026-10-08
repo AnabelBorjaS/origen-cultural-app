@@ -153,7 +153,7 @@ async function mobileChecks() {
   await page.locator('#reg-basic [name="password"]').fill('ExampleSecure2026!');
   await page.locator('#reg-basic [name="location"]').fill('Yaruquí, Ecuador');
   await page.locator('#reg-basic [name="location"]').press('Enter');
-  await page.locator('#reg-avatar-input').waitFor({ timeout: 8000 });
+  await page.locator('#reg-avatar-input').waitFor({ state: 'attached', timeout: 8000 });
   check(await page.locator('.wizard-label').innerText().then(t => t.includes('Paso 3')),
     'Pressing Enter in mobile signup form should advance instead of reloading');
 
