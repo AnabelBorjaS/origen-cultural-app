@@ -27,6 +27,21 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P1 — Onboarding cultural móvil (390px)
+
+| Caso | Resultado exigido | Estado |
+|---|---|---|
+| Agente Cultural elige su tipo de cuenta y datos básicos | Paso 1 y 2 fáciles de completar en móvil, sin desplazamiento horizontal | ✅ Chromium simulado #140; ⬜ personas reales |
+| Se pulsa Enter en el campo País/ciudad | Se avanza a fotos sin recargar ni borrar el borrador | ✅ Chromium simulado #140; ⬜ móvil real |
+| Se vuelve del paso de fotos a los datos básicos | Nombre, correo, país y contraseña ingresados siguen disponibles en el mismo asistente | ✅ Chromium simulado #140; ⬜ móvil real |
+| Se intenta usar un PDF como avatar | Rechazo claro y sin generar vista previa del archivo | ✅ Chromium simulado #140; ⬜ móvil real |
+| Se selecciona un JPG válido | Se previsualiza correctamente | ✅ Chromium simulado #140; ⬜ Storage real |
+| Se retrocede desde historia a fotos y se vuelve a historia | Se preservan historia, servicios y categorías culturales | ✅ Chromium simulado #140; ⬜ participante |
+| Se retrocede desde redes y aceptación legal | Se conservan el enlace y el consentimiento marcado explícitamente | ✅ Chromium simulado #140; ⬜ participante |
+| Se pulsa Crear perfil sin consentimiento | No debe producirse cuenta; el backend lo exige | ⬜ requiere staging y hook P0 |
+
+**Alcance:** no se ejecutó un registro real, no se almacenaron fotos en Storage, no se comprobó RLS ni se invitó a comunidades reales. El lanzamiento público permanece bloqueado.
+
 ## UX — Redacción y vista previa del Agente Cultural
 
 | Prueba | Resultado esperado | Estado |
