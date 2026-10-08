@@ -367,13 +367,21 @@
     const { data: existing, error: readError } = await client.from('cultural_posts')
       .select('id,author_id,media_urls')
       .eq('id', postId)
+      .eq('author_id', uid)
       .maybeSingle();
     if (readError) throw readError;
+    if (!existing) throw new Error('No tienes permiso para eliminar esta publicación.');
 
-    const { error } = await client.from('cultural_posts').delete().eq('id', postId);
+    // RLS is authoritative; enforce ownership in the client query as defense in depth.
+    const { data: deleted, error } = await client.from('cultural_posts')
+      .delete()
+      .eq('id', postId)
+      .eq('author_id', uid)
+      .select('id');
     if (error) throw error;
+    if (!deleted?.length) throw new Error('No se pudo eliminar la publicación.');
 
-    const media = existing?.author_id === uid && Array.isArray(existing?.media_urls)
+    const media = Array.isArray(existing.media_urls)
       ? existing.media_urls.filter(Boolean)
       : [];
     if (media.length) {
