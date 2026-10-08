@@ -286,29 +286,68 @@
 
   async function doRegister(data) {
     if (!window.ORIGEN_API) return { ok: false, error: 'Servicio de autenticación no disponible.' };
+
+    // The Auth account is created before any optional profile media is uploaded.
+    // Do not offer a retry of signUp after a post-registration upload failure.
+    let result;
     try {
-      const result = await window.ORIGEN_API.signUp(data);
-      if (result.session) {
+      result = await window.ORIGEN_API.signUp(data);
+    } catch (error) {
+      return { ok: false, error: error.message || 'No pudimos crear tu cuenta.' };
+    }
+
+    let setupWarning = null;
+    if (result.session) {
+      try {
         state.user = await window.ORIGEN_API.restoreSession();
-        let avatar = state.user?.avatar || '';
-        let cover = state.user?.cover || '';
-        if (data.avatarFile instanceof File) avatar = await window.ORIGEN_API.upload('avatars', data.avatarFile, 'avatar');
-        if (data.coverFile instanceof File) cover = await window.ORIGEN_API.upload('covers', data.coverFile, 'cover');
-        if (avatar || cover) {
-          state.user = await window.ORIGEN_API.updateMyProfile({
-            name: state.user?.name || data.name,
-            location: data.location || state.user?.location,
-            story: data.story || state.user?.story,
-            categories: data.categories || state.user?.categories || [],
-            links: data.links || state.user?.links || {},
-            accountType: data.accountType,
-            providerHeadline: data.providerHeadline || '',
-            services: data.services || [],
-            serviceDescription: data.serviceDescription || '',
-            avatar,
-            cover
-          });
+        if (!state.user) throw new Error('New account session is not ready.');
+
+        const uploaded = [];
+        try {
+          let avatar = state.user.avatar || '';
+          let cover = state.user.cover || '';
+          if (data.avatarFile instanceof File) {
+            avatar = await window.ORIGEN_API.upload('avatars', data.avatarFile, 'avatar');
+            uploaded.push(avatar);
+          }
+          if (data.coverFile instanceof File) {
+            cover = await window.ORIGEN_API.upload('covers', data.coverFile, 'cover');
+            uploaded.push(cover);
+          }
+          if (avatar || cover) {
+            state.user = await window.ORIGEN_API.updateMyProfile({
+              name: state.user?.name || data.name,
+              location: data.location || state.user?.location,
+              story: data.story || state.user?.story,
+              categories: data.categories || state.user?.categories || [],
+              links: data.links || state.user?.links || {},
+              accountType: data.accountType,
+              providerHeadline: data.providerHeadline || '',
+              services: data.services || [],
+              serviceDescription: data.serviceDescription || '',
+              avatar,
+              cover
+            });
+          }
+        } catch (error) {
+          setupWarning = 'media';
+          console.warn('[ORIGEN] Optional registration media setup incomplete:', error);
+          // Roll back newly uploaded files only; never delete existing profile media.
+          if (uploaded.length) {
+            const cleanup = await Promise.allSettled(
+              uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))
+            );
+            if (cleanup.some(item => item.status === 'rejected')) {
+              console.warn('[ORIGEN] Registration media cleanup incomplete.');
+            }
+          }
         }
+      } catch (error) {
+        setupWarning = 'profile';
+        console.warn('[ORIGEN] Post-signup profile setup incomplete:', error);
+      }
+
+      if (state.user) {
         await Promise.allSettled([
           window.ORIGEN_API.listCulturalProfiles(),
           window.ORIGEN_API.listPublicProfiles(),
@@ -319,10 +358,9 @@
           window.ORIGEN_API.loadPostInteractions()
         ]);
       }
-      return { ok: true, ...result };
-    } catch (error) {
-      return { ok: false, error: error.message || 'No pudimos crear tu cuenta.' };
     }
+
+    return { ok: true, ...result, setupWarning, profileReady: !result.session || !!state.user };
   }
 
   async function doLogout() {
