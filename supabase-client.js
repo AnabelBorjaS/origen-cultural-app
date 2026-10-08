@@ -182,9 +182,9 @@
     if (error) throw error;
   }
 
-  async function updateMyProfile(changes) {
-    const uid = cache.session?.user?.id || (await client.auth.getUser()).data.user?.id;
-    if (!uid) throw new Error('Sesión no disponible.');
+  async function updateMyProfile(changes, expectedUserId = null) {
+    const uid = cache.session?.user?.id || null;
+    if (!uid || (expectedUserId && expectedUserId !== uid)) throw new Error('La sesión cambió; vuelve a iniciar sesión antes de guardar.');
     const safe = {
       display_name: changes.name,
       avatar_url: changes.avatar,
@@ -205,8 +205,9 @@
     Object.keys(safe).forEach(k => safe[k] === undefined && delete safe[k]);
     const { data, error } = await client.from('profiles').update(safe).eq('id', uid).select('*').single();
     if (error) throw error;
+    if (cache.session?.user?.id !== uid) throw new Error('La sesión cambió durante la actualización.');
     cache.profile = data;
-    return normaliseUser(cache.session?.user || (await client.auth.getUser()).data.user, data);
+    return normaliseUser(cache.session.user, data);
   }
 
   async function listPublicProfiles() {
@@ -361,9 +362,9 @@
     return listPosts(false);
   }
 
-  async function createPost(payload) {
+  async function createPost(payload, expectedUserId = null) {
     const uid = cache.session?.user?.id;
-    if (!uid) throw new Error('Debes iniciar sesión.');
+    if (!uid || (expectedUserId && expectedUserId !== uid)) throw new Error('La sesión cambió; vuelve a iniciar sesión antes de publicar.');
     if (cache.profile?.role !== 'creator') {
       throw new Error('La publicación en el feed cultural está disponible para Agentes Culturales durante esta beta.');
     }
@@ -383,6 +384,7 @@
     };
     const { data, error } = await client.from('cultural_posts').insert(row).select('*').single();
     if (error) throw error;
+    if (cache.session?.user?.id !== uid) throw new Error('La sesión cambió mientras se publicaba; revisa tu cuenta antes de reintentar.');
     await listPosts();
     return data;
   }
