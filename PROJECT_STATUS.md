@@ -34,6 +34,14 @@
 - ⛔ La prueba usa APIs simuladas: Auth real, registros con correo confirmado, límites Storage y limpieza de archivos en Supabase requieren staging y dos cuentas de QA.
 - ⛔ [Issue #5](https://github.com/AnabelBorjaS/origen-cultural-app/issues/5) para desplegar Cloudflare Pages Free sigue abierto. No se ha desplegado staging, hecho merge a `main` ni migrado `origencultural.com`.
 
+## Seguridad del consentimiento — revisión 8 Oct 2026
+
+- ✅ Auditoría de solo lectura de las políticas RLS, permisos de `legal_acceptances` y función `private.handle_new_user()` de Supabase Production.
+- ⚠️ Brecha confirmada de control: `private.handle_new_user()` crea usuario/perfil aunque no exista `accepted_legal=true`, y usa versiones de términos enviadas por el cliente. **No se ha detectado incidente; es una debilidad preventiva de arquitectura.**
+- ✅ `supabase-client.js` exige `acceptedLegal === true`; las pruebas aisladas cubren entradas inválidas y versión v1.2.
+- ✅ Propuesta de protección y plan de QA sin cambios de producción: `BACKEND_CONSENT_REVIEW.md`.
+- ⛔ Backend P0 pendiente antes de registro público. Requiere validación pre-alta, versión legal definida en servidor, control de invitaciones y pruebas reales de staging. No se aplicó ninguna migración ni cambios a Auth en Production.
+
 ## Fuente de trabajo actual
 **GitHub es la fuente oficial del código.**
 Repositorio: `AnabelBorjaS/origen-cultural-app`
