@@ -2,6 +2,17 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Guardado seguro y recuperación de archivos — 8 Oct 2026
+
+- ✅ Los guardados de perfiles `updateMyProfile` y publicaciones `createPost` aceptan un identificador de cuenta iniciadora. Rechazan operaciones si ya se cambió de cuenta **antes de enviar** el guardado.
+- ✅ Si una operación válida se confirma después de un cambio de cuenta, no se debe llenar el caché del nuevo usuario con el perfil anterior ni interpretar un guardado exitoso como fallido para motivar duplicados.
+- ✅ El editor de publicaciones valida el titular inicial entre subidas; no envía la publicación desde otra identidad por un cambio de sesión a mitad de la operación.
+- ✅ El editor de perfil intenta eliminar únicamente los medios recién cargados si falla el siguiente upload o el guardado de perfil, y no elimina las fotos antiguas antes de confirmar un cambio.
+- ✅ Prueba aislada `tests/account-write-isolation.mjs` y prueba de navegador `profileMediaRollbackChecks` añadidas al pipeline.
+- ✅ **Versión de código verificada:** Quality Gate **#265 PASS**, Browser QA **#129 PASS** y CodeQL **#70 PASS**.
+- ⚠️ Si se pierde la sesión durante una subida, el intento de limpieza puede fallar por falta de autorización; registrar una incidencia y evaluar un procedimiento controlado de archivos huérfanos en staging. Ningún mecanismo cliente sustituye RLS de Supabase ni prueba su correcta configuración.
+- ⛔ La verificación usa clientes simulados, no cuentas reales: sigue pendiente staging cerrado y QA con usuarios A/B. No hubo cambios en Supabase Production, `main`, el dominio ni nuevos gastos.
+
 ## Sesiones concurrentes y aislamiento entre cuentas — 8 Oct 2026
 
 - ✅ `app.js` descarta callbacks de autenticación anteriores si llega un evento de sesión más reciente; también cubre `INITIAL_SESSION` mientras la aplicación se está iniciando.
