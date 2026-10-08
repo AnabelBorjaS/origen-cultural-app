@@ -1,4 +1,4 @@
-import { accessHeaders } from './staging-access.mjs';
+import { accessHeaders, stagingURL } from './staging-access.mjs';
 
 const raw = process.argv[2] || process.env.ORIGEN_STAGING_URL;
 if (!raw) {
@@ -6,13 +6,7 @@ if (!raw) {
   process.exit(2);
 }
 
-const base = new URL(raw);
-if (base.protocol !== 'https:') {
-  throw new Error('Staging must use HTTPS.');
-}
-if (!/\.pages\.dev$/i.test(base.hostname) && !['localhost','127.0.0.1'].includes(base.hostname)) {
-  console.warn('Warning: staging host is not a pages.dev hostname. Confirm this is intentional.');
-}
+const base = stagingURL(raw);
 
 const cloudflareAccessHeaders = accessHeaders();
 const checks = [];
