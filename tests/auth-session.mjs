@@ -14,6 +14,7 @@ let failSignOut = false;
 let deferredProfile = null;
 let signupCalls = 0;
 let lastSignupRequest = null;
+const deferredPrivateQueries = new Map();
 const events = [];
 const queued = [];
 
@@ -34,14 +35,22 @@ const client = {
     }
   },
   from(table) {
-    assert.equal(table, 'profiles', 'Auth tests should only load user profiles');
+    assert.ok(['profiles', 'follows', 'favorites', 'post_likes', 'post_saves'].includes(table),
+      'Unexpected Auth test table: ' + table);
     return {
       select() { return this; },
-      eq(key, value) { assert.equal(key, 'id'); this.uid = value; return this; },
+      eq(key, value) { this[key] = value; return this; },
       async maybeSingle() {
+        assert.equal(table, 'profiles');
         profileReads++;
         if (deferredProfile) return deferredProfile.promise;
-        return { data: { id: this.uid, display_name: 'QA user', role: 'explorer' }, error: null };
+        return { data: { id: this.id, display_name: 'QA user', role: 'explorer' }, error: null };
+      },
+      then(resolve, reject) {
+        assert.notEqual(table, 'profiles');
+        const pending = deferredPrivateQueries.get(table);
+        const result = pending || Promise.resolve({ data: [], error: null });
+        return result.then(resolve, reject);
       }
     };
   }
@@ -145,6 +154,43 @@ release({ data: { id: A, role: 'creator', display_name: 'Old user' }, error: nul
 assert.equal(await pending, null);
 assertPrivateEmpty();
 flushEvents();
+
+// In-flight private queries for account A must not restore private rows
+// after a cross-tab account switch to B or sign-out.
+async function testStalePrivateRead(method, table, testData, cacheKey) {
+  let releaseRead;
+  deferredPrivateQueries.set(table, new Promise(resolve => { releaseRead = resolve; }));
+  api.cache.session = makeSession(A);
+  activeSession = makeSession(A);
+  const pendingRead = api[method]();
+  await new Promise(resolve => setImmediate(resolve));
+  authListener('SIGNED_IN', makeSession(B));
+  releaseRead({ data: testData, error: null });
+  await pendingRead;
+  assert.deepEqual(api.cache[cacheKey], [], method + ' must not leak A into B');
+  deferredPrivateQueries.delete(table);
+  flushEvents();
+}
+await testStalePrivateRead('myFollows', 'follows', [{ cultural_profile_id: 'secret-A-follow' }], 'follows');
+await testStalePrivateRead('myFavorites', 'favorites', [{ cultural_profile_id: 'secret-A-favorite' }], 'favorites');
+
+// Likes and saved post IDs are queried concurrently in a shared method.
+let releaseLikes;
+let releaseSaves;
+deferredPrivateQueries.set('post_likes', new Promise(resolve => { releaseLikes = resolve; }));
+deferredPrivateQueries.set('post_saves', new Promise(resolve => { releaseSaves = resolve; }));
+api.cache.session = makeSession(A);
+activeSession = makeSession(A);
+const pendingInteractions = api.loadPostInteractions();
+await new Promise(resolve => setImmediate(resolve));
+authListener('SIGNED_OUT', null);
+releaseLikes({ data: [{ post_id: 'old-account-liked-post' }], error: null });
+releaseSaves({ data: [{ post_id: 'old-account-saved-post' }], error: null });
+await pendingInteractions;
+assertPrivateEmpty();
+deferredPrivateQueries.clear();
+flushEvents();
+console.log('✓ Account-switch guard rejects late follows, favorites, likes and saves');
 
 // The browser client only accepts a real boolean consent, not truthy strings.
 // These checks mock signUp and never create Supabase Production accounts.
