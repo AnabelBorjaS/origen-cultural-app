@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { accessHeaders } from '../scripts/staging-access.mjs';
+import { accessHeaders, stagingURL, STAGING_ROOT_HOST } from '../scripts/staging-access.mjs';
 
 // No credentials: initial unprotected staging audit can still run.
 assert.deepEqual(accessHeaders({}), {});
@@ -23,4 +23,25 @@ assert.deepEqual(headers, {
   'CF-Access-Client-Secret': 'staging-secret'
 });
 assert.equal(Object.keys(headers).length, 2);
+assert.equal(stagingURL('https://origen-cultural-staging.pages.dev/').hostname, STAGING_ROOT_HOST);
+assert.equal(stagingURL('https://preview-123.origen-cultural-staging.pages.dev/').hostname,
+  'preview-123.origen-cultural-staging.pages.dev');
+
+for (const url of [
+  'https://attacker.example/',
+  'https://origen-cultural-staging.pages.dev.evil.example/',
+  'https://another-project.pages.dev/',
+  'http://origen-cultural-staging.pages.dev/',
+  'https://origen-cultural-staging.pages.dev:444/',
+  'https://u:p@origen-cultural-staging.pages.dev/',
+  'https://origen-cultural-staging.pages.dev/?redirect=evil',
+  'https://origen-cultural-staging.pages.dev/#token'
+]) {
+  assert.throws(() => stagingURL(url), /only accepts approved Cloudflare Pages staging/i,
+    'Disallowed input must never receive staging credentials: ' + url);
+}
+assert.throws(() => stagingURL('not a url'), /valid HTTPS URL/i);
+
+console.log('✓ ORIGEN staging URL allowlist rejects non-approved origins before attaching secrets');
+
 console.log('✓ ORIGEN staging Access credentials are optional, paired, and header-scoped');
