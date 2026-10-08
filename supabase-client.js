@@ -185,6 +185,7 @@
   async function updateMyProfile(changes, expectedUserId = null) {
     const uid = cache.session?.user?.id || null;
     if (!uid || (expectedUserId && expectedUserId !== uid)) throw new Error('La sesión cambió; vuelve a iniciar sesión antes de guardar.');
+    const initiatingAuthUser = cache.session.user;
     const safe = {
       display_name: changes.name,
       avatar_url: changes.avatar,
@@ -205,9 +206,10 @@
     Object.keys(safe).forEach(k => safe[k] === undefined && delete safe[k]);
     const { data, error } = await client.from('profiles').update(safe).eq('id', uid).select('*').single();
     if (error) throw error;
-    if (cache.session?.user?.id !== uid) throw new Error('La sesión cambió durante la actualización.');
-    cache.profile = data;
-    return normaliseUser(cache.session.user, data);
+    // The save may have succeeded while another account signed in. Never
+    // put account A's profile back in account B's cache.
+    if (cache.session?.user?.id === uid) cache.profile = data;
+    return normaliseUser(initiatingAuthUser, data);
   }
 
   async function listPublicProfiles() {
@@ -384,8 +386,9 @@
     };
     const { data, error } = await client.from('cultural_posts').insert(row).select('*').single();
     if (error) throw error;
-    if (cache.session?.user?.id !== uid) throw new Error('La sesión cambió mientras se publicaba; revisa tu cuenta antes de reintentar.');
-    await listPosts();
+    // A successful insert should not be reported as a failure just because
+    // the user switched accounts while the response was in flight.
+    if (cache.session?.user?.id === uid) await listPosts();
     return data;
   }
 
