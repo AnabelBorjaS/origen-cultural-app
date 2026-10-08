@@ -1459,6 +1459,36 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 .provider-contact-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; font-size: 13px; }
 .provider-contact-row a { text-decoration: underline; text-underline-offset: 3px; }
 .reference-notice { border-radius: var(--radius-sm); }
+
+/* Status is text-led, visible without hovering or relying on color alone. */
+.creator-trust-label { margin: 8px 0 12px; }
+.profile-trust-chip {
+  display: inline-flex; align-items: center; width: fit-content;
+  max-width: 100%; white-space: normal; line-height: 1.35;
+  padding: 5px 9px; border: 1px solid #b8ada0; border-radius: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: .015em;
+  background: #f4f0ea; color: #302923;
+}
+.profile-trust-chip.profile-trust-unverified { border-color: #b9bec3; background: #f1f2f4; color: #343941; }
+.profile-trust-chip.profile-trust-verified { border-color: #8b7356; background: #f5ecd9; color: #382917; }
+.profile-trust-notice {
+  padding: 20px 22px; margin: 0 0 28px;
+  border: 1px solid #cdc3b6; border-left: 4px solid #a18a6a;
+  background: #f7f5f1; color: var(--black);
+}
+.profile-trust-notice.profile-trust-unverified { border-color: #c5cbd0; border-left-color: #737d89; background: #f7f8f9; }
+.profile-trust-notice.profile-trust-verified { border-color: #c8b696; border-left-color: #92754f; background: #faf6ec; }
+.profile-trust-notice > div:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.profile-trust-notice strong { font-size: 15px; }
+.profile-trust-notice p { margin: 12px 0; line-height: 1.65; font-size: 14px; }
+.profile-trust-links { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 12px; }
+.profile-trust-links a { color: #4a3824; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.profile-trust-links a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.search-result .profile-trust-chip { margin-top: 6px; }
+@media (max-width: 720px) {
+  .profile-trust-notice { padding: 18px; margin-bottom: 24px; }
+}
+
 @media (max-width: 720px) {
   .provider-professional { padding: 20px; }
   .provider-prof-head { flex-direction: column; }
