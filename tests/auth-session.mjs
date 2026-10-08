@@ -12,12 +12,19 @@ let activeSession = null;
 let profileReads = 0;
 let failSignOut = false;
 let deferredProfile = null;
+let signupCalls = 0;
+let lastSignupRequest = null;
 const events = [];
 const queued = [];
 
 const client = {
   auth: {
     onAuthStateChange(fn) { authListener = fn; },
+    async signUp(request) {
+      signupCalls++;
+      lastSignupRequest = request;
+      return { data: { user: { id: A }, session: null }, error: null };
+    },
     async getSession() { return { data: { session: activeSession }, error: null }; },
     async signOut() {
       if (failSignOut) return { error: new Error('Auth unavailable') };
@@ -139,4 +146,28 @@ assert.equal(await pending, null);
 assertPrivateEmpty();
 flushEvents();
 
+// The browser client only accepts a real boolean consent, not truthy strings.
+// These checks mock signUp and never create Supabase Production accounts.
+for (const acceptedLegal of [undefined, null, false, 0, 'true', 'yes', 1, {}]) {
+  await assert.rejects(
+    api.signUp({ email: 'qa@example.invalid', password: 'QA!notreal2026', acceptedLegal }),
+    /aceptar los documentos/i
+  );
+}
+assert.equal(signupCalls, 0, 'Invalid consent must never reach the Auth backend');
+
+const registered = await api.signUp({
+  email: 'qa@example.invalid',
+  password: 'QA!notreal2026',
+  acceptedLegal: true,
+  accountType: 'creator',
+  name: 'Pilot QA'
+});
+assert.equal(signupCalls, 1);
+assert.equal(registered.requiresEmailConfirmation, true);
+assert.equal(lastSignupRequest.options.data.accepted_legal, true);
+for (const name of ['terms_version', 'privacy_version', 'community_guidelines_version', 'cultural_rights_version']) {
+  assert.equal(lastSignupRequest.options.data[name], 'v1.2', name + ' should use approved version');
+}
+console.log('✓ ORIGEN client consent requires explicit true and sends canonical legal versions');
 console.log('✓ ORIGEN Auth callback isolation, cross-user cache clearing, sign-out failure and stale-request checks passed');
