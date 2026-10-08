@@ -342,6 +342,30 @@ async function roleChecks(role) {
   await page.close();
 }
 
+async function publicProfileStatusChecks() {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+  try {
+    await page.goto(baseURL + '#explorar', { waitUntil: 'domcontentloaded' });
+    await page.locator('#explore-grid .creator-card').first().waitFor({ timeout: 15000 });
+    check(await page.locator('#explore-grid .profile-trust-reference').count() >= 4,
+      'Editorial references need visible status on directory cards');
+    await page.evaluate(() => { location.hash = '#perfil/pakarina'; });
+    await page.locator('.profile-trust-notice.profile-trust-reference').waitFor({ timeout: 12000 });
+    check((await page.locator('.profile-trust-notice').innerText()).includes('no oficial'),
+      'Editorial reference should disclose non-official status');
+    check(await page.locator('.profile-trust-notice a[href="#reclamar/pakarina"]').count() === 1,
+      'Reference should expose a controlled claim route');
+    check((await page.locator('.profile-aside').innerText()).includes('Perfil de referencia · no oficial'),
+      'Reference metadata must match its explicit status');
+    check(!(await page.locator('.profile-aside').innerText()).includes('En proceso'),
+      'Reference cannot imply a verification process');
+  } catch (error) {
+    failures.push('Public reference trust QA: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 async function profileMediaRollbackChecks() {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await page.addInitScript(() => {
@@ -653,6 +677,7 @@ async function registrationUploadFailureChecks() {
 try {
   await desktopChecks();
   await mobileChecks();
+  await publicProfileStatusChecks();
   await roleChecks('explorer');
   await roleChecks('creator');
   await registrationUploadFailureChecks();
