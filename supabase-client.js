@@ -612,11 +612,13 @@
   }
 
   client.auth.onAuthStateChange((event, session) => {
-    authStateRevision++;
     // Never call Supabase APIs inside this callback: an async query here can
     // deadlock subsequent Auth/database calls while Supabase holds its lock.
     const previousUid = cache.session?.user?.id || null;
     const nextUid = session?.user?.id || null;
+    // Token refreshes for the same account must not cancel a pending
+    // getSession/profile restoration. Identity changes and sign-out do.
+    if (previousUid !== nextUid || event === 'SIGNED_OUT') authStateRevision++;
     cache.session = session || null;
     if (!nextUid || nextUid !== previousUid) clearPrivateCache();
 
