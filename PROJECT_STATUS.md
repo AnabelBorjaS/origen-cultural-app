@@ -42,6 +42,18 @@
 - ✅ Propuesta de protección y plan de QA sin cambios de producción: `BACKEND_CONSENT_REVIEW.md`.
 - ⛔ Backend P0 pendiente antes de registro público. Requiere validación pre-alta, versión legal definida en servidor, control de invitaciones y pruebas reales de staging. No se aplicó ninguna migración ni cambios a Auth en Production.
 
+## Implementación propuesta sin despliegue — 8 Oct 2026
+
+- ✅ Verificadas en GitHub las pruebas de la última versión anterior a esta preparación: Quality Gate **#229 PASS**, Browser QA **#93 PASS**, CodeQL **#34 PASS**.
+- ✅ Supabase Production auditado solo con lecturas: `auth.users` = **0**, `legal_acceptances` = **0** en la consulta del 8 Oct.
+- ✅ Función SQL propuesta `public.origen_before_user_created(event jsonb)`, compatible con la documentación de Supabase Auth Hook en Free, preparada bajo `supabase/proposals/ORIGEN_BETA_SERVER_SIGNUP_CONSENT_REVIEW_ONLY.sql`.
+- ✅ Propuesta complementaria para `private.handle_new_user()`: exigir `accepted_legal` JSON booleano verdadero y registrar exclusivamente versiones legales v1.2 definidas por ORIGEN, sin confiar en versiones enviadas por cliente.
+- ✅ Ocho casos del predicado de consentimiento se validaron con consultas de solo lectura (aceptar `true` booleano; rechazar ausente, `false`, `null`, `"true"`, número 1, proveedor no admitido y alta anónima). **Esto no es prueba del hook instalado.**
+- ✅ Archivo de QA de solo lectura para ejecutar después de instalar el hook en un proyecto staging separado: `supabase/proposals/ORIGEN_CONSENT_STAGING_QA_READ_ONLY.sql`.
+- ✅ [Issue #6](https://github.com/AnabelBorjaS/origen-cultural-app/issues/6) actualizado con enlaces, evidencia y condiciones de cierre.
+- ⛔ **Sin cambios en Production:** los SQL se guardaron en `supabase/proposals/`, NO en migraciones automáticas; ningún hook está activado, no se creó proyecto staging ni usuarios de prueba.
+- ⛔ Siguiente dependencia operativa: [issue #5](https://github.com/AnabelBorjaS/origen-cultural-app/issues/5) y autorización de herramientas gratuitas de staging; después validación Auth/RLS/Storage, consentimiento y asesoría legal.
+
 ## Fuente de trabajo actual
 **GitHub es la fuente oficial del código.**
 Repositorio: `AnabelBorjaS/origen-cultural-app`
