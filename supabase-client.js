@@ -34,6 +34,16 @@
     comments: []
   };
 
+  // Clear account-scoped in-memory data between users and on logout.
+  function clearPrivateCache() {
+    cache.profile = null;
+    cache.follows = [];
+    cache.favorites = [];
+    cache.likes = [];
+    cache.saves = [];
+    cache.comments = [];
+  }
+
   const normaliseUser = (authUser, profile) => {
     if (!authUser) return null;
     const p = profile || {};
@@ -64,6 +74,8 @@
     if (!authUser) return null;
     const { data, error } = await client.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
     if (error) throw error;
+    // A request started by a previous user must not restore their profile.
+    if (cache.session?.user?.id !== authUser.id) return null;
     cache.profile = data || null;
     return normaliseUser(authUser, data);
   }
@@ -71,9 +83,12 @@
   async function restoreSession() {
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
+    const previousUid = cache.session?.user?.id || null;
+    const nextUid = data.session?.user?.id || null;
     cache.session = data.session || null;
-    if (!cache.session?.user) return null;
-    return loadMyProfile(cache.session.user);
+    if (!nextUid || nextUid !== previousUid) clearPrivateCache();
+    if (!nextUid) return null;
+    return loadMyProfile(data.session.user);
   }
 
   function authRedirect(hashRoute) {
@@ -88,11 +103,13 @@
   }
 
   async function signIn(email, password, captchaToken = null) {
+    const previousUid = cache.session?.user?.id || null;
     const credentials = { email, password };
     if (captchaToken) credentials.options = { captchaToken };
     const { data, error } = await client.auth.signInWithPassword(credentials);
     if (error) throw error;
     cache.session = data.session || null;
+    if (data.user?.id !== previousUid) clearPrivateCache();
     return loadMyProfile(data.user);
   }
 
@@ -141,7 +158,7 @@
     const { error } = await client.auth.signOut();
     if (error) throw error;
     cache.session = null;
-    cache.profile = null;
+    clearPrivateCache();
   }
 
   async function resetPassword(email, captchaToken = null) {
@@ -582,17 +599,19 @@
     return data.publicUrl;
   }
 
-  client.auth.onAuthStateChange(async (_event, session) => {
+  client.auth.onAuthStateChange((event, session) => {
+    // Never call Supabase APIs inside this callback: an async query here can
+    // deadlock subsequent Auth/database calls while Supabase holds its lock.
+    const previousUid = cache.session?.user?.id || null;
+    const nextUid = session?.user?.id || null;
     cache.session = session || null;
-    if (session?.user) {
-      try { cache.profile = (await client.from('profiles').select('*').eq('id', session.user.id).maybeSingle()).data || null; }
-      catch (_) {}
-    } else {
-      cache.profile = null;
-      cache.follows = [];
-      cache.favorites = [];
+    if (!nextUid || nextUid !== previousUid) clearPrivateCache();
+
+    // Refresh profile data outside the Auth callback/lock. Token refreshes do
+    // not need to cause another full UI/database reload.
+    if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event)) {
+      setTimeout(() => window.dispatchEvent(new CustomEvent('origen-auth-change')), 0);
     }
-    window.dispatchEvent(new CustomEvent('origen-auth-change'));
   });
 
   window.ORIGEN_API = {
