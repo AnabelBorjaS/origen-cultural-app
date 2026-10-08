@@ -502,9 +502,61 @@
     if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
     return `<div class="ava ava-${sz}"><img src="${esc(safeMediaUrl(src) || 'assets/logo-mark.svg')}" alt="${esc(profile.name)}" data-avatar-fallback="${encodeURIComponent(init)}"></div>`;
   }
+  // Trust labels are deliberately derived from controlled profile states.
+  // An account/role alone never establishes identity, cultural authority,
+  // community representation or endorsement by ORIGEN.
+  function profileTrustInfo(profile) {
+    const es = state.lang === 'es';
+    const L = (spanish, english) => es ? spanish : english;
+    const isReference = profile?.referenceProfile === true || profile?.profileStatus === 'reference';
+    if (isReference) return {
+      kind: 'reference',
+      short: L('Referencia editorial', 'Editorial reference'),
+      label: L('Perfil de referencia · no oficial', 'Reference profile · not official'),
+      description: L(
+        'Este perfil es una referencia editorial creada por ORIGEN. No está administrado ni verificado por la persona, comunidad u organización mencionada. Su aparición aquí no indica una alianza o representación oficial.',
+        'This is an editorial reference created by ORIGEN. The person, community or organisation named has not managed or verified it. Inclusion does not imply a partnership or official representation.'
+      )
+    };
+    if (profile?.profileStatus === 'verified' && profile?.verified === true) return {
+      kind: 'verified',
+      short: L('Verificación registrada', 'Verification recorded'),
+      label: L('Perfil con verificación registrada', 'Profile with recorded verification'),
+      description: L(
+        'ORIGEN ha registrado una verificación para este perfil. Esto no certifica todo su contenido ni constituye una recomendación comercial.',
+        'ORIGEN has recorded verification for this profile. This does not certify all content or constitute a commercial endorsement.'
+      )
+    };
+    return {
+      kind: 'unverified',
+      short: L('Cuenta sin verificar', 'Unverified account'),
+      label: L('Cuenta autogestionada · sin verificar', 'Self-managed account · unverified'),
+      description: L(
+        'Esta cuenta fue creada por un usuario. ORIGEN no ha verificado su identidad ni su autoridad para representar a una comunidad, negocio u organización. Revisa sus afirmaciones antes de compartir información o contactar.',
+        'A user created this account. ORIGEN has not verified their identity or authority to represent a community, business or organisation. Check claims before sharing information or making contact.'
+      )
+    };
+  }
+  function profileTrustChip(profile) {
+    const trust = profileTrustInfo(profile);
+    return `<span class="profile-trust-chip profile-trust-${trust.kind}">${esc(trust.short)}</span>`;
+  }
+  function profileTrustNotice(profile) {
+    const trust = profileTrustInfo(profile);
+    const isReference = trust.kind === 'reference';
+    const claimLink = isReference && profile?.claimable === true
+      ? `<a href="#reclamar/${encodeURIComponent(profile.id)}">${state.lang === 'es' ? 'Solicitar gestión de este perfil' : 'Request management of this profile'} →</a>`
+      : '';
+    return `<aside class="profile-trust-notice profile-trust-${trust.kind}" aria-label="${esc(trust.label)}">
+      <div>${profileTrustChip(profile)}<strong>${esc(trust.label)}</strong></div>
+      <p>${esc(trust.description)}</p>
+      <div class="profile-trust-links">${claimLink}<a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'} →</a></div>
+    </aside>`;
+  }
   function verBadge(p) {
-    const verified = p && (p.profileStatus === 'verified' || (p.verified && !p.referenceProfile));
-    return verified ? '<span class="verified" title="Perfil verificado">✓</span>' : '';
+    return profileTrustInfo(p).kind === 'verified'
+      ? `<span class="verified" title="${state.lang === 'es' ? 'Verificación registrada' : 'Verification recorded'}" aria-label="${state.lang === 'es' ? 'Verificación registrada' : 'Verification recorded'}">✓</span>`
+      : '';
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -702,6 +754,7 @@
       <div class="creator-card-body">
         <div class="creator-meta"><span>${esc(c.type)}</span><span>${verBadge(c)} ${esc(c.location)}</span></div>
         <h3><a href="${href}">${esc(c.name)}</a></h3>
+        <div class="creator-trust-label">${profileTrustChip(c)}</div>
         <p>${esc(c.short)}</p>
         <div class="creator-tags">${(c.tags || []).map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
         <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers || 0)} seguidores</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
@@ -1131,7 +1184,7 @@
     </section>
     <section class="profile-layout">
       <div>
-        
+        ${profileTrustNotice(c)}
         <div class="profile-story">
           <p class="eyebrow">SU HISTORIA CULTURAL</p>
           <h2>Una puerta directa a su identidad</h2>
@@ -1150,7 +1203,7 @@
         <dl>
           <div><dt>Tipo</dt><dd>${esc(c.type)}</dd></div>
           <div><dt>Ubicación</dt><dd>${esc(c.location)}</dd></div>
-          <div><dt>Verificación</dt><dd>${c.verified ? 'Verificado manualmente' : 'En proceso'}</dd></div>
+          <div><dt>${state.lang === 'es' ? 'Estado del perfil' : 'Profile status'}</dt><dd>${esc(profileTrustInfo(c).label)}</dd></div>
         </dl>
         ${socialLinksHtml(c)}
         <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del creador.</p>
@@ -1201,6 +1254,7 @@
     </section>
     <section class="profile-layout">
       <div>
+        ${profile.accountType === 'creator' ? profileTrustNotice(profile) : ''}
         ${profile.story ? `<div class="profile-story"><p class="eyebrow">HISTORIA CULTURAL</p><p>${esc(profile.story)}</p></div>` : ''}
         ${profile.accountType === 'creator' ? `<section class="provider-professional"><div class="provider-prof-head"><div><p class="eyebrow">PERFIL PROFESIONAL CULTURAL</p><h2>${esc(profile.providerHeadline || 'Servicios y conocimiento cultural')}</h2></div>${profile.website ? `<a class="btn secondary" href="${esc(safeExternalUrl(profile.website))}" target="_blank" rel="noopener noreferrer">Visitar sitio web ↗</a>` : ''}</div>${profile.serviceDescription ? `<p class="provider-prof-copy">${esc(profile.serviceDescription)}</p>` : ''}${profile.services && profile.services.length ? `<div class="service-grid">${profile.services.map(service => `<div class="service-chip">${esc(service)}</div>`).join('')}</div>` : `<p class="form-note">Añade tus servicios, talleres, experiencias o conocimientos desde “Editar perfil”.</p>`}<div class="provider-contact-row">${profile.publicEmail ? `<a href="mailto:${esc(profile.publicEmail)}">✉ ${esc(profile.publicEmail)}</a>` : ''}${profile.publicWhatsapp ? `<span>WhatsApp: ${esc(profile.publicWhatsapp)}</span>` : ''}</div></section>` : ''}
         ${profile.categories && profile.categories.length ? `<div class="creator-tags" style="margin:18px 0">${profile.categories.map(cat => `<span>${esc(cat)}</span>`).join('')}</div>` : ''}
@@ -2976,7 +3030,7 @@
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${esc(safeMediaUrl(c.image || c.avatar) || 'assets/logo-mark.svg')}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${esc(c.category)} · ${esc(c.location)}</p></div><span class="link-arrow">Ver</span></a>`; }),
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${esc(safeMediaUrl(c.image || c.avatar) || 'assets/logo-mark.svg')}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${esc(c.category)} · ${esc(c.location)}</p>${profileTrustChip(c)}</div><span class="link-arrow">Ver</span></a>`; }),
       ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" data-close-search data-clear-comments><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
