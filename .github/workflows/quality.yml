@@ -1,0 +1,24 @@
+name: ORIGEN Quality Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ launch-beta-supabase, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate JavaScript syntax
+        run: npm run check
