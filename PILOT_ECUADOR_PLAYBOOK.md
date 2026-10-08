@@ -49,6 +49,20 @@ No presentar perfiles de referencia como verificados, activos, aliados ni partic
 - Registrar incidencias con severidad y sin copiar datos sensibles al repositorio público.
 - Atender retirada o corrección del contenido siguiendo el procedimiento de privacidad, sin prometer eliminación instantánea de copias o respaldos.
 
+### Observación móvil antes de invitar al piloto
+
+**Aplicable únicamente después de superar el Release Gate.** Preparar una sesión acompañada de prueba con teléfono y una cuenta de ensayo autorizada, sin pedir a la persona que comparta su contraseña.
+
+1. Observar si identifica correctamente **Agente Cultural** y distingue su representación personal de la representación formal de una comunidad.
+2. Solicitar que complete país, ciudad e historia cultural en su propio lenguaje; comprobar que pueda retroceder sin perder campos.
+3. Explicar que foto y portada son **opcionales**. Antes de seleccionar archivos, confirmar derechos de uso de imagen y consentimiento de personas retratadas.
+4. Permitir que elija categorías y explique lo que ofrece sin sugerir contenidos culturalmente restringidos. No introducir servicios pagados ni reservas en esta beta.
+5. Pedir que revise enlaces de contacto y la versión de documentos legales con calma; la aceptación debe realizarla personalmente, sin presión.
+6. Medir tiempo de registro y bloqueos reales **sin registrar credenciales, respuestas sensibles o nombres de comunidades** en GitHub.
+7. Detener la sesión y registrar un problema si surgen alertas de privacidad, autorización o contenidos que no deban divulgarse.
+
+La regresión automática móvil de **390px** cubre pasos y navegación, pero **no** sustituye observación humana, pruebas de accesibilidad en dispositivos reales ni control legal de registro desde Supabase Auth.
+
 ## 4. Entrevista de descubrimiento (15–20 minutos)
 
 Preguntas sugeridas — no son resultados recopilados:
