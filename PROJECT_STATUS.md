@@ -2,6 +2,15 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Protección de borradores en dispositivos compartidos — 8 Oct 2026
+
+- ✅ Corregido `app.js` para borrar borradores de publicaciones, contraseñas temporales del registro, imágenes y archivos en edición, y selecciones de comentarios al cerrar sesión correctamente o pasar de cuenta A a cuenta B.
+- ✅ Se revocan referencias `blob:` de imágenes temporales al descartarlas o al terminar operaciones, y se descartan archivos seleccionados al cambiar el tipo de publicación.
+- ✅ Si otra pestaña cierra una sesión mientras está abierta una vista privada, ORIGEN vuelve a una pantalla pública en lugar de dejar visible el formulario anterior.
+- ✅ `tests/browser-smoke.mjs` incluye la simulación de dos Agentes Culturales consecutivos en un mismo navegador, limpieza de fotos/borradores y cierre de sesión entre pestañas. **Browser QA #111 PASS; Quality Gate #247 PASS**.
+- ⏳ CodeQL #52 permanecía en ejecución al registrar esta sección; verificar resultado final antes de concluir revisión.
+- ⛔ Las pruebas son simuladas: queda pendiente Auth/RLS/Storage real en staging y el acceso Cloudflare descrito en [issue #5](https://github.com/AnabelBorjaS/origen-cultural-app/issues/5). No se ha cambiado Production.
+
 ## Resumen ejecutivo verificado — 8 Oct 2026
 
 **Fase:** beta controlada pre-staging. **Decisión de lanzamiento:** NO-GO público.
