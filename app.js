@@ -2882,9 +2882,18 @@
   ═══════════════════════════════════════════════════════════ */
   document.documentElement.lang = state.lang;
 
+  // Ignore delayed callbacks from an earlier Auth event or initial load.
+  // In particular an old profile response must not restore account A after
+  // account B has signed in or another tab has signed out.
+  let authUiGeneration = 0;
+
   async function initApp() {
+    const generation = ++authUiGeneration;
     try {
-      state.user = await window.ORIGEN_API?.restoreSession() || null;
+      const restored = await window.ORIGEN_API?.restoreSession() || null;
+      if (generation !== authUiGeneration) return;
+      state.user = restored;
+
       const tasks = [
         window.ORIGEN_API?.listCulturalProfiles(),
         window.ORIGEN_API?.listPublicProfiles(),
@@ -2899,19 +2908,26 @@
         );
       }
       await Promise.allSettled(tasks);
+      if (generation !== authUiGeneration) return;
     } catch (error) {
+      if (generation !== authUiGeneration) return;
       console.error('[ORIGEN] Startup error:', error);
       state.user = null;
     } finally {
-      state.authReady = true;
-      render(currentRoute());
+      if (generation === authUiGeneration) {
+        state.authReady = true;
+        render(currentRoute());
+      }
     }
   }
 
   window.addEventListener('origen-auth-change', async () => {
+    const generation = ++authUiGeneration;
     try {
       const previousUid = state.user?.id || null;
       const refreshedUser = await window.ORIGEN_API?.restoreSession() || null;
+      if (generation !== authUiGeneration) return;
+
       const nextUid = refreshedUser?.id || null;
       if (previousUid && previousUid !== nextUid) clearAccountDrafts();
       state.user = refreshedUser;
@@ -2926,6 +2942,15 @@
           window.ORIGEN_API?.loadPostInteractions()
         ]);
       }
+      if (generation !== authUiGeneration) return;
+
+      if (!state.authReady) {
+        // INITIAL_SESSION may arrive while initApp is still loading.
+        state.authReady = true;
+        render(currentRoute(), false);
+        return;
+      }
+
       // Sign-out in a different tab must remove privileged UI content too,
       // not only the navigation links. Switching accounts must re-render it.
       if (previousUid && previousUid !== nextUid) {
@@ -2935,6 +2960,7 @@
       }
       updateShell();
     } catch (error) {
+      if (generation !== authUiGeneration) return;
       console.error('[ORIGEN] Auth refresh error:', error);
     }
   });
