@@ -27,6 +27,18 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — Privacidad entre cuentas en dispositivos compartidos
+
+| Prueba | Resultado esperado | Evidencia |
+|---|---|---|
+| Agente A deja título e imagen de borrador, cierra sesión, Agente B entra en el mismo navegador | B ve editor limpio, sin título/imagen/archivo de A | ✅ Chromium simulado Browser QA #111; ⬜ dos cuentas reales staging |
+| A abandona edición de perfil y cierra sesión | Archivos temporales de avatar/portada y sus vistas previas se liberan | ✅ limpieza en cliente; ⬜ staging real |
+| Cierre de sesión desde otra pestaña mientras se muestra «Crear publicación» | Formulario privado deja de mostrarse y se redirige a pantalla pública | ✅ Chromium simulado Browser QA #111; ⬜ staging real |
+| Intento fallido de cierre de sesión | La interfaz no da a entender que la sesión terminó | ✅ test aislado Auth; ⬜ staging real |
+| Cambio de tipo foto/video/carrusel | No se reutilizan archivos seleccionados para otro tipo de publicación | ✅ limpieza en cliente; ⬜ navegador con media real |
+
+**Importante:** la simulación no comprueba revocación de tokens JWT ni aislamiento de Supabase RLS. Los controles del servidor siguen siendo P0 independientes.
+
 ## P0 — Registro completado vs fallos posteriores
 
 Una cuenta creada con éxito no debe registrarse por segunda vez si fallan una imagen opcional o un paso de configuración.
