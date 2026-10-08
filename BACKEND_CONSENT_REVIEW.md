@@ -21,6 +21,19 @@ Separately, `legal_acceptances` has `SELECT` but not `INSERT` table privileges f
 
 Client hardening in branch `reconcile-main-beta-2026-10-07`: `supabase-client.js` requires `acceptedLegal === true`, and isolated tests check that truthy strings and other nonboolean values do not call the signup API. This client protection is **not** a substitute for the backend.
 
+## New engineering deliverables — 8 October 2026
+
+A review-only implementation has been added under `supabase/proposals/`:
+
+- [`ORIGEN_BETA_SERVER_SIGNUP_CONSENT_REVIEW_ONLY.sql`](supabase/proposals/ORIGEN_BETA_SERVER_SIGNUP_CONSENT_REVIEW_ONLY.sql): Before User Created Postgres hook for the email-only beta, explicit JSON boolean acceptance, refusal of unsupported providers, and reconstructed `private.handle_new_user()` that pins legal versions on the server and fails closed if the acknowledgement is missing.
+- [`ORIGEN_CONSENT_STAGING_QA_READ_ONLY.sql`](supabase/proposals/ORIGEN_CONSENT_STAGING_QA_READ_ONLY.sql): eight nonmutating test cases for the hook after it is installed in a separate staging project.
+- A **Production read-only SQL predicate dry run** passed all eight corresponding test vectors on 8 October. This proves only JSON predicate semantics, **not** compilation/activation of the proposed hook or actual Auth signup behavior.
+- Official Supabase reference: [Before User Created Hook](https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook); this hook is available on the Free tier according to Supabase documentation.
+
+**No SQL migration or hook was installed in Production or staging.** The review-only SQL files are **not** placed in the executable migration directory. Running them in Production is outside the authorized beta-release sequence. Actual activation and migrations remain P0 pending.
+
+**Important policy distinction:** a boolean marker received from a caller is not independently verifiable evidence that a person actually reviewed the documents. The platform must still present intelligible information, timestamp acknowledgements on the server, protect logs and implement legally reviewed consent/evidence practices before any public launch.
+
 ## Preferred server-side solution for controlled beta
 
 1. Choose and configure an Auth **Before User Created** hook, which Supabase documents as a pre-insert validation point: https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook . The hook should permit only supported account-creation paths with an **explicit boolean true** consent acknowledgement for the currently published versions, and fail closed for missing/false/invalid consent.
