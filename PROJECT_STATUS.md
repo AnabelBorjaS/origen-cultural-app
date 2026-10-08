@@ -14,6 +14,17 @@
 - El consentimiento, Auth real con dos cuentas, CAPTCHA server-side, Storage negativo, solicitudes de privacidad, backup lógico validado, revisión legal y pruebas de staging siguen siendo bloqueadores antes de una beta pública.
 - `main` y el dominio `origencultural.com` permanecen fuera de estos cambios. No aprobar gasto ni suscripciones durante este paso.
 
+## Avances nuevos — 8 Oct 2026 (segunda iteración)
+
+- ✅ Eliminado el acceso a Supabase dentro de `onAuthStateChange`; el evento ahora es síncrono y el refresco de interfaz se agenda fuera del callback de Auth, para evitar bloqueos documentados.
+- ✅ Se limpian `profile`, follows, favoritos, likes, saves y comentarios al cerrar sesión, recuperar una sesión nula o pasar a otro usuario.
+- ✅ Una lectura de perfil antigua ya no debe sobrescribir el perfil de una sesión que ha cambiado durante la solicitud.
+- ✅ La interfaz no finge un cierre de sesión correcto si Supabase devuelve un error.
+- ✅ Nueva suite aislada `tests/auth-session.mjs` integrada a `npm run check:release`, sin usar datos/cuentas de Production.
+- ✅ Calidad del código verificada en commit de aplicación `a4f2a1159d86f59d1421a158724628f8aa20b71e`: Quality Gate **#216 PASS** y CodeQL **#21 PASS**. Browser QA de ese commit estaba en ejecución al documentar; no contarla como aprobación hasta su resultado definitivo.
+- ✅ Guía operativa interna `PILOT_ECUADOR_PLAYBOOK.md` creada para 10 Agentes Culturales potenciales con consentimiento, límites beta, métricas propuestas, ética cultural y controles de costos. No representa participantes confirmados.
+- ⛔ Cloudflare Pages staging / Auth end-to-end con dos cuentas, Turnstile server-side, recuperación y revisión legal siguen pendientes. No merge a `main` ni cambio de dominio público.
+
 ## Fuente de trabajo actual
 **GitHub es la fuente oficial del código.**
 Repositorio: `AnabelBorjaS/origen-cultural-app`
