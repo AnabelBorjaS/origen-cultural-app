@@ -155,6 +155,7 @@ release({ data: { id: A, role: 'creator', display_name: 'Old user' }, error: nul
 assert.equal(await pending, null);
 assertPrivateEmpty();
 flushEvents();
+deferredProfile = null;
 
 // In-flight private queries for account A must not restore private rows
 // after a cross-tab account switch to B or sign-out.
