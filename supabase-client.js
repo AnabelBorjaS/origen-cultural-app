@@ -370,6 +370,12 @@
     if (cache.profile?.role !== 'creator') {
       throw new Error('La publicación en el feed cultural está disponible para Agentes Culturales durante esta beta.');
     }
+    // Client-side guard against accidental publication without the two
+    // declarations. Not authoritative: browser code can be bypassed.
+    // Backend evidence/enforcement must be implemented and tested in staging.
+    if (payload?.rightsAcknowledged !== true || payload?.culturalAcknowledged !== true) {
+      throw new Error('Confirma derechos de contenido y autorizaciones culturales antes de publicar.');
+    }
     const row = {
       cultural_profile_id: payload.cultural_profile_id || null,
       author_id: uid,
