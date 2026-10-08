@@ -236,6 +236,119 @@ async function roleChecks(role) {
   await page.close();
 }
 
+async function sessionDraftIsolationChecks() {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+
+  await page.addInitScript(() => {
+    const creator = (id, name) => ({
+      id, email: id + '@qa.invalid', name, accountType: 'creator', role: 'creator',
+      location: 'QA', story: '', categories: [], links: {}, avatar: '', cover: '',
+      services: [], providerHeadline: '', serviceDescription: ''
+    });
+    const userA = creator('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'First Cultural Agent');
+    const userB = creator('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Second Cultural Agent');
+    let activeUser = userA;
+
+    window.__origenPrivacyQA = { revokedPreviews: 0, signOuts: 0 };
+    const originalRevoke = URL.revokeObjectURL.bind(URL);
+    URL.revokeObjectURL = url => {
+      window.__origenPrivacyQA.revokedPreviews++;
+      return originalRevoke(url);
+    };
+
+    let currentApi;
+    Object.defineProperty(window, 'ORIGEN_API', {
+      configurable: true,
+      get() { return currentApi; },
+      set(api) {
+        currentApi = api;
+        function prime() {
+          api.cache.session = activeUser ? { user: { id: activeUser.id, email: activeUser.email } } : null;
+          api.cache.profile = activeUser ? { id: activeUser.id, role: 'creator', display_name: activeUser.name } : null;
+          api.cache.culturalProfiles = [];
+          api.cache.publicProfiles = [];
+          api.cache.posts = [];
+          api.cache.follows = [];
+          api.cache.favorites = [];
+          api.cache.likes = [];
+          api.cache.saves = [];
+          api.cache.comments = [];
+        }
+        api.restoreSession = async () => { prime(); return activeUser; };
+        api.signOut = async () => {
+          window.__origenPrivacyQA.signOuts++;
+          activeUser = null;
+          prime();
+        };
+        api.signIn = async () => {
+          activeUser = userB;
+          prime();
+          return userB;
+        };
+        api.listCulturalProfiles = async () => [];
+        api.listPublicProfiles = async () => [];
+        api.ensureCreatorCulturalProfile = async () => null;
+        api.myFollows = async () => [];
+        api.myFavorites = async () => [];
+        api.listPosts = async () => [];
+        api.loadPostInteractions = async () => null;
+        prime();
+      }
+    });
+  });
+
+  try {
+    await page.goto(baseURL + '#crear', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.locator('#create-form').waitFor({ timeout: 15000 });
+    await page.locator('#create-form [name="title"]').fill('CONFIDENTIAL DRAFT FROM ACCOUNT A');
+    await page.waitForTimeout(500); // allow preview debounce to finish
+
+    await page.locator('#post-media-input').setInputFiles({
+      name: 'private-a.jpg',
+      mimeType: 'image/jpeg',
+      buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9])
+    });
+    await page.waitForFunction(() => document.querySelectorAll('#post-media-zone img').length > 0, null, { timeout: 8000 });
+    await page.evaluate(() => { window.location.hash = '#mi-perfil'; });
+    await page.locator('#logout-btn').waitFor({ timeout: 12000 });
+    await page.locator('#logout-btn').click();
+    await page.waitForFunction(() => location.hash === '#inicio', null, { timeout: 12000 });
+
+    const qaAfterLogout = await page.evaluate(() => window.__origenPrivacyQA);
+    check(qaAfterLogout.signOuts === 1, 'Log-out should invoke Auth signOut exactly once');
+    check(qaAfterLogout.revokedPreviews >= 1, 'Log-out should revoke a private unsaved blob preview');
+
+    await page.evaluate(() => { window.location.hash = '#login'; });
+    await page.locator('#login-form [name="email"]').fill('second@qa.invalid');
+    await page.locator('#login-form [name="password"]').fill('not-a-real-password');
+    await page.locator('#login-form button[type="submit"]').click();
+    await page.waitForFunction(() => location.hash === '#feed', null, { timeout: 12000 });
+
+    await page.evaluate(() => { window.location.hash = '#crear'; });
+    await page.locator('#create-form [name="title"]').waitFor({ timeout: 12000 });
+    const title = await page.locator('#create-form [name="title"]').inputValue();
+    check(title === '', 'Account B must not inherit account A unpublished post title');
+    check(await page.locator('#post-media-zone img').count() === 0, 'Account B must not inherit account A media preview');
+
+    // Simulate a cross-tab SIGNED_OUT event while a privileged route is open.
+    await page.evaluate(() => {
+      const api = window.ORIGEN_API;
+      api.restoreSession = async () => {
+        api.cache.session = null;
+        api.cache.profile = null;
+        return null;
+      };
+      window.dispatchEvent(new CustomEvent('origen-auth-change'));
+    });
+    await page.waitForFunction(() => location.hash === '#inicio', null, { timeout: 12000 });
+    check(await page.locator('#create-form').count() === 0, 'External sign-out must remove the privileged post form');
+  } catch (error) {
+    failures.push('Account draft/session privacy regression: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 async function registrationUploadFailureChecks() {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
@@ -325,6 +438,7 @@ try {
   await roleChecks('explorer');
   await roleChecks('creator');
   await registrationUploadFailureChecks();
+  await sessionDraftIsolationChecks();
 } finally {
   await browser.close();
 }
