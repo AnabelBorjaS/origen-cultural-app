@@ -1705,7 +1705,7 @@
       <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Agentes Culturales</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador: hasta 10 Agentes Culturales voluntarios, después de aprobar seguridad y consentimiento</span></div>
         <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
         <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
       </div>
