@@ -39,6 +39,19 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 
 **Importante:** la simulación no comprueba revocación de tokens JWT ni aislamiento de Supabase RLS. Los controles del servidor siguen siendo P0 independientes.
 
+## P0 — Eventos concurrentes de autenticación (nuevas regresiones)
+
+| Escenario | Control esperado | Estado |
+|---|---|---|
+| Una respuesta lenta de `getSession` llega después de `SIGNED_OUT` | No restaura la cuenta cerrada | ✅ prueba aislada; ⬜ staging real |
+| Dos solicitudes de restauración se resuelven al revés | La respuesta antigua no sobrescribe la nueva | ✅ prueba aislada; ⬜ staging real |
+| A consulta favoritos/seguidos/likes/guardados y cambia a B antes de recibir respuesta | Los datos privados de A no se incorporan al caché de B | ✅ prueba aislada; ⬜ staging real |
+| `TOKEN_REFRESHED` para la misma cuenta durante restauración | La sesión legítima continúa activa | ✅ prueba aislada; ⬜ staging real |
+| Dos eventos UI de Auth simultáneos llegan fuera de orden | La vista privada pertenece solamente a la última sesión | ✅ caso Chromium simulado; ⬜ staging real |
+| `INITIAL_SESSION` interrumpe el inicio de la aplicación | La interfaz carga correctamente sin volver al usuario anterior | ✅ guardia de concurrencia; ⬜ staging real |
+
+Las pruebas con simulaciones **no reemplazan** la verificación real de Supabase Auth, RLS ni revocación de sesiones en múltiples dispositivos. Mantener NO-GO mientras falte staging.
+
 ## P0 — Registro completado vs fallos posteriores
 
 Una cuenta creada con éxito no debe registrarse por segunda vez si fallan una imagen opcional o un paso de configuración.
