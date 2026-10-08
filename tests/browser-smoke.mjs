@@ -208,9 +208,99 @@ async function roleChecks() {
   await context.close();
 }
 
+
+async function roleChecks(role) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+
+  await page.addInitScript(({ role }) => {
+    const id = role === 'creator'
+      ? '11111111-1111-1111-1111-111111111111'
+      : '22222222-2222-2222-2222-222222222222';
+    const profile = {
+      id,
+      role,
+      display_name: role === 'creator' ? 'QA Cultural Agent' : 'QA Cultural Explorer',
+      location: 'QA Territory',
+      story: '',
+      categories: [],
+      links: {},
+      avatar_url: null,
+      cover_url: null
+    };
+    const normalized = {
+      id,
+      email: role + '@qa.invalid',
+      name: profile.display_name,
+      accountType: role,
+      role,
+      location: profile.location,
+      story: '',
+      categories: [],
+      links: {},
+      avatar: null,
+      cover: null,
+      providerHeadline: '',
+      services: [],
+      serviceDescription: ''
+    };
+
+    let currentApi;
+    Object.defineProperty(window, 'ORIGEN_API', {
+      configurable: true,
+      get() { return currentApi; },
+      set(api) {
+        currentApi = api;
+        const prime = () => {
+          api.cache.session = { user: { id, email: normalized.email } };
+          api.cache.profile = profile;
+          api.cache.culturalProfiles = [];
+          api.cache.publicProfiles = [];
+          api.cache.posts = [];
+          api.cache.follows = [];
+          api.cache.favorites = [];
+          api.cache.likes = [];
+          api.cache.saves = [];
+          api.cache.comments = [];
+        };
+        prime();
+        api.restoreSession = async () => { prime(); return normalized; };
+        api.listCulturalProfiles = async () => { api.cache.culturalProfiles = []; return []; };
+        api.listPublicProfiles = async () => { api.cache.publicProfiles = []; return []; };
+        api.ensureCreatorCulturalProfile = async () => null;
+        api.myFollows = async () => { api.cache.follows = []; return []; };
+        api.myFavorites = async () => { api.cache.favorites = []; return []; };
+        api.listPosts = async () => { api.cache.posts = []; return []; };
+        api.loadPostInteractions = async () => {
+          api.cache.likes = [];
+          api.cache.saves = [];
+          api.cache.comments = [];
+        };
+      }
+    });
+  }, { role });
+
+  await page.goto(baseURL + '#crear', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => (document.querySelector('#main-content')?.innerText || '').trim().length > 20, null, { timeout: 20000 });
+
+  if (role === 'explorer') {
+    check(await page.locator('#create-form').count() === 0, 'Explorer should not receive the create-post form during Beta');
+    check(await page.locator('#main-content').innerText().then(t => t.includes('El feed cultural es para Agentes Culturales')), 'Explorer create route should explain Beta publishing scope');
+    check(await page.locator('.desktop-nav a[href="#crear"]').count() === 0, 'Explorer desktop navigation should not expose Create');
+  } else {
+    await page.waitForSelector('#create-form');
+    check(await page.locator('#create-form').count() === 1, 'Cultural Agent should receive the create-post form');
+    check(await page.locator('.desktop-nav a[href="#crear"]').count() === 1, 'Cultural Agent desktop navigation should expose Create');
+    check(await page.locator('[data-ctype="text"]').count() === 0, 'Cultural Agent should not receive a text-only post type');
+  }
+
+  await page.close();
+}
+
 try {
   await desktopChecks();
   await mobileChecks();
+  await roleChecks('explorer');
+  await roleChecks('creator');
   await roleChecks();
 } finally {
   await browser.close();
