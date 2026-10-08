@@ -27,6 +27,20 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — Transparencia pública de perfiles y representación
+
+| Comprobación | Resultado esperado | Evidencia |
+|---|---|---|
+| Las cuatro referencias editoriales están en el directorio | Cada una muestra el estado "Referencia editorial", no "verificado" | ✅ lógica y test Chromium incluidos; ⬜ piloto real |
+| Visitar `#perfil/pakarina` | Aviso visible de perfil no oficial, no gestionado ni verificado por la entidad mencionada | ✅ lógica y test Chromium incluidos; ⬜ evaluación humana |
+| Solicitar gestión de una referencia | Enlace a `#reclamar/pakarina`; sin transferencia automática de cuenta o legitimidad | ✅ enlace y flujo; ⬜ autoridad real |
+| Cuenta autogestionada de Agente Cultural | Estado "Cuenta sin verificar", sin distintivo de verificación o reclamo de referencia | ✅ test Chromium simulado; ⬜ cuenta real |
+| Cambiar a inglés | Estado de cuenta autogestionada y aviso de responsabilidad traducidos | ✅ test Chromium simulado; ⬜ evaluación humana |
+| Revisar información de representación en el perfil | Estado del detalle concuerda con la tarjeta, sin falso "En proceso" | ✅ lógica y test Chromium incluidos; ⬜ evaluación humana |
+| Señal real de verificación | No asignar insignia por rol ni por una declaración del usuario; revisión autorizada y auditada en servidor | ⬜ backend y pruebas con usuarios reales |
+
+Los perfiles de referencia son muestras editoriales, **no participantes reclutados**, organizaciones aliadas ni comunidades que hayan cedido representación. Deben contar con las autorizaciones necesarias antes de un lanzamiento público.
+
 ## P1 — Onboarding cultural móvil (390px)
 
 | Caso | Resultado exigido | Estado |
