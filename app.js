@@ -2342,8 +2342,8 @@
       }
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
+      const uploaded = [];
       try {
-        const uploaded = [];
         for (let i = 0; i < (state.createData.files || []).length; i++) {
           uploaded.push(await window.ORIGEN_API.upload('post-media', state.createData.files[i], `post-${i+1}`));
         }
@@ -2361,6 +2361,13 @@
         showToast('¡Publicación creada!');
         go('feed');
       } catch (error) {
+        if (uploaded.length) {
+          Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))).then(results => {
+            if (results.some(result => result.status === 'rejected')) {
+              console.warn('ORIGEN post upload cleanup incomplete after failed post creation.');
+            }
+          });
+        }
         showToast(error.message || 'No pudimos crear la publicación.');
         if (submit) { submit.disabled = false; submit.textContent = 'Publicar →'; }
       }
