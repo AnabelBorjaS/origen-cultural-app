@@ -191,3 +191,10 @@ Public Beta requires:
 - [ ] Confirm logout does not expose authenticated data from offline cache.
 - [ ] Confirm a new deployment updates app JS/CSS without requiring manual cache clearing.
 - [ ] Confirm private/no-store responses are not stored by the service worker.
+
+
+## CI role simulation vs real-account QA
+- Browser QA simulates Explorer and Cultural Agent UI states locally to verify navigation and Beta publishing scope.
+- The simulation does **not** authenticate against Supabase and does **not** replace two-account RLS testing.
+- Required staging evidence still includes: real Explorer signup/login, real Cultural Agent signup/login, creator post creation, Explorer post denial, cross-user write denial, Storage ownership denial and claim/report isolation.
+- A release item may be marked complete only when the evidence type matches the control being tested (UI simulation, browser deployment test, or real Supabase authorization test).
