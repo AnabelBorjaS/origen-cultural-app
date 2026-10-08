@@ -2345,7 +2345,18 @@
     // native form and reload the page (which would discard private drafts).
     for (const formId of ['reg-basic', 'reg-story', 'reg-social']) {
       const form = document.getElementById(formId);
-      if (form) form.addEventListener('submit', event => {
+      if (!form) continue;
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (!nextBtn.disabled) nextBtn.click();
+      });
+      // Multi-input forms without a native submit button do not always
+      // submit on Enter. Support mobile keyboard "Go" explicitly on the
+      // first two steps, while keeping Enter inside textareas as a newline
+      // and requiring an intentional final legal-confirmation button press.
+      if (formId !== 'reg-social') form.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || event.isComposing ||
+            !(event.target instanceof HTMLInputElement)) return;
         event.preventDefault();
         if (!nextBtn.disabled) nextBtn.click();
       });
