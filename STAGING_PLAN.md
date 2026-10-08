@@ -50,6 +50,8 @@ Cloudflare Pages provides preview URLs for branches and pull requests when Git i
 
 ## Mandatory Cloudflare Access protection
 
+**Security allowlist used by GitHub Staging Audit:** exactly `origen-cultural-staging.pages.dev` and its preview subdomains (`*.origen-cultural-staging.pages.dev`). The auditor **refuses all other hosts**, HTTP, userinfo, custom ports, query strings and fragments before attaching Access credentials. If a different Cloudflare project name is selected, change this approved hostname in code, review the change, and re-run CI **before** using a service token. No arbitrary URL input may override the allowlist.
+
 Cloudflare Pages preview URLs are **public by default**. Protect both (1) preview aliases and (2) the **root** staging hostname `origen-cultural-staging.pages.dev`. The Pages setting `Settings > General > Enable access policy` covers previews only; Cloudflare's known-issues guide explains the extra step for the root `*.pages.dev` domain.
 
 Before using real test credentials:
