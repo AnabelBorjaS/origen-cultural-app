@@ -42,6 +42,19 @@ Una cuenta creada con éxito no debe registrarse por segunda vez si fallan una i
 
 La prueba de navegador `tests/browser-smoke.mjs` usa un cliente simulado: **no** equivale a un test de Storage/RLS real.
 
+## P0 — Obligación de consentimiento en Auth (servidor)
+
+| Intento | Resultado esperado | Evidencia |
+|---|---|---|
+| Registro web con checkbox aceptado | Account creada; aceptación versionada del servidor | ⬜ pendiente staging |
+| Signup directo a Supabase Auth sin indicador legal | No crear `auth.users`, ni `profiles` | ⬜ pendiente implementación backend |
+| Signup directo con `false`, `null`, `"true"` | Rechazo por backend incluso sin web | ⬜ pendiente implementación backend |
+| Signup con versión manipulada | Se almacena exclusivamente versión aprobada por servidor | ⬜ pendiente implementación backend |
+| Registro existente y recuperación de contraseña | Sin bloqueos regresivos | ⬜ pendiente staging |
+| Rutas de invitación/admin | Definidas explícitamente; sin bloqueo accidental | ⬜ pendiente decisión |
+
+La protección estricta `acceptedLegal === true` del cliente **no** cierra este bloqueo. Documento de revisión: `BACKEND_CONSENT_REVIEW.md`.
+
 ## P0 — CAPTCHA / bot protection
 
 Provider: **Cloudflare Turnstile**
