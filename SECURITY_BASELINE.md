@@ -1,0 +1,61 @@
+# ORIGEN Cultural — Security & Abuse Baseline
+
+Status: controlled beta hardening
+Last reviewed: 6 October 2026
+
+## Security principle
+No web or mobile platform can be guaranteed to be impossible to attack. ORIGEN uses layered controls to reduce likelihood, limit impact, detect abuse and recover safely.
+
+## Controls already implemented
+- Supabase Auth instead of locally stored passwords.
+- PostgreSQL Row Level Security on public application tables.
+- User-controlled fields separated from privileged verification/ownership fields.
+- Storage ownership policies and file-size/type restrictions.
+- Server-side constraints on user-generated text lengths.
+- Server-side anti-spam limits:
+  - posts: maximum 5 per user per hour;
+  - comments: maximum 15 per user per 10 minutes;
+  - profile claims: maximum 3 per user per 24 hours;
+  - moderation reports: maximum 20 per user per hour.
+- Claims can target only unowned reference profiles and do not grant ownership automatically.
+- External profile links are restricted to approved URL schemes.
+- Content Security Policy added to the web client.
+- Public frontend uses only the Supabase publishable key. Service-role keys and database secrets must never be shipped to browsers/apps.
+- Security Advisor is checked after database security changes.
+
+## Launch blockers
+- Enable CAPTCHA/bot protection for auth.
+- Enable/verify email confirmation.
+- Configure approved production redirect URLs.
+- Review auth rate limits.
+- Enable MFA/2FA for administrative accounts.
+- Run cross-account authorization tests.
+- Test malicious/oversized uploads and unsupported MIME types.
+- Test XSS payloads in profile names, bios, posts, comments and links.
+- Validate CSP after deployment.
+- Establish incident-response contacts, account-lock/recovery process and backup/recovery expectations.
+
+## Cookies and browser storage
+ORIGEN should use the minimum browser storage required for core operation. Optional analytics, advertising and cross-site tracking must remain off until they are deliberately approved, documented and consented to where required.
+
+The technical inventory must distinguish:
+- cookies;
+- localStorage/sessionStorage;
+- authentication tokens;
+- service-worker/PWA caches;
+- third-party SDK/network requests.
+
+A cookie banner must reflect the technology actually deployed. Do not show a misleading consent interface for optional trackers that are not present. If optional analytics/advertising is later activated, those technologies must not run before the relevant choice is made where consent is required.
+
+## Incident response
+For suspected compromise:
+1. contain affected account/function;
+2. revoke/rotate relevant credentials;
+3. preserve logs/evidence;
+4. assess exposed data and affected users;
+5. restore from a known-safe state;
+6. make legally required notifications;
+7. document root cause and prevention actions.
+
+## Review cadence
+Re-run security checks before each public release and after changes to Auth, RLS, Storage, analytics, payments, messaging, third-party SDKs or mobile clients.

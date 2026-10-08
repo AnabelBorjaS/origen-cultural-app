@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0d0d0d" />
+  <meta name="theme-color" content="#000000" />
   <meta name="description" content="Origen Cultural: red social cultural global para descubrir, seguir y valorar culturas vivas." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://raw.githubusercontent.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta property="og:title" content="Origen Cultural" />
   <meta property="og:description" content="Conectando al mundo con sus raíces culturales." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=20261007-2" />
+  <link rel="stylesheet" href="styles.css" />
   <title>Origen Cultural</title>
 </head>
 <body>
@@ -64,17 +65,31 @@
   <dialog id="search-dialog" class="modal">
     <form method="dialog" class="modal-card search-modal-card">
       <div class="modal-header"><div><p class="eyebrow">DESCUBRIR</p><h2>Busca cultura viva</h2></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div>
-      <label class="search-field"><span aria-hidden="true">⌕</span><input id="global-search" type="search" placeholder="Busca tradición, territorio, oficio o agente cultural..." autocomplete="off" /></label>
+      <label class="search-field"><span aria-hidden="true">⌕</span><input id="global-search" type="search" placeholder="Busca tradición, territorio, oficio o creador..." autocomplete="off" /></label>
       <div id="search-results" class="search-results" aria-live="polite"></div>
     </form>
   </dialog>
 
+  <dialog id="wellbeing-dialog" class="modal wellbeing-modal" aria-labelledby="wellbeing-title">
+    <div class="modal-card wellbeing-card">
+      <p class="eyebrow">BIENESTAR DIGITAL</p>
+      <h2 id="wellbeing-title">Una pausa también es parte del viaje.</h2>
+      <p>Has llegado al objetivo diario de bienestar de ORIGEN. Puedes tomar un descanso, continuar un poco más o desactivar este recordatorio.</p>
+      <div class="wellbeing-actions">
+        <button class="btn" type="button" data-wellbeing="break">Tomar un descanso</button>
+        <button class="btn secondary" type="button" data-wellbeing="snooze">Seguir 15 minutos</button>
+        <button class="text-button" type="button" data-wellbeing="off">Desactivar recordatorios</button>
+      </div>
+      <p class="wellbeing-note">ORIGEN no usa rachas ni recompensas por permanecer conectado.</p>
+    </div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-client.js?v=20261007-2"></script>
+  <script src="supabase-client.js"></script>
   <script src="data.js"></script>
-  <script src="mundo.js?v=20261007-2"></script>
-  <script src="app.js?v=20261007-2"></script>
-  <script src="backend-runtime.js?v=20261007-1"></script>
+  <script src="trust.js"></script>
+  <script src="mundo.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
