@@ -2910,7 +2910,11 @@
 
   window.addEventListener('origen-auth-change', async () => {
     try {
-      state.user = await window.ORIGEN_API?.restoreSession() || null;
+      const previousUid = state.user?.id || null;
+      const refreshedUser = await window.ORIGEN_API?.restoreSession() || null;
+      const nextUid = refreshedUser?.id || null;
+      if (previousUid && previousUid !== nextUid) clearAccountDrafts();
+      state.user = refreshedUser;
       if (state.user) {
         await Promise.allSettled([
           window.ORIGEN_API?.ensureCreatorCulturalProfile(),
@@ -2921,6 +2925,13 @@
           window.ORIGEN_API?.listPosts(),
           window.ORIGEN_API?.loadPostInteractions()
         ]);
+      }
+      // Sign-out in a different tab must remove privileged UI content too,
+      // not only the navigation links. Switching accounts must re-render it.
+      if (previousUid && previousUid !== nextUid) {
+        if (!nextUid) go('inicio');
+        else render(currentRoute(), false);
+        return;
       }
       updateShell();
     } catch (error) {
