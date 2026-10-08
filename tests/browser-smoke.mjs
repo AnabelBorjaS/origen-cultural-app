@@ -236,11 +236,95 @@ async function roleChecks(role) {
   await page.close();
 }
 
+async function registrationUploadFailureChecks() {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+
+  await page.addInitScript(() => {
+    const fakeUser = {
+      id: '33333333-3333-4333-8333-333333333333',
+      email: 'pilot-qa@example.invalid',
+      name: 'QA Cultural Agent',
+      accountType: 'creator',
+      role: 'creator',
+      avatar: '',
+      cover: '',
+      location: 'Yaruquí, Ecuador',
+      links: {},
+      categories: [],
+      services: []
+    };
+    let created = false;
+    let currentApi;
+    window.__origenRegistrationQA = { signups: 0, uploads: 0 };
+
+    Object.defineProperty(window, 'ORIGEN_API', {
+      configurable: true,
+      get() { return currentApi; },
+      set(api) {
+        currentApi = api;
+        api.restoreSession = async () => created ? fakeUser : null;
+        api.signUp = async () => {
+          window.__origenRegistrationQA.signups += 1;
+          created = true;
+          return {
+            user: { id: fakeUser.id },
+            session: { user: { id: fakeUser.id } },
+            requiresEmailConfirmation: false
+          };
+        };
+        api.upload = async () => {
+          window.__origenRegistrationQA.uploads += 1;
+          throw new Error('Simulated storage rejection');
+        };
+        api.listCulturalProfiles = async () => [];
+        api.listPublicProfiles = async () => [];
+        api.ensureCreatorCulturalProfile = async () => null;
+        api.myFollows = async () => [];
+        api.myFavorites = async () => [];
+        api.listPosts = async () => [];
+        api.loadPostInteractions = async () => null;
+      }
+    });
+  });
+
+  try {
+    await page.goto(baseURL + '#registro', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.locator('[data-atype="creator"]').click();
+    await page.locator('#reg-next').click();
+    await page.locator('#reg-basic [name="name"]').fill('QA Cultural Agent');
+    await page.locator('#reg-basic [name="email"]').fill('pilot-qa@example.invalid');
+    await page.locator('#reg-basic [name="password"]').fill('TestPassword2026!');
+    await page.locator('#reg-basic [name="location"]').fill('Yaruquí, Ecuador');
+    await page.locator('#reg-next').click();
+
+    await page.locator('#reg-avatar-input').setInputFiles({
+      name: 'qa-avatar.jpg',
+      mimeType: 'image/jpeg',
+      buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9])
+    });
+    await page.locator('#reg-next').click(); // Story
+    await page.locator('#reg-next').click(); // Social / legal consent
+    await page.locator('#reg-social [name="acceptedLegal"]').check();
+    await page.locator('#reg-next').click();
+
+    await page.waitForFunction(() => window.location.hash === '#feed', null, { timeout: 15000 });
+    const counts = await page.evaluate(() => window.__origenRegistrationQA);
+    check(counts.signups === 1, 'Optional media failure must not restart account creation');
+    check(counts.uploads === 1, 'Simulated avatar upload failure should be exercised');
+    check((await page.locator('#toast').innerText()).includes('Cuenta creada'), 'Optional media failure should show account created, not signup failed');
+  } catch (error) {
+    failures.push('Registration optional-media regression: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 try {
   await desktopChecks();
   await mobileChecks();
   await roleChecks('explorer');
   await roleChecks('creator');
+  await registrationUploadFailureChecks();
 } finally {
   await browser.close();
 }
