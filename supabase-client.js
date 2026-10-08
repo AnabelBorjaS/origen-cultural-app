@@ -269,6 +269,7 @@
     if (!uid) return [];
     const { data, error } = await client.from('follows').select('cultural_profile_id').eq('user_id', uid);
     if (error) throw error;
+    if (cache.session?.user?.id !== uid) return [];
     cache.follows = (data || []).map(x => x.cultural_profile_id);
     return cache.follows;
   }
@@ -291,6 +292,7 @@
     if (!uid) return [];
     const { data, error } = await client.from('favorites').select('cultural_profile_id').eq('user_id', uid);
     if (error) throw error;
+    if (cache.session?.user?.id !== uid) return [];
     cache.favorites = (data || []).map(x => x.cultural_profile_id);
     return cache.favorites;
   }
@@ -425,6 +427,8 @@
     ]);
     if (lErr) throw lErr;
     if (sErr) throw sErr;
+    // An old account's slow API reply must not repopulate private state.
+    if (cache.session?.user?.id !== uid) return;
     cache.likes = (likes || []).map(x => x.post_id);
     cache.saves = (saves || []).map(x => x.post_id);
   }
