@@ -1378,8 +1378,32 @@
           <div class="form-field"><label>Propósito cultural *</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
           <div class="form-field"><label>Territorio</label><input name="territory" placeholder="Ciudad, región o país" value="${esc(d.territory || '')}"></div>
           <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
+          <fieldset class="post-cultural-safety form-field full" aria-describedby="post-safety-intro">
+            <legend>${state.lang === 'es' ? 'Responsabilidad cultural antes de publicar' : 'Cultural responsibility before publishing'}</legend>
+            <p id="post-safety-intro">${state.lang === 'es'
+              ? 'Confirma ambos puntos para cada publicación. Tu declaración no equivale a una verificación oficial de ORIGEN.'
+              : 'Confirm both statements for each post. Your declaration is not an official verification by ORIGEN.'}</p>
+            <label class="post-safety-check">
+              <input type="checkbox" name="rightsAcknowledged" data-post-attestation="rightsAcknowledged" required ${d.rightsAcknowledged ? 'checked' : ''}>
+              <span>${state.lang === 'es'
+                ? 'Tengo derecho o autorización para compartir los textos, fotografías, videos y testimonios de esta publicación, incluidas las imágenes de otras personas y menores cuando corresponda.'
+                : 'I own or have permission to share this post’s text, photos, videos and testimonies, including images of other people and minors where applicable.'}</span>
+            </label>
+            <label class="post-safety-check">
+              <input type="checkbox" name="culturalAcknowledged" data-post-attestation="culturalAcknowledged" required ${d.culturalAcknowledged ? 'checked' : ''}>
+              <span>${state.lang === 'es'
+                ? 'He comprobado que tengo autorización para divulgar cualquier conocimiento cultural que requiera consentimiento comunitario y que no revelo información sagrada, restringida o privada sin permiso.'
+                : 'I have confirmed permission to share any cultural knowledge requiring community consent, and I am not disclosing sacred, restricted or private information without permission.'}</span>
+            </label>
+            <p class="post-safety-help">${state.lang === 'es'
+              ? 'Si no puedes confirmar ambos puntos, no publiques todavía. Solicita permiso o retira ese contenido.'
+              : 'If you cannot confirm both statements, do not publish yet. Request permission or remove that content.'}
+              <a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'}</a>.
+            </p>
+            <p id="post-safety-error" class="post-safety-error" role="alert" aria-live="assertive" hidden></p>
+          </fieldset>
           <div class="form-field full">
-            <button class="btn" type="submit" style="width:100%">Publicar →</button>
+            <button class="btn" type="submit" style="width:100%">${state.lang === 'es' ? 'Publicar →' : 'Publish →'}</button>
             <p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>
           </div>
         </form>
@@ -2530,6 +2554,8 @@
       mediaInput.addEventListener('change', async e => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
+        state.createData.rightsAcknowledged = false;
+        state.createData.culturalAcknowledged = false;
         if (state.createData.type === 'video') {
           for (const url of state.createData.media || []) releasePreview(url);
           state.createData.files = [files[0]];
@@ -2556,6 +2582,8 @@
         e.stopPropagation();
         const idx = parseInt(btn.dataset.rmidx, 10);
         const [preview] = state.createData.media.splice(idx, 1);
+        state.createData.rightsAcknowledged = false;
+        state.createData.culturalAcknowledged = false;
         releasePreview(preview);
         if (state.createData.files) state.createData.files.splice(idx, 1);
         render('crear', false);
@@ -2565,9 +2593,23 @@
     /* form inputs → update preview */
     const form = document.getElementById('create-form');
     if (!form) return;
+    const resetPostAttestations = () => {
+      state.createData.rightsAcknowledged = false;
+      state.createData.culturalAcknowledged = false;
+      form.querySelectorAll('[data-post-attestation]').forEach(input => { input.checked = false; });
+    };
+    form.querySelectorAll('[data-post-attestation]').forEach(input => {
+      input.addEventListener('change', () => {
+        state.createData[input.name] = input.checked === true;
+        const error = document.getElementById('post-safety-error');
+        if (error) { error.textContent = ''; error.hidden = true; }
+      });
+    });
     ['title','description','category','contentPurpose','territory','tags'].forEach(field => {
       const el = form.querySelector(`[name="${field}"]`);
       if (el) el.addEventListener('input', () => {
+        // Any content change requires a fresh, explicit permissions check.
+        resetPostAttestations();
         state.createData[field] = field === 'tags'
           ? el.value.split(',').map(s => s.trim()).filter(Boolean)
           : el.value;
@@ -2582,6 +2624,18 @@
       e.preventDefault();
       const user = me(); if (!user) return;
       const fd = Object.fromEntries(new FormData(form));
+      if (fd.rightsAcknowledged !== 'on' || fd.culturalAcknowledged !== 'on') {
+        const error = document.getElementById('post-safety-error');
+        if (error) {
+          error.hidden = false;
+          error.textContent = state.lang === 'es'
+            ? 'Antes de publicar, confirma tus permisos de contenido y tu responsabilidad cultural.'
+            : 'Before publishing, confirm your content permissions and cultural responsibilities.';
+        }
+        const missing = form.querySelector('[name="rightsAcknowledged"]:not(:checked), [name="culturalAcknowledged"]:not(:checked)');
+        if (missing) missing.focus();
+        return; // Must run before uploads or any database write.
+      }
       if (user.accountType === 'creator' && state.createData.type === 'text') {
         showToast('El feed de Agentes Culturales requiere foto, carrusel o video.'); return;
       }
@@ -2609,6 +2663,8 @@
           category: fd.category,
           contentPurpose: fd.contentPurpose,
           territory: fd.territory,
+          rightsAcknowledged: true,
+          culturalAcknowledged: true,
           tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
         }, user.id);
         if (me()?.id !== user.id) return; // Do not mutate another account's draft or UI.
