@@ -359,6 +359,28 @@ async function publicProfileStatusChecks() {
       'Reference metadata must match its explicit status');
     check(!(await page.locator('.profile-aside').innerText()).includes('En proceso'),
       'Reference cannot imply a verification process');
+
+    const publicId = '99999999-9999-4999-8999-999999999999';
+    await page.evaluate(id => {
+      window.ORIGEN_API.cache.publicProfiles = [{
+        id, role: 'creator', display_name: 'QA Artisan',
+        location: 'Yaruquí, Ecuador', categories: ['Artesanía y tradición'],
+        links: {}, avatar_url: '', created_at: '2026-10-08'
+      }];
+      location.hash = '#explorar';
+    }, publicId);
+    const card = page.locator('#explore-grid .creator-card').filter({ hasText: 'QA Artisan' });
+    await card.waitFor({ timeout: 12000 });
+    check((await card.innerText()).includes('Cuenta sin verificar'),
+      'Registered Cultural Agent should not be described as verified');
+    await page.evaluate(id => { location.hash = '#usuario/' + id; }, publicId);
+    await page.locator('.profile-trust-notice.profile-trust-unverified').waitFor({ timeout: 12000 });
+    check(await page.locator('.profile-trust-notice a[href^="#reclamar/"]').count() === 0,
+      'Registered profile must not inherit a reference claim action');
+    await page.evaluate(() => document.getElementById('language-toggle').click());
+    await page.waitForFunction(() => document.documentElement.lang === 'en');
+    check((await page.locator('.profile-trust-notice').innerText()).includes('Self-managed account'),
+      'Self-managed disclosure needs English translation');
   } catch (error) {
     failures.push('Public reference trust QA: ' + (error?.message || error));
   } finally {
