@@ -144,6 +144,68 @@ async function mobileChecks() {
   check(await page.locator('.auth-card').innerText().then(t => t.includes('Agente Cultural')), 'Registration should render Cultural Agent option');
   check(await page.locator('.auth-card').innerText().then(t => t.includes('Explorador Cultural')), 'Registration should render Cultural Explorer option');
 
+  // Cultural Agent onboarding from a real 390px mobile viewport, without
+  // signing up or making authenticated Supabase write requests.
+  await page.locator('[data-atype="creator"]').click();
+  await page.locator('#reg-next').click();
+  await page.locator('#reg-basic [name="name"]').fill('Artisana Yaruquí');
+  await page.locator('#reg-basic [name="email"]').fill('piloto@qa.invalid');
+  await page.locator('#reg-basic [name="password"]').fill('ExampleSecure2026!');
+  await page.locator('#reg-basic [name="location"]').fill('Yaruquí, Ecuador');
+  await page.locator('#reg-basic [name="location"]').press('Enter');
+  await page.locator('#reg-avatar-input').waitFor({ timeout: 8000 });
+  check(await page.locator('.wizard-label').innerText().then(t => t.includes('Paso 3')),
+    'Pressing Enter in mobile signup form should advance instead of reloading');
+
+  await page.locator('#reg-back').click();
+  check(await page.locator('#reg-basic [name="name"]').inputValue() === 'Artisana Yaruquí',
+    'Returning from photo step must retain the mobile creator name');
+  check(await page.locator('#reg-basic [name="password"]').inputValue() === 'ExampleSecure2026!',
+    'Returning to basic step should not force retyping the password mid-wizard');
+  check(await page.locator('#reg-basic [name="location"]').inputValue() === 'Yaruquí, Ecuador',
+    'Returning from photo step must retain the creator territory');
+  await page.locator('#reg-next').click();
+
+  await page.locator('#reg-avatar-input').setInputFiles({
+    name: 'not-an-image.pdf', mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.7 sample')
+  });
+  check((await page.locator('#reg-error').innerText()).includes('Formato no permitido'),
+    'Invalid registration avatar must be rejected immediately');
+  check(await page.locator('#reg-avatar-zone img').count() === 0,
+    'Rejected avatar must not create a misleading preview');
+  await page.locator('#reg-avatar-input').setInputFiles({
+    name: 'artisan-portrait.jpg', mimeType: 'image/jpeg',
+    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9])
+  });
+  check(await page.locator('#reg-avatar-zone img').count() === 1,
+    'Valid optional avatar should preview on mobile');
+  await page.locator('#reg-next').click();
+
+  await page.locator('#reg-story [name="story"]').fill('Un oficio que aprendimos de nuestras mayores.');
+  await page.locator('#reg-story [name="providerHeadline"]').fill('Tejidos tradicionales de Yaruquí');
+  await page.locator('#reg-story [name="services"]').fill('Talleres, Demostraciones');
+  await page.locator('[data-cat="Artesanía y tradición"]').click();
+  await page.locator('#reg-back').click();
+  await page.locator('#reg-next').click();
+  check(await page.locator('#reg-story [name="story"]').inputValue() === 'Un oficio que aprendimos de nuestras mayores.',
+    'Going back to photo step must not erase an unsaved cultural story');
+  check(await page.locator('#reg-story [name="services"]').inputValue() === 'Talleres, Demostraciones',
+    'Creator offerings must survive back and next');
+  check(await page.locator('[data-cat="Artesanía y tradición"]').getAttribute('aria-pressed') === 'true',
+    'Canonical cultural category selection must persist across wizard steps');
+  await page.locator('#reg-next').click();
+  await page.locator('#reg-social [name="instagram"]').fill('@tejidosyaruqui');
+  await page.locator('#reg-social [name="acceptedLegal"]').check();
+  await page.locator('#reg-back').click();
+  await page.locator('#reg-next').click();
+  check(await page.locator('#reg-social [name="instagram"]').inputValue() === '@tejidosyaruqui',
+    'Mobile creator social link must persist when revisiting legal step');
+  check(await page.locator('#reg-social [name="acceptedLegal"]').isChecked(),
+    'Explicit user-ticked legal acceptance must stay checked after going back');
+  check((await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)),
+    'Mobile signup must not overflow viewport horizontally');
+
   check(pageErrors.length === 0, 'Mobile page should have no uncaught JavaScript errors: ' + pageErrors.join(' | '));
   await page.close();
 }
