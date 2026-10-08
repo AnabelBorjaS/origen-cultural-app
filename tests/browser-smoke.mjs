@@ -309,7 +309,7 @@ async function sessionDraftIsolationChecks() {
       buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9])
     });
     await page.waitForFunction(() => document.querySelectorAll('#post-media-zone img').length > 0, null, { timeout: 8000 });
-    await page.evaluate(() => { window.location.hash = '#mi-perfil'; });
+    await page.evaluate(() => { window.location.hash = '#editar-perfil'; });
     await page.locator('#logout-btn').waitFor({ timeout: 12000 });
     await page.locator('#logout-btn').click();
     await page.waitForFunction(() => location.hash === '#inicio', null, { timeout: 12000 });
