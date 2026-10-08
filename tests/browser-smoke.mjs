@@ -342,6 +342,47 @@ async function sessionDraftIsolationChecks() {
     });
     await page.waitForFunction(() => location.hash === '#inicio', null, { timeout: 12000 });
     check(await page.locator('#create-form').count() === 0, 'External sign-out must remove the privileged post form');
+
+    // Two overlapping Auth events: a very slow A response must not overwrite
+    // a newer B response after both have been dispatched.
+    await page.evaluate(() => {
+      window.ORIGEN_API.restoreSession = () => new Promise(resolve => {
+        window.__resolveStaleAuth = resolve;
+      });
+      window.dispatchEvent(new CustomEvent('origen-auth-change'));
+    });
+    await page.waitForFunction(() => typeof window.__resolveStaleAuth === 'function', null, { timeout: 8000 });
+    await page.evaluate(() => {
+      const userB = {
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        email: 'second@qa.invalid',
+        name: 'Second Cultural Agent',
+        accountType: 'creator',
+        role: 'creator',
+        links: {},
+        categories: [],
+        services: []
+      };
+      window.ORIGEN_API.restoreSession = async () => userB;
+      window.ORIGEN_API.cache.session = { user: { id: userB.id } };
+      window.dispatchEvent(new CustomEvent('origen-auth-change'));
+    });
+    await page.waitForTimeout(150);
+    await page.evaluate(() => {
+      window.__resolveStaleAuth({
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        name: 'Stale Cultural Agent',
+        accountType: 'creator',
+        role: 'creator',
+        links: {},
+        categories: [],
+        services: []
+      });
+    });
+    await page.waitForTimeout(120);
+    await page.evaluate(() => { window.location.hash = '#mi-perfil'; });
+    await page.waitForFunction(() => document.querySelector('#main-content')?.innerText?.includes('Second Cultural Agent'), null, { timeout: 12000 });
+    check(!(await page.locator('#main-content').innerText()).includes('Stale Cultural Agent'), 'Older Auth event must not restore the previous user');
   } catch (error) {
     failures.push('Account draft/session privacy regression: ' + (error?.message || error));
   } finally {
