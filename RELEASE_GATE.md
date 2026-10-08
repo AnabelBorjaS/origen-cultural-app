@@ -101,3 +101,15 @@ Public beta remains NO-GO until:
 - [x] Existing Quality Gate and Browser QA remain separate required evidence during release review.
 - [ ] Repository admin must add/confirm a `main` branch ruleset or equivalent protection before Public Beta.
 - [ ] Repository owner/admin 2FA must be confirmed manually; this connector cannot inspect account-level 2FA state.
+
+
+## Consentimiento obligatorio en servidor — nuevo bloqueo P0 (8 Oct 2026)
+
+- [x] Auditoría de solo lectura: existe `private.handle_new_user()` en `auth.users`, pero actualmente omite registrar aceptación si falta el indicador; **no rechaza** el alta.
+- [x] Cliente mejorado: solo acepta `acceptedLegal === true`, con pruebas automáticas de valores no booleanos.
+- [ ] **P0:** configurar validación de consentimiento en servidor y versionado legal aprobado, con migración y revisión del flujo de invitaciones. Ver `BACKEND_CONSENT_REVIEW.md`.
+- [ ] Probar en staging peticiones directas sin consentimiento / consentimiento inválido para verificar que no se crean cuentas ni perfiles.
+- [ ] Confirmar que las versiones legales aceptadas las fija el servidor, no los campos enviados por usuarios.
+- [ ] Revisar contenido legal y registro probatorio con asesoría jurídica antes de público.
+
+**Importante:** 0 alertas de Security Advisor no equivale a prueba de consentimiento obligatorio en servidor. No GO hasta que todo lo anterior quede verificado.
