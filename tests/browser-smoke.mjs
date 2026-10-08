@@ -248,11 +248,21 @@ async function roleChecks(role) {
     };
 
     let currentApi;
+    window.__postSafetyQA = { uploads: 0, writes: 0, payload: null };
     Object.defineProperty(window, 'ORIGEN_API', {
       configurable: true,
       get() { return currentApi; },
       set(api) {
         currentApi = api;
+        api.upload = async () => {
+          window.__postSafetyQA.uploads++;
+          return 'https://xwkjvoyicrrwjybjolld.supabase.co/storage/v1/object/public/post-media/qa/preview.webm';
+        };
+        api.createPost = async payload => {
+          window.__postSafetyQA.writes++;
+          window.__postSafetyQA.payload = payload;
+          return { id: 'qa-post' };
+        };
         const prime = () => {
           api.cache.session = { user: { id, email: normalized.email } };
           api.cache.profile = profile;
@@ -337,6 +347,43 @@ async function roleChecks(role) {
       return calls;
     });
     check(pickerTriggers === 0, 'Interacting with video playback must not open the file chooser');
+
+    // Publishing declarations must be explicit, per draft, before any upload.
+    const rights = page.locator('#create-form [name="rightsAcknowledged"]');
+    const cultural = page.locator('#create-form [name="culturalAcknowledged"]');
+    check(await rights.count() === 1 && await cultural.count() === 1,
+      'Creator needs two independent pre-publication rights declarations');
+    await page.locator('#create-form button[type="submit"]').click();
+    check(await page.evaluate(() => window.__postSafetyQA.uploads) === 0,
+      'Native required validation prevents upload without consent');
+    await rights.check();
+    await page.locator('#create-form button[type="submit"]').click();
+    check(await page.evaluate(() => window.__postSafetyQA.uploads) === 0,
+      'One declaration cannot authorize media upload');
+    await cultural.check();
+
+    // Replacing any part of the content must invalidate prior declarations.
+    await story.fill('Una historia ampliada y revisada.');
+    check(!await rights.isChecked() && !await cultural.isChecked(),
+      'Changing cultural story invalidates both prior declarations');
+    await rights.check();
+    await cultural.check();
+    await page.locator('#post-media-input').setInputFiles({
+      name: 'updated-culture.webm', mimeType: 'video/webm',
+      buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0xa0])
+    });
+    check(!await rights.isChecked() && !await cultural.isChecked(),
+      'Replacing attached video invalidates both prior declarations');
+
+    await rights.check();
+    await cultural.check();
+    await page.locator('#create-form button[type="submit"]').click();
+    await page.waitForFunction(() => window.__postSafetyQA.writes === 1, null, { timeout: 12000 });
+    const safety = await page.evaluate(() => window.__postSafetyQA);
+    check(safety.uploads === 1 && safety.writes === 1,
+      'Completed declarations permit exactly one media upload and post');
+    check(safety.payload?.rightsAcknowledged === true && safety.payload?.culturalAcknowledged === true,
+      'The client API receives explicit permissions declarations');
   }
 
   await page.close();
