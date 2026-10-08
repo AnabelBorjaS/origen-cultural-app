@@ -2,6 +2,16 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Registro móvil de Agentes Culturales — 8 Oct 2026
+
+- ✅ Los cinco pasos del asistente guardan los campos escritos al retroceder: datos básicos, historia, categorías, oferta cultural, enlaces y aceptación legal marcada expresamente.
+- ✅ La contraseña del asistente se restaura únicamente en la sesión de página en curso mediante JavaScript, sin escribirla en el HTML, URL, localStorage o sessionStorage; el registro sigue sin persistencia durable.
+- ✅ La selección de foto de perfil y portada valida anticipadamente las reglas existentes de formato y tamaño antes de generar la vista previa; rechaza archivos PDF o no compatibles.
+- ✅ La tecla Enter del teclado móvil avanza los pasos de datos/historia sin recargar; el paso final sigue requiriendo el clic explícito en Crear perfil. Al avanzar o retroceder se regresa al inicio del contenido.
+- ✅ Se amplió Browser QA con un recorrido de Agente Cultural a **390px**: entrada por teclado, navegación Atrás/Siguiente, conservación de datos, archivo inválido y válido, categorías canónicas, enlaces y aceptación legal.
+- ✅ Para el código `52b293da`: **Quality Gate #276 PASS, Browser QA #140 PASS, CodeQL #81 PASS**. Son pruebas de navegador con datos simulados; no crean cuentas ni verifican Supabase Auth/Storage/RLS en vivo.
+- ⛔ **Public Beta NO-GO**: todavía faltan staging protegido, consentimiento legal exigido en el servidor, y pruebas con dos cuentas reales. `main`, producción y `origencultural.com` sin modificaciones.
+
 ## Usabilidad del editor cultural — 8 Oct 2026
 
 - ✅ La vista previa de publicaciones se actualiza de manera independiente al formulario, evitando que el cursor salga del título o la descripción mientras un Agente Cultural escribe.
