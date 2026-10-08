@@ -43,6 +43,10 @@ async function desktopChecks() {
   check((await page.locator('#language-toggle').innerText()).trim() === 'ES', 'Language toggle should offer ES after switching to English');
 
   check(await page.evaluate(() => localStorage.getItem('origen-lang')) === 'en', 'English preference should persist in localStorage');
+  check(await page.locator('#report-dialog').getAttribute('aria-labelledby') === 'report-title', 'Report dialog should expose an accessible title relationship');
+  const reportValues = await page.locator('#report-reason option').evaluateAll(options => options.map(option => option.value));
+  check(['cultural_rights','harassment','impersonation','spam','copyright','other'].every(value => reportValues.includes(value)), 'Report dialog should expose canonical moderation reason codes');
+  check((await page.locator('#report-submit').innerText()).trim() === 'Submit report', 'Report dialog controls should follow active English locale');
   await page.waitForLoadState('load');
   const swAudit = await page.evaluate(async () => {
     if (!('serviceWorker' in navigator)) return { supported:false };
