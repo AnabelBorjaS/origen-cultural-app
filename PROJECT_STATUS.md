@@ -2,6 +2,16 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Consentimiento y derechos antes de publicar — 9 Oct 2026
+
+- ✅ El editor de Agentes Culturales incluye dos declaraciones requeridas y separadas, en español e inglés, antes de publicar: **permisos de los contenidos/imágenes/testimonios** y **autorización para divulgar conocimientos culturales sujetos a consentimiento comunitario**.
+- ✅ Las declaraciones se anulan si cambia el texto, categorías, etiquetas, territorio, el tipo de publicación o los archivos adjuntos. La persona debe revisarlas otra vez para continuar.
+- ✅ La validación ocurre **antes** de las subidas de medios. `supabase-client.js` también rechaza el envío accidental a `createPost` cuando no recibe ambas confirmaciones; este control del cliente es eludible y no equivale a autorización real.
+- ✅ `tests/account-write-isolation.mjs` comprueba que una declaración incompleta no provoca un INSERT. La prueba de Chromium confirma que no comienza una subida cuando falta una confirmación, que cambios de contenido invalidan declaraciones previas y que el flujo completo solo continúa tras reaceptarlas.
+- ✅ **CI comprobado en código:** Quality Gate **#289 PASS**, Browser QA **#153 PASS**. CodeQL **#94** se encontraba en proceso durante el registro de esta nota.
+- ⚠️ **No hay constancia inmutable de esta declaración en Supabase** ni validación server-side. Antes de permitir publicaciones reales deben definirse un mecanismo de auditoría/procedencia, permisos de terceros, moderación y un procedimiento de retirada, sujetos a revisión de seguridad y legal en staging; véase `CULTURAL_PUBLICATION_SAFETY_PLAN.md`.
+- ⛔ No se habilitaron cuentas nuevas, no se desplegó staging, no se modificaron `main`, Supabase Production ni `origencultural.com`; Public Beta continúa **NO-GO**.
+
 ## Transparencia de perfiles culturales — 8 Oct 2026
 
 - ✅ Cada tarjeta del directorio indica si su perfil es una **referencia editorial de ORIGEN**, una **cuenta autogestionada no verificada**, o un perfil con verificación registrada si existe evidencia autoritativa. El mero rol Agente Cultural no entrega un sello de verificación.
