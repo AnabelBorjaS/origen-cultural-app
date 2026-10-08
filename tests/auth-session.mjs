@@ -223,6 +223,18 @@ assert.equal(await firstRestore, null);
 assert.equal(api.cache.session.user.id, B);
 assert.equal(api.cache.profile.id, B);
 flushEvents();
+// A token refresh for the SAME account is not a sign-out and must not
+// invalidate a normal in-flight restoration.
+let finishRefresh;
+deferredSession = { promise: new Promise(resolve => { finishRefresh = resolve; }) };
+api.cache.session = makeSession(B);
+const duringRefresh = api.restoreSession();
+await new Promise(resolve => setImmediate(resolve));
+authListener('TOKEN_REFRESHED', makeSession(B));
+finishRefresh({ data: { session: makeSession(B) }, error: null });
+assert.equal((await duringRefresh).id, B);
+assert.equal(api.cache.session.user.id, B);
+deferredSession = null;
 console.log('✓ Auth restore rejects stale session responses and overlapping requests');
 
 // The browser client only accepts a real boolean consent, not truthy strings.
