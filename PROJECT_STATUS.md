@@ -2,6 +2,15 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Usabilidad del editor cultural — 8 Oct 2026
+
+- ✅ La vista previa de publicaciones se actualiza de manera independiente al formulario, evitando que el cursor salga del título o la descripción mientras un Agente Cultural escribe.
+- ✅ Se conservan los campos del borrador al cambiar de fotografía a video.
+- ✅ La selección de video muestra un reproductor con controles, no una etiqueta de imagen rota, y pulsar los controles no inicia nuevamente el selector de archivos.
+- ✅ Se agregaron pruebas automáticas de foco sostenido después de pausas, continuidad de escritura, actualización de la vista previa y visualización de video en `tests/browser-smoke.mjs`.
+- ✅ **Quality Gate #270 PASS · Browser QA #134 PASS · CodeQL #75 PASS** para la versión de código correspondiente.
+- ⛔ Estas pruebas usan Agentes Culturales simulados; la validación con participantes reales, permisos del backend y el piloto público permanecen pendientes. No se ha fusionado la beta ni modificado `origencultural.com`.
+
 ## Guardado seguro y recuperación de archivos — 8 Oct 2026
 
 - ✅ Los guardados de perfiles `updateMyProfile` y publicaciones `createPost` aceptan un identificador de cuenta iniciadora. Rechazan operaciones si ya se cambió de cuenta **antes de enviar** el guardado.
