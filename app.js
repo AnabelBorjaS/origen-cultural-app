@@ -1309,7 +1309,10 @@
         ${d.type !== 'text' ? `
           <div class="upload-zone wide" id="post-media-zone">
             ${hasMedia
-              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${esc(safeMediaUrl(src))}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb">${d.type === 'video'
+                ? `<video src="${esc(safeMediaUrl(src))}" controls muted playsinline preload="metadata" aria-label="Vista previa del video"></video>`
+                : `<img src="${esc(safeMediaUrl(src))}" alt="Vista previa de imagen ${i + 1}">`}
+                <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
             <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
@@ -1329,9 +1332,11 @@
       </div>
       <div class="create-preview-wrap">
         <p class="eyebrow" style="margin-bottom:16px">VISTA PREVIA</p>
-        ${d.title || hasMedia
-          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
-          : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
+        <div id="create-live-preview">
+          ${d.title || hasMedia
+            ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+            : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
+        </div>
       </div>
     </div>`;
   }
@@ -2363,6 +2368,26 @@
     });
   }
 
+  // Update only the preview, never the active editor. Replacing the form
+  // on each keystroke used to blur text fields and interrupt cultural stories.
+  function updateCreatePostPreview() {
+    const preview = document.getElementById('create-live-preview');
+    const user = me();
+    if (!preview || !user || user.accountType !== 'creator') return;
+    const d = state.createData;
+    const hasMedia = (d.media || []).length > 0;
+    preview.innerHTML = d.title || hasMedia
+      ? postCard({
+          id: '_prev', authorId: user.id, type: d.type,
+          media: d.media || [], title: d.title || 'Título',
+          description: d.description || '', category: d.category || '',
+          contentPurpose: d.contentPurpose || 'education',
+          territory: d.territory || '', tags: d.tags || [],
+          timestamp: new Date().toISOString(), likes: 0
+        })
+      : '<div class="create-preview-empty"><p>La vista previa aparecerá aquí.</p></div>';
+  }
+
   /* Create post */
   function bindCreatePost() {
     const currentUser = me();
@@ -2383,7 +2408,7 @@
     const mediaInput = document.getElementById('post-media-input');
     if (mediaZone && mediaInput) {
       mediaZone.addEventListener('click', e => {
-        if (e.target.closest('[data-rmidx]') || e.target.closest('#add-more-media')) return;
+        if (e.target.closest('video, video *, [data-rmidx], #add-more-media')) return;
         mediaInput.click();
       });
       mediaInput.addEventListener('change', async e => {
@@ -2430,9 +2455,9 @@
         state.createData[field] = field === 'tags'
           ? el.value.split(',').map(s => s.trim()).filter(Boolean)
           : el.value;
-        // Throttle preview re-render
+        // Keep focus/caret and in-progress edits intact, even after a pause.
         clearTimeout(bindCreatePost._prev);
-        bindCreatePost._prev = setTimeout(() => render('crear', false), 350);
+        bindCreatePost._prev = setTimeout(updateCreatePostPreview, 120);
       });
     });
 
