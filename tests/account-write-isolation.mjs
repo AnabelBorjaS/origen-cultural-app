@@ -79,12 +79,27 @@ assert.equal(api.cache.profile, bCache, 'Old profile result must not enter new a
 assert.equal(api.cache.session.user.id, B);
 console.log('✓ Delayed successful profile save cannot overwrite another account');
 
-// The request starts while signed in as A; the write succeeds after switching.
+// Missing community permission cannot reach the database even through the
+// browser API, though real enforcement still requires server-side controls.
 setAccount(A);
+await assert.rejects(
+  api.createPost({ title: 'Craft', type: 'photo', rightsAcknowledged: true, culturalAcknowledged: false }, A),
+  /Confirma derechos de contenido/i
+);
+await assert.rejects(
+  api.createPost({ title: 'Craft', type: 'photo', rightsAcknowledged: false, culturalAcknowledged: true }, A),
+  /Confirma derechos de contenido/i
+);
+assert.equal(postWrites.length, 0, 'Incomplete declarations cannot issue a post insert');
+console.log('✓ Client API blocks incomplete cultural rights declarations before database writes');
+
+// The request starts while signed in as A; the write succeeds after switching.
 const pendingPost = api.createPost({
   title: 'Cultural craft',
   contentPurpose: 'education',
   type: 'photo',
+  rightsAcknowledged: true,
+  culturalAcknowledged: true,
   media: []
 }, A);
 assert.equal(postWrites.length, 1);
