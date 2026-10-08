@@ -27,6 +27,20 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — Declaraciones culturales antes de publicar
+
+| Caso | Resultado esperado | Estado |
+|---|---|---|
+| Publicar foto/video sin marcar ningún permiso | No se sube archivo ni se envía INSERT | ✅ Browser QA simulado #153; ⬜ staging |
+| Solo marcar derechos de medios, no divulgación cultural | No se sube contenido | ✅ Browser QA simulado #153; ⬜ staging |
+| Confirmar ambos permisos y cambiar la descripción | Se desmarcan ambos; hace falta volver a confirmarlos | ✅ Browser QA simulado #153; ⬜ móvil real |
+| Confirmar ambos permisos y reemplazar video | Se desmarcan ambos; no se reutiliza el consentimiento para otro archivo | ✅ Browser QA simulado #153; ⬜ móvil real |
+| Intentar `createPost` desde cliente sin ambas declaraciones | Rechazo antes de INSERT | ✅ prueba aislada; ⬜ revisión de backend |
+| Intentar un INSERT directo a Supabase sin declaraciones válidas | Backend lo debe rechazar y registrar las aceptaciones aprobadas de forma trazable | ⬜ **P0 pendiente de diseño e implementación en staging** |
+| Compartir imágenes de terceros, menores o conocimiento restringido | Tener autorizaciones específicas y mecanismo de reporte/retirada; ninguna declaración equivale a verificación oficial | ⬜ verificación operacional y legal |
+
+**No anunciar este control del navegador como prueba legal de permisos.** El frontend no registra evidencias inmutables y se puede eludir si se llama al backend directamente. Mantener Public Beta en **NO-GO** hasta superar el control servidor y el proceso de moderación correspondiente.
+
 ## P0 — Transparencia pública de perfiles y representación
 
 | Comprobación | Resultado esperado | Evidencia |
