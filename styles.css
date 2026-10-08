@@ -709,6 +709,16 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 .preview-thumb.preview-video { width: min(100%, 320px); height: 180px; }
 .preview-thumb video { width: 100%; height: 100%; object-fit: contain; display: block; background: var(--black); }
 .create-preview-empty { padding: 40px; text-align: center; border: 1px dashed #ccc; color: #888; }
+/* Permission declarations: a readable, explicit stop before cultural media is uploaded. */
+.post-cultural-safety { min-width: 0; margin: 4px 0 0; padding: 20px; border: 1px solid #a89983; background: #faf8f4; }
+.post-cultural-safety legend { padding: 0 7px; font-size: 15px; font-weight: 700; color: var(--black); }
+.post-cultural-safety p { font-size: 13px; line-height: 1.6; }
+.post-safety-check { display: flex !important; gap: 12px; align-items: flex-start; margin-top: 14px; font-size: 13px !important; line-height: 1.6; letter-spacing: normal !important; text-transform: none !important; font-weight: 500 !important; cursor: pointer; }
+.post-safety-check input { flex: 0 0 20px; width: 20px !important; min-height: 20px !important; height: 20px; margin: 1px 0 0; accent-color: var(--black); }
+.post-safety-check input:focus-visible { outline: 2px solid var(--black); outline-offset: 3px; }
+.post-safety-help { color: #595044; margin: 16px 0 0; }
+.post-safety-help a { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.post-safety-error:not([hidden]) { color: #8f2623; font-weight: 700; margin: 12px 0 0; }
 .remove-media { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--black); color: var(--white); border: 0; font-size: 14px; display: grid; place-items: center; cursor: pointer; }
 .preview-add { width: 100px; height: 100px; border: 2px dashed #ccc; background: transparent; font-size: 28px; color: #aaa; cursor: pointer; display: grid; place-items: center; }
 .preview-add:hover { border-color: var(--sand); color: var(--sand); }
