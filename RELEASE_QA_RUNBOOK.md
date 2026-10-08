@@ -27,6 +27,20 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## UX — Redacción y vista previa del Agente Cultural
+
+| Prueba | Resultado esperado | Estado |
+|---|---|---|
+| Escribir un título y detenerse al menos 400 ms | El foco y la posición del cursor permanecen en el campo | ✅ Chromium simulado #134; ⬜ participantes reales |
+| Seguir escribiendo después de ver la vista previa | Ningún carácter se pierde y el título completo queda en el formulario | ✅ Chromium simulado #134; ⬜ participantes reales |
+| Escribir una descripción cultural y detenerse | El campo mantiene el foco y la vista previa refleja el contenido | ✅ Chromium simulado #134; ⬜ participantes reales |
+| Cambiar el tipo de publicación de foto a video | El borrador textual sigue intacto | ✅ Chromium simulado #134; ⬜ participantes reales |
+| Seleccionar un archivo video/webm | Aparecen un elemento `video` con controles y la vista previa de la publicación; no una imagen rota | ✅ Chromium simulado #134; ⬜ video real staging |
+| Usar controles de reproducción | No abre accidentalmente el selector de archivos | ✅ Chromium simulado #134; ⬜ táctil móvil |
+| Publicar un video real desde una cuenta Agente Cultural | Subida permitida por Storage, persistencia con RLS y reproducción verificada | ⬜ staging, NO probado |
+
+La aprobación de interfaz **no implica** que las subidas reales de video o las políticas de Storage/RLS se hayan probado.
+
 ## P0 — Identidad durante subida y guardado
 
 | Escenario | Resultado esperado | Evidencia |
