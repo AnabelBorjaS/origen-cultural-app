@@ -298,6 +298,7 @@
 
     let setupWarning = null;
     if (result.session) {
+      state.user = null;
       try {
         state.user = await window.ORIGEN_API.restoreSession();
         if (!state.user) throw new Error('New account session is not ready.');
@@ -2301,8 +2302,17 @@
           if (requiresConfirmation) {
             showToast(state.lang === 'es' ? 'Revisa tu correo para confirmar tu cuenta.' : 'Check your email to confirm your account.');
             go('login');
+          } else if (!result.profileReady) {
+            showToast(state.lang === 'es'
+              ? 'Cuenta creada. No pudimos terminar de cargar tu perfil; inicia sesión para completarlo.'
+              : 'Account created. Profile setup was interrupted; sign in to complete it.');
+            go('login');
           } else {
-            showToast(state.lang === 'es' ? '¡Bienvenida/o a ORIGEN Cultural!' : 'Welcome to ORIGEN Cultural!');
+            showToast(result.setupWarning === 'media'
+              ? (state.lang === 'es'
+                ? 'Cuenta creada. No se pudieron guardar las imágenes; puedes subirlas después desde Editar perfil.'
+                : 'Account created. Images were not saved; you can upload them later from Edit profile.')
+              : (state.lang === 'es' ? '¡Bienvenida/o a ORIGEN Cultural!' : 'Welcome to ORIGEN Cultural!'));
             updateShell(); go('feed');
           }
         } else {
