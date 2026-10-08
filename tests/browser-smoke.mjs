@@ -154,8 +154,9 @@ async function mobileChecks() {
   await page.locator('#reg-basic [name="location"]').fill('Yaruquí, Ecuador');
   await page.locator('#reg-basic [name="location"]').press('Enter');
   await page.locator('#reg-avatar-input').waitFor({ state: 'attached', timeout: 8000 });
-  check(await page.locator('.wizard-label').innerText().then(t => t.includes('Paso 3')),
-    'Pressing Enter in mobile signup form should advance instead of reloading');
+  const currentSignupStep = await page.locator('.wizard-label').innerText();
+  check(/(?:paso|step)\s+3\b/i.test(currentSignupStep),
+    'Pressing Enter in mobile signup should advance to step 3 (actual: ' + currentSignupStep + ')');
 
   await page.locator('#reg-back').click();
   check(await page.locator('#reg-basic [name="name"]').inputValue() === 'Artisana Yaruquí',
