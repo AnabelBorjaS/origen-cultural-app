@@ -27,6 +27,22 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — Retirada y corrección solicitada por titulares sin cuenta
+
+| Comprobación | Resultado esperado | Estado |
+|---|---|---|
+| Entrar a `#solicitar-revision` sin sesión | Formulario de derechos visible, sin forzar registro | ✅ código y prueba Chromium; ⬜ cuentas/dispositivos reales |
+| Acceder desde la publicación `post/ID` | Referencia de ID exacta, sin acusar a otra publicación | ✅ código y prueba Chromium; ⬜ staging |
+| Acceder desde perfil de referencia | Enlace contextual y descripción no oficial preservados | ✅ código y prueba Chromium; ⬜ revisión humana |
+| Generar correo | Mailto dirigido solo a contacto oficial con motivo, referencia y resumen | ✅ código y prueba Chromium; ⬜ app de correo real |
+| No pulsar Enviar desde aplicación de correo | ORIGEN no asegura recepción ni abre ticket | ✅ indicación explícita en UI; ⬜ pruebas manuales |
+| Cambiar detalle o motivo tras preparar correo | Se oculta y elimina enlace antiguo, hasta nueva preparación | ✅ código y prueba Chromium; ⬜ móvil real |
+| Idiomas ES/EN y 390px | Etiquetas, prevención de falsas promesas y ausencia de overflow | ✅ código y prueba Chromium; ⬜ accesibilidad manual |
+| Enviar reporte autenticado | Supabase guarda y restringe lectura a usuario correcto según RLS | ⬜ prueba con dos cuentas de staging |
+| Moderación humana, retirada, apelación y bitácora | Operadores autorizados, respuesta trazable y datos restringidos | ⬜ P0 issue #8; no implementado |
+
+**Advertencia:** generar `mailto:` no equivale a enviar un correo, recibir una denuncia ni gestionar un ticket. No invitar usuarios al piloto antes de activar y verificar el circuito humano de revisión y retirada descrito en `CONTENT_REVIEW_OPERATIONS.md`.
+
 ## P0 — Declaraciones culturales antes de publicar
 
 | Caso | Resultado esperado | Estado |
