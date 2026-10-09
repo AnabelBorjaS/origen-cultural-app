@@ -9,8 +9,10 @@ const B = '22222222-2222-4222-8222-222222222222';
 
 let profileChanges = [];
 let postWrites = [];
+let reportWrites = [];
 let profileResolve = null;
 let postResolve = null;
+let reportResolve = null;
 let postLists = 0;
 let authListener = null;
 
@@ -30,6 +32,10 @@ class Query {
     if (this.table === 'cultural_posts') {
       postWrites.push({ row: this.row, filters: { ...this.filters } });
       return new Promise(resolve => { postResolve = resolve; });
+    }
+    if (this.table === 'moderation_reports') {
+      reportWrites.push({ row: this.row, filters: { ...this.filters } });
+      return new Promise(resolve => { reportResolve = resolve; });
     }
     throw new Error('Unexpected mutation of ' + this.table);
   }
@@ -111,3 +117,41 @@ assert.equal(savedPost.author_id, A, 'A completed insert must report its real ow
 assert.equal(postLists, 0, 'Switching accounts must not trigger an old user post refresh');
 assert.equal(api.cache.profile.id, B);
 console.log('✓ Completed post insert cannot refresh other account or duplicate on retry');
+
+
+// Moderation report safety: unauthenticated submissions, spoofed origin,
+// invalid reason and malformed targets never reach moderation_reports.
+setAccount(A);
+const validReport = {
+  target_type: 'post',
+  target_id: 'qa-culture-post',
+  reason: 'cultural_rights',
+  details: 'La publicación revela conocimientos restringidos.'
+};
+await assert.rejects(api.report(validReport, B), /sesión cambió/i);
+await assert.rejects(api.report({ ...validReport, reason: 'admin_override' }, A), /motivo.*válido/i);
+await assert.rejects(api.report({ ...validReport, target_type: 'profile' }, A), /publicación válida/i);
+await assert.rejects(api.report({ ...validReport, target_id: '' }, A), /publicación válida/i);
+await assert.rejects(api.report({ ...validReport, target_id: '../otro' }, A), /publicación válida/i);
+await assert.rejects(api.report({ ...validReport, details: 'x'.repeat(6001) }, A), /límite permitido/i);
+assert.equal(reportWrites.length, 0, 'Invalid report inputs must not hit database');
+
+authListener('SIGNED_OUT', null);
+await assert.rejects(api.report(validReport), /sesión cambió/i);
+assert.equal(reportWrites.length, 0, 'Logged-out reporter must not write moderation reports');
+console.log('✓ Report guard rejects wrong session, invalid reasons, malformed IDs and sign-out');
+
+setAccount(A);
+const pendingReport = api.report(validReport, A);
+assert.equal(reportWrites.length, 1, 'Valid report should issue one INSERT');
+assert.equal(reportWrites[0].row.reporter_user_id, A, 'Reporter owner comes from Auth, never user input');
+assert.equal(reportWrites[0].row.reason, validReport.reason);
+assert.equal(reportWrites[0].row.target_id, validReport.target_id);
+assert.equal(reportWrites[0].row.details, validReport.details);
+setAccount(B);
+reportResolve({ data: { id: 'report-qa' }, error: null });
+const savedReport = await pendingReport;
+assert.equal(savedReport.id, 'report-qa');
+assert.equal(reportWrites[0].row.reporter_user_id, A, 'Account switch cannot reattribute a submitted report');
+assert.equal(api.cache.session.user.id, B);
+console.log('✓ In-flight report remains attributed to original Auth account after account switch');
