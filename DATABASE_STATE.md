@@ -94,3 +94,10 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 - **Límites de la evidencia:** coincidencia de GRANT + RLS habilitado **no comprueba** eficacia de políticas ante dos cuentas reales, ejecución de funciones, Storage, consentimiento exigido por Auth, autorizaciones culturales, retirada de medios ni moderación.
 - La documentación actual de Supabase está pasando de privilegios automáticos amplios a concesiones explícitas para nuevos objetos. Toda migración nueva debe declarar y revisar `GRANT/REVOKE` y su política RLS deliberadamente; no dar permisos por defecto a tablas sensibles. Ver https://supabase.com/docs/guides/api/securing-your-api
 - **Estado GO/NO-GO sin cambios: NO-GO.** No habilitar registro público, no fusionar PR #3 y no conectar staging al backend de Production.
+
+## Staging reproducido con historial original — 9 October 2026
+
+- El proyecto aislado `ORIGEN Cultural Staging` (`egujmptgnrpajgfpjjxu`) recibió **14/14 migraciones originales en orden** el 9 Oct 2026. Las versiones registradas por Supabase al aplicarlas en Staging son distintas de los timestamps originales; los nombres/SQL provienen del repositorio.
+- Comparación SELECT-only de Staging vs Production: **11 tablas públicas**, **33 políticas**, **14 funciones privadas**, y **3 buckets (avatars/covers/post-media)** en ambos. Cero tablas públicas de aplicación con RLS desactivado. Staging Security Advisor: **0 active lints**.
+- No es una prueba de igualdad columna-por-columna o grants, ni una prueba adversarial de Auth/RLS/Storage. **0 usuarios y 0 publicaciones** en Staging. Los controles de consentimiento y declaraciones culturales `REVIEW_ONLY` no se instalaron.
+- Estado: baseline de staging preparado, **NO-GO** para pilotos reales, producción inalterada.
