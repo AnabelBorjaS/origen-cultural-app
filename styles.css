@@ -1581,6 +1581,7 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 .rights-context a { font-weight: 700; color: var(--black); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .rights-form { padding: clamp(20px, 3vw, 30px); background: var(--white); border: 1px solid var(--grey); }
 .rights-email-ready { background: #f7f4ee; border-left: 4px solid var(--sand); padding: 18px; font-size: 14px; line-height: 1.6; }
+.rights-email-ready[hidden] { display: none !important; }
 .rights-email-ready p { margin: 0 0 14px; }
 .rights-email-ready a { display: inline-flex; width: fit-content; max-width: 100%; justify-content: center; }
 .post-rights-link { padding: 0 18px 16px; font-size: 12px; }
