@@ -475,3 +475,11 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ **14/14 migraciones aplicadas** al Supabase aislado `ORIGEN Cultural Staging`. Estado inicial de aplicación: 11 tablas públicas, 33 políticas, 14 funciones privadas y 3 buckets; comparación de métricas con Production coincide. RLS habilitado en todas las tablas públicas; 0 alertas Security Advisor.
 - ✅ **0 usuarios, 0 publicaciones** en Staging al finalizar. Production sin cambios; coste de la nueva instancia $0/mes confirmado.
 - ⚠️ Todavía no probados Auth, dos cuentas A/B, consentimientos, Storage real, publicación/retirada ni una web protegida. Los P0 #5–#8 y #12 siguen abiertos: **NO-GO** para invitaciones al piloto y merge público.
+
+## Derechos culturales instalados en STAGING — 9 Oct 2026
+
+- ✅ En **ORIGEN Cultural Staging** (`egujmptgnrpajgfpjjxu`) se aplicó la propuesta `ORIGEN_CULTURAL_POST_RIGHTS_STAGING_REVIEW_ONLY.sql` (sin envoltura BEGIN/COMMIT para la herramienta de migración), con nombre de ejecución `staging_cultural_post_rights_atomic_record_test_only`. **No se aplicó a Production**.
+- ✅ Comprobación SELECT-only: columnas `rights_acknowledged` y `cultural_acknowledged` presentes, tabla privada `private.cultural_post_rights_events` existente con RLS, triggers `origen_post_rights_after_insert` y `origen_post_rights_before_update` activos; el rol `authenticated` no posee SELECT sobre la bitácora.
+- ℹ️ Security Advisor indica **1 aviso informativo** `rls_enabled_no_policy` sobre la tabla **privada sin políticas públicas**; es restricción deliberada de acceso, no prueba de vulnerabilidad. Ver https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+- ⚠️ Faltan **pruebas de integración reales con dos cuentas sintéticas**, casos de POST válido/inválido vía Data API, rollback al fallar la bitácora, edición, eliminación y revisión legal de retención. Hasta entonces P0 #7 sigue ABIERTO y el lanzamiento sigue NO-GO.
+- ⚠️ Se añadió una migración de pruebas en Staging con versión propia. Antes de hacer futuros despliegues es obligatorio revisar la concordancia de historial y generar una migración versionada aprobada. La propuesta no debe tratarse como lista para Production.
