@@ -2,6 +2,17 @@
 
 Última actualización: 9 de octubre de 2026
 
+## Enlaces directos para compartir historias culturales — 9 Oct 2026
+
+- ✅ En el código de la rama beta, cada publicación **pública** con UUID admite una URL individual `#publicacion/<UUID>`; el botón «Compartir» ya no apunta al feed genérico. Se usa compartición nativa cuando está disponible y, si no, copia del enlace con mensajes ES/EN.
+- ✅ Se añadió una página editorial **sin registro obligatorio** para la historia concreta con autor, contexto, video/foto cuando estén autorizados y acceso a Explorar. No muestra contenido de perfil ficticio como socio verificado.
+- ✅ `supabase-client.js` resuelve cada publicación desde la consulta individual `cultural_posts`, filtrando por `id` e `is_published=true`, respetando las políticas RLS existentes; no depende de las primeras 12 entradas del feed.
+- ✅ Código defensivo para URLs inválidas y respuestas sin publicación: «Historia no disponible», sin exponer datos no publicados ni mantener la historia anterior visible después de navegar.
+- ✅ Node mock `tests/public-story-read.mjs` incorporado al Quality Gate y pruebas mock de Chromium en `tests/browser-smoke.mjs` para vista sin sesión, autor, enlace, ES/EN, ancho móvil, publicación inexistente y URL malformada.
+- ✅ Verificado en versión de código+plan **Quality Gate #333 PASS y Browser QA #197 PASS**; CodeQL **#138** seguía ejecutándose en la última consulta.
+- ⚠️ **Falta aún QA con datos reales en staging aislado**: RLS desde anónimo y cuentas A/B, publicación oculta/retirada, permisos de contenido, dispositivos reales, metadatos de vista previa en mensajería/redes y casos de moderación. Los enlaces con `#` no garantizan tarjetas OG dinámicas. La issue **#10 permanece abierta**.
+- ⛔ Sin publicar el cambio en `origencultural.com`, sin merge y sin modificaciones a Supabase Production.
+
 ## Conciliación de identidad digital 2026–2030 — 9 Oct 2026
 
 - ✅ En la rama beta se aplicó el negro de referencia `#0D0D0D` al token CSS `--black`, coherente con el color del manifiesto PWA y de la barra del navegador.
