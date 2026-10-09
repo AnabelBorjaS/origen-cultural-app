@@ -8,7 +8,7 @@ const projectURL = 'https://xwkjvoyicrrwjybjolld.supabase.co';
 const selfId = '11111111-1111-4111-8111-111111111111';
 const otherId = '22222222-2222-4222-8222-222222222222';
 
-function makeHarness({ owner = selfId, deleteReturnsRow = true, mediaUrls = [], legacyImage = null, cleanupError = false, delayedCleanup = false } = {}) {
+function makeHarness({ owner = selfId, deleteReturnsRow = true, mediaUrls = [], legacyImage = null, cleanupError = false, delayedCleanup = false, returnedPaths = null } = {}) {
   const queries = [];
   const removals = [];
   const warnings = [];
@@ -52,7 +52,10 @@ function makeHarness({ owner = selfId, deleteReturnsRow = true, mediaUrls = [], 
           async remove(paths) {
             removals.push({ bucket, paths });
             if (delayedCleanup) await new Promise(resolve => releaseRemovals.push(resolve));
-            return { error: cleanupError ? new Error('Simulated public media deletion failure') : null };
+            return {
+              error: cleanupError ? new Error('Simulated public media deletion failure') : null,
+              data: cleanupError ? null : (returnedPaths === null ? paths : returnedPaths).map(name => ({ name }))
+            };
           }
         };
       }
@@ -128,6 +131,27 @@ const ownedMedia = `${projectURL}/storage/v1/object/public/post-media/${selfId}/
   assert.equal(result.unresolvedMediaCount, 1);
   assert.equal(h.removals.length, 1);
   assert.equal(h.warnings.length, 1);
+}
+
+
+// A Storage 2xx with an empty result or the wrong removed-object name is not
+// confirmation that an accessible public file was deleted. Never report success.
+{
+  const h = makeHarness({ mediaUrls: [ownedMedia], returnedPaths: [] });
+  h.api.cache.session = { user: { id: selfId } };
+  const result = await h.api.deletePost('post-1');
+  assert.equal(result.postDeleted, true);
+  assert.equal(result.mediaCleanup, 'incomplete');
+  assert.equal(result.unresolvedMediaCount, 1);
+  assert.equal(h.removals.length, 1);
+  assert.equal(h.warnings.length, 1);
+}
+{
+  const h = makeHarness({ mediaUrls: [ownedMedia], returnedPaths: [selfId + '/unrelated-file.jpg'] });
+  h.api.cache.session = { user: { id: selfId } };
+  const result = await h.api.deletePost('post-1');
+  assert.equal(result.mediaCleanup, 'incomplete');
+  assert.equal(result.unresolvedMediaCount, 1);
 }
 
 // Legacy image_url must be considered, and duplicate paths removed once.
