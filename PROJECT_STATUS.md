@@ -463,3 +463,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ⚠️ **NO HABILITADO EN SERVIDOR**: staging no existe todavía; la propuesta no se ha ejecutado; no hay evidencia de pruebas de base de datos reales. La rama beta actual exige nuevas columnas que Production no tiene, por lo que **NO DEBE desplegarse contra Production** sin migración aprobada, plan de pruebas y revisión legal.
 - ⛔ Issue #7 permanece **P0 abierto**. No se han modificado Production, permisos, datos, dominio ni suscripciones.
 
+## Infraestructura staging creada — 9 octubre 2026
+
+- ✅ Creado `ORIGEN Cultural Staging` (**egujmptgnrpajgfpjjxu**) en organización Free `ORIGEN Cultural`, región de Sídney y costo confirmado **$0/mes**. Supabase indica estado `ACTIVE_HEALTHY`.
+- ✅ Aislamiento comprobado por referencia distinta de Production `xwkjvoyicrrwjybjolld`; inicio con **0 migraciones**, **0 tablas públicas de aplicación** y **0 avisos Security Advisor**.
+- ⚠️ Staging aún **vacío**, no se han aplicado las 14 migraciones ni configurado Auth, Storage, Cloudflare Access o pruebas reales. No se creó URL web de staging ni cuentas de prueba.
+- ⛔ Sigue NO-GO para usuarios y merge público; Production permanece sin cambios.
