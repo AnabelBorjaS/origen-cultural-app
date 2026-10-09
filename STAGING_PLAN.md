@@ -176,3 +176,12 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - ✅ El proyecto responde `ACTIVE_HEALTHY`; inventario inicial **0 migraciones**, **0 tablas públicas de aplicación** y Security Advisor **0 lints**. Esta comprobación no valida aún la seguridad de la beta.
 - ⛔ **Aún no instalado**: 14 migraciones recuperadas, propuestas P0 de consentimiento, protección cultural, frontend aislado, protección Cloudflare Access y QA de dos cuentas. **No existe URL de aplicación Staging desplegada**.
 - Próximo paso: recuperar/validar la secuencia de migraciones y esquema en este proyecto aislado antes de crear usuarios sintéticos. Las propuestas `REVIEW_ONLY` no se ejecutan sin revisión de permisos, versión legal, rollback y pruebas.
+
+## Instalación del esquema en Staging — 9 octubre 2026
+
+- ✅ Se aplicaron las **14 migraciones históricas** en orden al proyecto aislado `egujmptgnrpajgfpjjxu`, con la herramienta de migración de Supabase. Staging conserva sus propios IDs/versiones de historial de aplicación; los SQL son los 14 archivos de la rama beta.
+- ✅ Consulta solo lectura: **11 tablas públicas**, **33 políticas de RLS**, **14 funciones privadas** y **3 buckets** (avatars, covers y post-media); la comparación de esos conteos con Production coincide.
+- ✅ Ninguna tabla pública de aplicación sin RLS en el inventario; Supabase Security Advisor **0 lints**; **0 usuarios** y **0 publicaciones** al terminar.
+- ⚠️ Las comparaciones de conteos **no validan equivalencia completa**, permisos de un usuario real, flujos Auth ni políticas Storage con dos usuarios. Los 3 buckets son públicos como en Production: el P0 de retirada de medios persiste.
+- ⛔ Propuestas de consentimiento legal y derechos culturales **NO aplicadas**. Antes de usarlas hay que revisar y probar Auth/server checks/rollback en Staging. Sin hosting web, Cloudflare Access ni cuentas reales creadas.
+- ⛔ `origencultural.com` y Supabase Production **sin cambios**. Release NO-GO.
