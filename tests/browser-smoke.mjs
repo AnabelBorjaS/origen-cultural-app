@@ -384,6 +384,49 @@ async function roleChecks(role) {
       'Completed declarations permit exactly one media upload and post');
     check(safety.payload?.rightsAcknowledged === true && safety.payload?.culturalAcknowledged === true,
       'The client API receives explicit permissions declarations');
+
+    // Signed-in report route must keep the current reporter identity,
+    // canonical reason, target and details. This is a mocked server response.
+    await page.evaluate(() => {
+      const api = window.ORIGEN_API;
+      const id = api.cache.session.user.id;
+      api.cache.posts = [{
+        id: 'qa-cultural-rights-post', authorId: id, type: 'photo', media: [],
+        title: 'QA Cultural Story', description: 'A fictional weaving story.',
+        timestamp: new Date().toISOString(), category: 'Artesanía', likes: 0
+      }];
+      window.__reportQA = { writes: 0, payload: null, expectedId: '' };
+      api.report = async (payload, expectedId) => {
+        window.__reportQA = { writes: 1, payload, expectedId };
+        return { id: 'qa-report-id' };
+      };
+      location.hash = '#explorar';
+    });
+    await page.waitForSelector('#explore-grid', { timeout: 12000 });
+    await page.evaluate(() => { location.hash = '#feed'; });
+    const reportPost = page.locator('[data-report="qa-cultural-rights-post"]');
+    await reportPost.waitFor({ timeout: 12000 });
+    await reportPost.click();
+    check(await page.locator('#report-dialog').evaluate(el => el.open),
+      'Signed-in reporter can open the report modal from a post');
+    await page.locator('#report-reason').selectOption('cultural_rights');
+    await page.locator('#report-details').fill('Solicito revisión por conocimientos sensibles.');
+    await page.locator('#report-submit').click();
+    await page.waitForFunction(() => window.__reportQA.writes === 1, null, { timeout: 8000 });
+    const reportQA = await page.evaluate(() => ({
+      ...window.__reportQA, uid: window.ORIGEN_API.cache.session.user.id,
+      dialogOpen: document.getElementById('report-dialog').open
+    }));
+    check(reportQA.expectedId === reportQA.uid,
+      'Report must pass original signed-in account ID to API');
+    check(reportQA.payload?.target_type === 'post' &&
+      reportQA.payload?.target_id === 'qa-cultural-rights-post' &&
+      reportQA.payload?.reason === 'cultural_rights',
+      'Report sends the exact canonical target and reason');
+    check(reportQA.payload?.details === 'Solicito revisión por conocimientos sensibles.',
+      'Report preserves the submitted complaint context');
+    check(reportQA.dialogOpen === false,
+      'Report modal should close only after mocked submission succeeds');
   }
 
   await page.close();
