@@ -39,6 +39,12 @@
 6. Ofrecer, cuando proceda, una vía de revisión o apelación proporcional. No garantizar reintegro, compensación o arbitraje no existente.
 7. Distinguir el borrado de la interfaz de la gestión de cachés, copias de terceros, respaldos y conservación obligatoria; no prometer desaparición absoluta inmediata.
 
+### Nota de seguridad adicional: archivos públicos
+
+La revisión de 9/10/2026 confirmó que `post-media` es un bucket público de Supabase. **Ocultar o eliminar una fila de `cultural_posts` no necesariamente retira imágenes/videos ya publicados**. Para una retirada legítima se debe determinar si los objetos continúan accesibles, solicitar eliminación autorizada de Storage, comprobar el resultado y considerar cachés, contenido externo y copias de terceros.
+
+El código beta ahora espera la limpieza de medios gestionados en la eliminación de posts por el autor e indica fallos, pero **esto no es un procedimiento de retirada administrativa ni una garantía de eliminación global**. El sistema operativo real, la bitácora privada y las pruebas con cuentas diferentes son P0 #12 y #8. Véase `PUBLIC_MEDIA_WITHDRAWAL_SAFETY.md`.
+
 ## 5. Seguridad y prevención de abuso
 
 - No utilizar formularios públicos para transferir archivos, documentos de identidad, declaraciones jurídicas extensas o pruebas que incluyan datos de menores.
