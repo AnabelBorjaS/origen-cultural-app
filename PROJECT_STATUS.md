@@ -2,6 +2,15 @@
 
 Última actualización: 9 de octubre de 2026
 
+## Decisión de modelo de negocio — 9 Oct 2026
+
+- ✅ La fundadora define **ORIGEN como red social cultural de acceso gratuito**: alta, perfiles, publicaciones y exploración gratuitas para Agentes y Exploradores Culturales; un Agente Cultural puede ser una persona, colectivo, negocio u organización, sin que "comunidad" sea sinónimo automático de cuenta.
+- ✅ La primera fuente de ingresos **futura** será promoción pagada **opcional** para destacar perfiles o publicaciones. Requiere identificación inequívoca de contenido patrocinado, políticas, consentimiento/privacidad, costes y aprobación antes de activar.
+- ✅ La segunda fuente de ingresos **futura** podrá consistir en comisiones acordadas por ventas efectivamente **atribuidas en los sitios oficiales de los Agentes Culturales**, con pago, distribución y posventa a cargo del vendedor correspondiente. Se requieren contratos y conciliación; no se genera comisión por un clic sin venta verificada.
+- ✅ Se sustituye el antiguo reparto **80/20** como modelo de negocio vigente; no existe porcentaje predeterminado ni comisión actualmente exigible.
+- ✅ Referencias actualizadas en `BUSINESS_MODEL.md`, `README.md`, `PILOT_ECUADOR_PLAYBOOK.md` y el roadmap del impacto. Estos cambios son estratégicos, no implementación comercial.
+- ⛔ Sin cobro de promociones, sin comisiones, sin sistemas de checkout, sin pasarelas activadas, sin seguimiento de afiliados y sin cambios en Production. Public Beta sigue **NO-GO** por seguridad, consentimiento y QA reales.
+
 ## Reportes autenticados: control de identidad y validación — 9 Oct 2026
 
 - ✅ La API de reportes ahora exige una sesión iniciada y rechaza un reporte si el identificador de cuenta con el que se comenzó no coincide con la sesión actual.
