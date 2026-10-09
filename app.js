@@ -550,7 +550,7 @@
     return `<aside class="profile-trust-notice profile-trust-${trust.kind}" aria-label="${esc(trust.label)}">
       <div>${profileTrustChip(profile)}<strong>${esc(trust.label)}</strong></div>
       <p>${esc(trust.description)}</p>
-      <div class="profile-trust-links">${claimLink}<a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'} →</a></div>
+      <div class="profile-trust-links">${claimLink}<a href="#solicitar-revision/${profile._kind === 'user' ? 'usuario' : 'perfil'}/${encodeURIComponent(profile.id)}">${state.lang === 'es' ? 'Solicitar corrección o revisión' : 'Request correction or review'} →</a><a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'} →</a></div>
     </aside>`;
   }
   function verBadge(p) {
@@ -686,6 +686,7 @@
         <button class="pact share-btn" data-share="${post.id}" aria-label="Compartir">↗</button>
         <button class="pact report-btn" data-report="${post.id}" aria-label="Reportar" style="margin-left:auto">⚑</button>
       </div>
+      <div class="post-rights-link"><a href="#solicitar-revision/post/${encodeURIComponent(post.id)}">${state.lang === 'es' ? '¿Uso no autorizado? Solicitar revisión' : 'Unauthorised use? Request a review'}</a></div>
       ${showComs ? commentBlock(post.id, coms) : ''}
     </article>`;
   }
@@ -1751,9 +1752,130 @@
       <div class="trust-content">
         <div class="trust-status"><strong>Estado beta</strong><p>${esc(trust.status)}</p></div>
         ${trust.sections.map(s => `<article class="trust-card" id="trust-${s.id}"><p class="eyebrow">${esc(s.title)}</p>${s.body.map(p => `<p>${esc(p)}</p>`).join('')}</article>`).join('')}
-        <article class="trust-card trust-contact"><p class="eyebrow">CONTACTO</p><h2>Ayuda, reportes y solicitudes</h2><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
+        <article class="trust-card trust-contact"><p class="eyebrow">CONTACTO</p><h2>Ayuda, reportes y solicitudes</h2><p><a href="#solicitar-revision">${state.lang === 'es' ? 'Solicitar corrección o retirada sin crear cuenta' : 'Request correction or removal without an account'}</a></p><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
       </div>
     </div></section>${footer()}`;
+  }
+
+  /* ── PUBLIC RIGHTS / CONTENT REVIEW REQUEST ──────────────── */
+  function rightsRequestView(route) {
+    const es = state.lang === 'es';
+    const L = (spanish, english) => es ? spanish : english;
+    const routeMatch = /^solicitar-revision\/(post|perfil|usuario)\/([^/?#]+)$/.exec(route);
+    const resourceType = routeMatch?.[1] || '';
+    const resourceId = (routeMatch?.[2] || '').slice(0, 180);
+    const sourceReference = resourceType
+      ? resourceType + ': ' + resourceId
+      : '';
+    return `<section class="page-hero rights-hero">
+      <div class="section-inner">
+        <p class="eyebrow">${L('CUIDADO DE LA CULTURA Y LAS PERSONAS','PROTECTING CULTURE AND PEOPLE')}</p>
+        <h1>${L('Solicitar revisión de contenido','Request a content review')}</h1>
+        <p class="lead">${L(
+          '¿Aparece tu imagen, tu obra o el conocimiento de tu comunidad sin autorización? Puedes solicitar revisión o corrección sin crear una cuenta.',
+          'Is your image, work or community knowledge being shared without permission? You can request a review or correction without creating an account.'
+        )}</p>
+      </div>
+    </section>
+    <section class="section"><div class="section-inner rights-layout">
+      <div class="rights-context">
+        <h2>${L('¿Cómo funciona?','How it works')}</h2>
+        <p>${L(
+          'Describe el contenido y por qué te preocupa. Prepararemos un correo dirigido a ORIGEN, pero no se enviará nada desde la web.',
+          'Describe the content and why it concerns you. We will prepare an email to ORIGEN, but nothing is sent from this website.'
+        )}</p>
+        <p>${L(
+          'Tu aplicación de correo debe abrirse y tendrás que pulsar Enviar. Si no tienes correo configurado, escríbenos directamente a',
+          'Your email app must open and you must press Send. If you do not have email configured, contact us directly at'
+        )} <a href="mailto:info.origencultural@gmail.com">info.origencultural@gmail.com</a>.</p>
+        <p>${L(
+          'Evita incluir contraseñas, documentos de identidad, datos privados de menores o conocimiento cultural restringido en tu mensaje inicial.',
+          'Do not include passwords, identity documents, children’s private information or restricted cultural knowledge in the initial message.'
+        )}</p>
+        <p>${L(
+          'Las solicitudes requieren revisión humana. Enviar un mensaje no garantiza la retirada automática ni la verificación de la autoría.',
+          'Requests require human review. Sending a message does not guarantee automatic removal or verification of ownership.'
+        )}</p>
+        <a href="#confianza">${L('Conocer las normas de ORIGEN','Read ORIGEN’s guidelines')} →</a>
+      </div>
+      <form class="form-grid rights-form" id="rights-review-form">
+        <div class="form-field full"><label for="rights-reason">${L('¿Qué deseas revisar? *','What needs review? *')}</label>
+          <select id="rights-reason" name="reason" required>
+            <option value="">${L('Selecciona una opción','Select an option')}</option>
+            <option value="image_permission">${L('Imagen o testimonio usado sin permiso','Photo or testimony used without permission')}</option>
+            <option value="cultural_knowledge">${L('Conocimiento cultural sensible o sin autorización','Sensitive or unauthorised cultural knowledge')}</option>
+            <option value="copyright">${L('Derechos de autor u obra original','Copyright or original work')}</option>
+            <option value="representation">${L('Representación incorrecta de una persona o comunidad','Incorrect representation of a person or community')}</option>
+            <option value="privacy">${L('Privacidad y datos personales','Privacy or personal data')}</option>
+            <option value="other">${L('Otro motivo de revisión','Other review concern')}</option>
+          </select>
+        </div>
+        <div class="form-field full"><label for="rights-reference">${L('Publicación, perfil o enlace relacionado','Related post, profile or link')}</label>
+          <input id="rights-reference" name="reference" maxlength="500" value="${esc(sourceReference)}" placeholder="${L('Ej. enlace o nombre del perfil','e.g. link or profile name')}">
+        </div>
+        <div class="form-field full"><label for="rights-description">${L('Explícanos brevemente tu solicitud *','Briefly describe your request *')}</label>
+          <textarea id="rights-description" name="description" rows="5" required minlength="15" maxlength="2500" placeholder="${L('Qué contenido es, qué derecho o consentimiento te preocupa y qué corrección solicitas.','What content is involved, your concern about rights or consent, and what correction you request.')}"></textarea>
+        </div>
+        <div class="form-field full"><button type="submit" class="btn">${L('Preparar correo de solicitud','Prepare review email')} →</button></div>
+        <div id="rights-email-ready" class="rights-email-ready form-field full" aria-live="polite" hidden>
+          <p>${L(
+            'Tu solicitud está preparada, pero todavía NO se ha enviado. Abre tu aplicación de correo y pulsa Enviar.',
+            'Your request is prepared but has NOT been sent. Open your email app and press Send.'
+          )}</p>
+          <a id="rights-email-link" class="btn secondary" href="mailto:info.origencultural@gmail.com">${L('Abrir correo para enviarlo','Open email to send it')} ↗</a>
+        </div>
+      </form>
+    </div></section>${footer()}`;
+  }
+
+  function bindRightsRequest() {
+    const form = document.getElementById('rights-review-form');
+    const ready = document.getElementById('rights-email-ready');
+    const mail = document.getElementById('rights-email-link');
+    if (!form || !ready || !mail) return;
+    const resetPrepared = () => {
+      ready.hidden = true;
+      mail.removeAttribute('href');
+    };
+    form.addEventListener('input', resetPrepared);
+    form.addEventListener('change', resetPrepared);
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const values = new FormData(form);
+      const reason = String(values.get('reason') || '');
+      const reference = String(values.get('reference') || '').trim().slice(0, 500);
+      const description = String(values.get('description') || '').trim().slice(0, 2500);
+      if (!description || description.length < 15) {
+        document.getElementById('rights-description')?.focus();
+        return;
+      }
+      const reasons = {
+        image_permission: 'Image / testimony permissions',
+        cultural_knowledge: 'Cultural knowledge and community consent',
+        copyright: 'Copyright / original work',
+        representation: 'Incorrect representation',
+        privacy: 'Personal data and privacy',
+        other: 'Other'
+      };
+      if (!Object.hasOwn(reasons, reason)) return;
+      const body = [
+        'ORIGEN Cultural - content review request',
+        '',
+        'Reason: ' + reasons[reason],
+        'Reference: ' + (reference || 'Not provided'),
+        'Request details:',
+        description,
+        '',
+        'Please reply to this email to discuss the request.',
+        'This request was prepared by the website and is sent only when the sender presses Send in their email app.'
+      ].join('\n');
+      mail.href = 'mailto:info.origencultural@gmail.com?subject='
+        + encodeURIComponent('ORIGEN - Content review request')
+        + '&body=' + encodeURIComponent(body);
+      ready.hidden = false;
+      mail.focus();
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1792,6 +1914,7 @@
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
     else if (route === 'confianza')                html = trustCenterView();
+    else if (route === 'solicitar-revision' || route.startsWith('solicitar-revision/')) html = rightsRequestView(route);
     else                                          html = isAuth() ? feedView() : landingView();
 
     $app.innerHTML = html;
@@ -1811,6 +1934,7 @@
     if (route === 'explorar')      bindExplore();
     if (route.startsWith('reclamar/')) bindClaimProfile();
     if (route === 'registro')      bindRegister();
+    if (route === 'solicitar-revision' || route.startsWith('solicitar-revision/')) bindRightsRequest();
     if (route === 'login')         bindLogin();
     if (route === 'recuperar')     bindRecoverPassword();
     if (route === 'restablecer')   bindResetPassword();
@@ -1990,8 +2114,7 @@
     document.querySelectorAll('[data-report]').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!isAuth()) {
-          showToast(state.lang === 'es' ? 'Inicia sesión para enviar un reporte.' : 'Sign in to submit a report.');
-          go('login');
+          go('solicitar-revision/post/' + encodeURIComponent(btn.dataset.report || ''));
           return;
         }
         if (!$report) return;
