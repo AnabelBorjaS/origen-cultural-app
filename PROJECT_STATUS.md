@@ -2,6 +2,16 @@
 
 Última actualización: 8 de octubre de 2026
 
+## Solicitudes públicas de corrección y retirada — 9 Oct 2026
+
+- ✅ Se añadió la ruta pública `#solicitar-revision`, accesible sin cuenta para solicitar la revisión de imágenes, testimonios, derechos de autor, privacidad, representación incorrecta o conocimiento cultural.
+- ✅ Se añadieron enlaces contextuales en tarjetas de publicaciones, perfiles culturales y el Centro de Confianza. El formulario completa una referencia del ID de publicación/perfil cuando existe.
+- ✅ El formulario es bilingüe, no almacena información en un backend ni envía solicitudes por sí mismo. Solo prepara un correo a `info.origencultural@gmail.com` para que la persona lo abra y lo envíe expresamente. Se advierte de ello de forma visible y no se promete retirada automática.
+- ✅ Editar la solicitud invalida el enlace de correo preparado anteriormente y obliga a generarlo otra vez.
+- ✅ Protocolo de revisión humana, priorización y apelación propuesto en `CONTENT_REVIEW_OPERATIONS.md`. Pendientes la recepción operativa, el sistema privado de casos, protección de denunciantes y controles administrativos; issue **#8**.
+- ✅ Se añadieron pruebas de navegador del formulario sin sesión, preparación de correo, referencia, inglés y versión móvil. **Requieren resultados verdes de CI para considerarse validadas.**
+- ⛔ Esta ruta **no sustituye** `moderation_reports` ni implementa moderación/retirada automática. Ninguna denuncia o correo fue enviado; sin merge, sin despliegue, sin cambio en Supabase Production ni dominio público.
+
 ## Consentimiento y derechos antes de publicar — 9 Oct 2026
 
 - ✅ El editor de Agentes Culturales incluye dos declaraciones requeridas y separadas, en español e inglés, antes de publicar: **permisos de los contenidos/imágenes/testimonios** y **autorización para divulgar conocimientos culturales sujetos a consentimiento comunitario**.
