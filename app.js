@@ -634,6 +634,7 @@
     const isOwn      = !!(user && user.id === post.authorId);
 
     const showComs = state.openComments.has(post.id);
+    const shareable = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(post.id));
     const cidx     = Math.min(state.carIdx[post.id] || 0, (post.media || []).length - 1 || 0);
 
     /* media */
@@ -676,7 +677,7 @@
           ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
           ${post.contentPurpose ? `<span class="post-purpose">${esc(contentPurposeLabel(post.contentPurpose))}</span>` : ''}
         </div>
-        <h3 class="post-title">${esc(post.title)}</h3>
+        <h3 class="post-title">${shareable ? `<a href="#publicacion/${encodeURIComponent(post.id)}" aria-label="${state.lang === 'es' ? 'Abrir historia cultural' : 'Open cultural story'}: ${esc(post.title)}">${esc(post.title)}</a>` : esc(post.title)}</h3>
         <p class="post-desc">${esc(post.description)}</p>
         ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
       </div>
@@ -690,7 +691,7 @@
         <button class="pact save-btn${saved ? ' on' : ''}" data-save="${post.id}" ${!user ? 'data-needs-auth' : ''} aria-label="${saved ? 'Guardado' : 'Guardar'}">
           ${saved ? '◆' : '◇'}
         </button>
-        <button class="pact share-btn" data-share="${post.id}" aria-label="Compartir">↗</button>
+        ${shareable ? `<button class="pact share-btn" data-share="${post.id}" aria-label="${state.lang === 'es' ? 'Compartir esta historia' : 'Share this story'}">↗</button>` : ''}
         <button class="pact report-btn" data-report="${post.id}" aria-label="Reportar" style="margin-left:auto">⚑</button>
       </div>
       <div class="post-rights-link"><a href="#solicitar-revision/post/${encodeURIComponent(post.id)}">${state.lang === 'es' ? '¿Uso no autorizado? Solicitar revisión' : 'Unauthorised use? Request a review'}</a></div>
@@ -1079,6 +1080,60 @@
       </div>
     </section>
     ${footer()}`;
+  }
+
+  /* ── PUBLIC CULTURAL STORY (NO ACCOUNT REQUIRED) ─────────── */
+  function publicStoryView() {
+    const es = state.lang === 'es';
+    return `<section class="section public-story-section"><div class="section-inner public-story-layout">
+      <div class="public-story-heading">
+        <p class="eyebrow">${es ? 'HISTORIA CULTURAL' : 'CULTURAL STORY'}</p>
+        <h1>${es ? 'Una historia para descubrir y compartir' : 'A story to discover and share'}</h1>
+        <p class="lead">${es ? 'Conoce a su Agente Cultural y explora otras historias reales.' : 'Meet its Cultural Agent and explore more real stories.'}</p>
+      </div>
+      <div id="public-story-content" role="status" aria-live="polite">
+        <p>${es ? 'Buscando historia pública…' : 'Loading public story…'}</p>
+      </div>
+      <p><a class="btn secondary" href="#explorar">${es ? 'Descubrir Agentes Culturales' : 'Discover Cultural Agents'} →</a></p>
+    </div></section>${footer()}`;
+  }
+
+  async function bindPublicStory(route) {
+    const container = document.getElementById('public-story-content');
+    if (!container) return;
+    const es = state.lang === 'es';
+    const showNotFound = () => {
+      container.innerHTML = `<div class="empty-feed" role="status">
+        <h2>${es ? 'Historia no disponible' : 'Story unavailable'}</h2>
+        <p>${es ? 'Esta historia no existe, no es pública o ha sido retirada.' : 'This story does not exist, is not public, or has been removed.'}</p>
+      </div>`;
+    };
+    const id = route.slice('publicacion/'.length);
+    try {
+      const post = await window.ORIGEN_API?.getPublicPost(id);
+      if (!container.isConnected || currentRoute() !== route) return;
+      if (!post) { showNotFound(); return; }
+      // Profiles come from published and creator-only public data.
+      // If a profile was unavailable on first load, refresh that list once.
+      if (!getProfile(post.authorId)) {
+        await window.ORIGEN_API?.listPublicProfiles();
+        if (!container.isConnected || currentRoute() !== route) return;
+      }
+      const card = postCard(post);
+      if (!card) { showNotFound(); return; }
+      container.removeAttribute('role');
+      container.removeAttribute('aria-live');
+      container.innerHTML = card;
+      bindPostInteractions();
+      bindFollowButtons();
+      bindFeedVideos();
+    } catch (_) {
+      if (!container.isConnected || currentRoute() !== route) return;
+      container.innerHTML = `<div class="empty-feed" role="alert">
+        <h2>${es ? 'No se pudo cargar la historia' : 'Could not load this story'}</h2>
+        <p>${es ? 'Comprueba tu conexión e inténtalo de nuevo.' : 'Check your connection and try again.'}</p>
+      </div>`;
+    }
   }
 
   /* ── FEED ────────────────────────────────────────────────── */
@@ -1905,6 +1960,7 @@
     let html = '';
     if      (route === 'inicio')                  html = isAuth() ? feedView()            : landingView();
     else if (route === 'feed')                    html = feedView();
+    else if (route.startsWith('publicacion/'))     html = publicStoryView();
     else if (route === 'explorar')                html = exploreView();
     else if (route === 'mundo')                   html = mundoView();
     else if (route.startsWith('perfil/'))         html = creatorProfileView(route.split('/')[1]);
@@ -1939,6 +1995,7 @@
     bindFavorites();
     if (document.getElementById('feed-posts')) bindFeedExperience();
     if (route === 'explorar')      bindExplore();
+    if (route.startsWith('publicacion/')) bindPublicStory(route);
     if (route.startsWith('reclamar/')) bindClaimProfile();
     if (route === 'registro')      bindRegister();
     if (route === 'solicitar-revision' || route.startsWith('solicitar-revision/')) bindRightsRequest();
@@ -2108,12 +2165,28 @@
       });
     });
 
-    /* share */
+    /* share: always link to the exact public story, never a generic feed */
     document.querySelectorAll('[data-share]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const url = window.location.href.split('#')[0] + '#feed';
-        if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showToast('Enlace copiado al portapapeles.'));
-        else showToast('Comparte este enlace: ' + url);
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.share || '';
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return;
+        const url = window.location.origin + window.location.pathname + '#publicacion/' + encodeURIComponent(id);
+        const es = state.lang === 'es';
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: es ? 'Historia cultural · ORIGEN' : 'Cultural story · ORIGEN', url });
+            return;
+          } catch (error) {
+            if (error?.name === 'AbortError') return; // User cancelled.
+          }
+        }
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+          await navigator.clipboard.writeText(url);
+          showToast(es ? 'Enlace de esta historia copiado.' : 'Story link copied.');
+        } catch (_) {
+          showToast((es ? 'Enlace para compartir: ' : 'Share this link: ') + url);
+        }
       });
     });
 
