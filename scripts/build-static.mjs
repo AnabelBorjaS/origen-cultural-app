@@ -41,7 +41,7 @@ for (const entry of runtimeEntries) {
 // authenticated staging requires a different, explicitly provided project.
 const rejectStagingBuild = message => {
   fs.rmSync(out, { recursive: true, force: true });
-  rejectStagingBuild(message);
+  throw new Error(message);
 };
 const clientPath = path.join(out, 'supabase-client.js');
 const clientSource = fs.readFileSync(clientPath, 'utf8');
