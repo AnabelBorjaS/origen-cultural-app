@@ -24,7 +24,17 @@ No se cobra por:
 
 No existe tarifa de ingreso, suscripción obligatoria, porcentaje obligatorio de ingresos propios ni pago requerido para obtener una insignia de verificación.
 
-## 3. Primera fuente de ingresos prevista: promoción opcional
+## 2A. Prioridad anterior a cualquier monetización: comunidad y contenido orgánico
+
+**Nueva decisión estratégica de la fundadora (9 de octubre de 2026):** antes de ofrecer publicidad, ORIGEN debe generar una comunidad real de **Agentes Culturales** que deseen publicar historias y **Exploradores Culturales** que descubran, sigan, guarden y compartan contenidos de manera orgánica. Los videos deben crearse por su valor cultural e interés de difusión voluntaria, **no** por la necesidad de pagar para promocionarlos.
+
+En este ciclo no se venden anuncios, no se impulsan publicaciones pagando y no se exige un mínimo de seguidores. Se trabaja en contenido autorizado, descubrimiento, enlaces compartibles, experiencia móvil, interacción significativa, retorno y seguridad. **Ningún algoritmo garantiza que un contenido se haga viral.**
+
+Las promociones opcionales solo podrán evaluarse **después de comprobar una audiencia real y activa**, una oferta de contenido suficiente, retorno de los Exploradores y herramientas honestas para medir lo que se ofrece. Tener una base de usuarios registrados, sin actividad demostrada, no habilita la venta de alcance.
+
+Estrategia operativa y métricas propuestas: `ORGANIC_COMMUNITY_GROWTH_PLAN.md`.
+
+## 3. Primera fuente de ingresos prevista, después del crecimiento orgánico: promoción opcional
 
 ORIGEN podrá ofrecer promociones pagadas que den visibilidad adicional a perfiles o publicaciones de Agentes Culturales, con funcionamiento conceptual comparable al de las publicaciones promocionadas en una red social.
 
