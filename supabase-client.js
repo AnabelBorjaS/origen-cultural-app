@@ -523,14 +523,36 @@
     return data;
   }
 
-  async function report(payload) {
+  const REPORT_REASONS = new Set([
+    'cultural_rights', 'harassment', 'impersonation',
+    'spam', 'copyright', 'other'
+  ]);
+
+  async function report(payload, expectedUserId = null) {
+    // In-app moderation reports require an authenticated, unchanged session.
+    // The unauthenticated cultural rights route prepares a separate email;
+    // it never inserts a moderation_reports row.
     const uid = cache.session?.user?.id || null;
+    if (!uid || (expectedUserId && expectedUserId !== uid)) {
+      throw new Error('La sesión cambió; inicia sesión para enviar el reporte.');
+    }
+    if (payload?.target_type !== 'post' ||
+        typeof payload.target_id !== 'string' ||
+        !/^[a-zA-Z0-9_-]{1,180}$/.test(payload.target_id)) {
+      throw new Error('Selecciona una publicación válida para reportar.');
+    }
+    if (!REPORT_REASONS.has(payload.reason)) {
+      throw new Error('Selecciona un motivo de reporte válido.');
+    }
+    if (typeof payload.details !== 'string' || payload.details.length > 6000) {
+      throw new Error('El contexto del reporte excede el límite permitido.');
+    }
     const { data, error } = await client.from('moderation_reports').insert({
       reporter_user_id: uid,
-      target_type: payload.target_type,
-      target_id: payload.target_id || null,
+      target_type: 'post',
+      target_id: payload.target_id,
       reason: payload.reason,
-      details: payload.details || null
+      details: payload.details.trim() || null
     }).select('id').single();
     if (error) throw error;
     return data;
