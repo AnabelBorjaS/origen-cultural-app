@@ -531,3 +531,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ⚠️ `authenticated` conserva privilegios amplios de INSERT/UPDATE en `public.cultural_posts`, compensados actualmente por políticas RLS y triggers; considerar reducir grants por columna sólo con pruebas de compatibilidad de cliente. No se cambiaron permisos de Staging/Production.
 - ✅ Nuevo `STAGING_AUTH_HOOK_ACTIVATION.md`: instrucción de habilitar la función ya instalada en `Authentication → Hooks → Before User Created` del proyecto Staging, más QA y rollback seguro. **La activación de Auth NO ha sido comprobada ni realizada desde las herramientas**; P0 #6 abierto.
 - 🔒 No se crearon usuarios, publicaciones ni hosting público en este avance. Production y `origencultural.com` sin cambios. Beta NO-GO.
+
+## Control de aislamiento exacto del backend de pruebas — 10 octubre 2026
+
+- ✅ En `scripts/build-static.mjs` se restringió el backend conectado al **único proyecto Staging autorizado** `https://egujmptgnrpajgfpjjxu.supabase.co`; ya no basta con apuntar a un Supabase distinto de Production. El modo visual sin backend sigue bloqueando Auth real.
+- ✅ En `scripts/verify-staging.mjs` se añadió la misma identidad exacta para verificar el bundle desplegado, no solo el código fuente.
+- ✅ Se ampliaron las pruebas `tests/staging-build-isolation.mjs` para rechazar un proyecto Supabase diferente aunque parezca válido, así como URL de Production, secretos y claves mal configuradas. Quality Gate para el cambio concluyó en **success**; Browser QA y CodeQL siguen sujetos al último estado de CI.
+- ⛔ Esta mejora no habilita `Before User Created` dentro de Supabase Auth, no despliega Pages, no abre el piloto y no modifica `origencultural.com` ni Production.
