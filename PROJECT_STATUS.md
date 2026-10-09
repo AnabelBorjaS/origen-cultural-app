@@ -500,3 +500,11 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Se ejecutó en Staging una consulta **SELECT-only** con ocho escenarios de consentimiento (true, false, faltante, tipos inválidos, OAuth, anónimo); **8/8 PASS**, sin aceptar un `NULL` como falso positivo. Se registró la consulta reproducible en `supabase/proposals/ORIGEN_SIGNUP_CONSENT_PREDICATE_READ_ONLY.sql`.
 - ⛔ La **función real del hook Before User Created sigue sin instalarse/activarse en Auth**, y no existen cuentas sintéticas ni fixtures A/B: las pruebas SQL del predicado y los tests de seguridad offline no validan un registro real. P0 #6, #7 y #5 siguen abiertos.
 - ⛔ Staging no tiene web protegida de pruebas desplegada; no hay evidencia E2E de correos, redirects, medios, RLS con datos reales, ni moderación/retirada. NO-GO para invitar comunidades. Production intacta.
+
+## Staging: consentimiento en función de registro — 9 octubre 2026
+
+- La migración `staging_strict_signup_consent_trigger_validation` se aplicó únicamente al proyecto Staging `egujmptgnrpajgfpjjxu`.
+- La función interna `private.handle_new_user()` exige un booleano JSON `accepted_legal=true`, proveedor `email` y que el usuario no sea anónimo. Registra versiones legales `v1.2` fijadas por servidor.
+- Se verificó por consulta de catálogo que la función contiene los controles. No es una prueba de creación/rechazo real mediante Auth.
+- No se configuró el hook independiente `Before User Created`; su propuesta sigue pendiente. Antes de cerrar issue #6 se necesitan pruebas Auth reales, correos de confirmación, recuperación y revisión legal.
+- Production y el dominio público no se modificaron. NO-GO para usuarios reales.
