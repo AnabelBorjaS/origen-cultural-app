@@ -364,6 +364,22 @@
     return listPosts(false);
   }
 
+  // Public permalink resolver: never rely on the paginated feed cache and
+  // never request unpublished material. Database RLS remains authoritative.
+  async function getPublicPost(postId) {
+    const id = String(postId || '');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      return null;
+    }
+    const { data, error } = await client.from('cultural_posts')
+      .select('*')
+      .eq('id', id)
+      .eq('is_published', true)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.is_published === true ? mapPostRow(data) : null;
+  }
+
   async function createPost(payload, expectedUserId = null) {
     const uid = cache.session?.user?.id;
     if (!uid || (expectedUserId && expectedUserId !== uid)) throw new Error('La sesión cambió; vuelve a iniciar sesión antes de publicar.');
@@ -668,7 +684,7 @@
     listPublicProfiles, ensureCreatorCulturalProfile,
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
-    listPosts, loadMorePosts, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
+    listPosts, loadMorePosts, getPublicPost, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
     submitClaim, report, upload, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
   };
 })();
