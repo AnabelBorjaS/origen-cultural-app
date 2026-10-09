@@ -419,7 +419,7 @@
     if (!uid) throw new Error('Debes iniciar sesión.');
 
     const { data: existing, error: readError } = await client.from('cultural_posts')
-      .select('id,author_id,media_urls')
+      .select('id,author_id,media_urls,image_url')
       .eq('id', postId)
       .eq('author_id', uid)
       .maybeSingle();
@@ -435,17 +435,36 @@
     if (error) throw error;
     if (!deleted?.length) throw new Error('No se pudo eliminar la publicación.');
 
-    const media = Array.isArray(existing.media_urls)
-      ? existing.media_urls.filter(Boolean)
-      : [];
-    if (media.length) {
-      Promise.allSettled(media.map(url => removeOwnMedia(url))).then(results => {
-        if (results.some(result => result.status === 'rejected')) {
-          console.warn('ORIGEN post-media cleanup incomplete after post deletion.');
-        }
-      });
+    // Public Storage object URLs remain reachable even when their post is
+    // removed. Await all known managed-media deletions before describing the
+    // outcome to the author. Also include legacy image_url, not just media_urls.
+    const media = [...new Set([
+      ...(Array.isArray(existing.media_urls) ? existing.media_urls : []),
+      existing.image_url
+    ].filter(Boolean))];
+    const results = await Promise.allSettled(media.map(url => removeOwnMedia(url)));
+    const unresolvedMediaCount = results.filter(result =>
+      result.status !== 'fulfilled' || result.value !== true
+    ).length;
+    if (unresolvedMediaCount) {
+      console.warn('ORIGEN post removed; some public media cleanup could not be confirmed.');
     }
-    await listPosts();
+
+    // The database DELETE was already confirmed. A feed refresh failure must
+    // not turn it into a false "post not deleted" response.
+    if (cache.session?.user?.id === uid) {
+      cache.posts = cache.posts.filter(post => post.id !== postId);
+      try {
+        await listPosts();
+      } catch (_) {
+        console.warn('ORIGEN feed refresh unavailable after confirmed post removal.');
+      }
+    }
+    return {
+      postDeleted: true,
+      mediaCleanup: !media.length ? 'no-media' : unresolvedMediaCount ? 'incomplete' : 'completed',
+      unresolvedMediaCount
+    };
   }
 
   async function loadPostInteractions() {
