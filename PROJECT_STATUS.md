@@ -1,6 +1,16 @@
 # Estado del proyecto — ORIGEN Cultural
 
-Última actualización: 8 de octubre de 2026
+Última actualización: 9 de octubre de 2026
+
+## Reportes autenticados: control de identidad y validación — 9 Oct 2026
+
+- ✅ La API de reportes ahora exige una sesión iniciada y rechaza un reporte si el identificador de cuenta con el que se comenzó no coincide con la sesión actual.
+- ✅ Se permiten solo motivos canónicos de moderación, publicación objetivo identificable y contexto de hasta 6000 caracteres; motivos arbitrarios, referencias malformadas y solicitudes sin sesión se bloquean **antes** de emitir el INSERT desde el navegador.
+- ✅ Al cambiar de cuenta o cerrar sesión se cierra el formulario de reporte, se eliminan sus campos y se limpia la referencia anterior. Las respuestas tardías de la solicitud original no muestran mensajes en la cuenta nueva.
+- ✅ `tests/account-write-isolation.mjs` prueba identidad A/B, cierre de sesión, motivo y referencia inválidos, límites de texto y respuesta tardía. `tests/browser-smoke.mjs` prueba la interacción del diálogo con un Agente Cultural simulado, conservando referencia, razón y remitente.
+- ✅ **Código evaluado:** Quality Gate **#306 PASS**, Browser QA **#170 PASS**. CodeQL **#111** continuaba ejecutándose al registrar el estado.
+- ⚠️ Los controles del navegador **no son antispam del servidor ni garantizan RLS**. Siguen pendientes pruebas en staging con dos cuentas reales y políticas de base de datos que impidan acceso a reportes ajenos. Ver issue **#8** y `RELEASE_QA_RUNBOOK.md`.
+- ⛔ Los cambios se mantienen en PR #3 (borrador), sin fusión, publicación ni modificación de `origencultural.com` o Supabase Production.
 
 ## Solicitudes públicas de corrección y retirada — 9 Oct 2026
 
