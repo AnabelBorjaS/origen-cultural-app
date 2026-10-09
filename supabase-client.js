@@ -404,6 +404,12 @@
       content_purpose: payload.contentPurpose || null,
       territory: payload.territory || null,
       tags: payload.tags || [],
+      // Backend contract: these declarations must be checked and recorded
+      // atomically by the isolated staging database, not trusted as proof.
+      // Production lacks these columns: NEVER deploy this beta client there
+      // before the approved, separately tested backend migration.
+      rights_acknowledged: true,
+      cultural_acknowledged: true,
       is_published: true
     };
     const { data, error } = await client.from('cultural_posts').insert(row).select('*').single();
