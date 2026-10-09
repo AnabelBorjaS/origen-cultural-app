@@ -67,7 +67,7 @@ const backendKey = backendJS.match(/^  const PUBLISHABLE_KEY = "([^"]+)";$/m)?.[
 const backendReady = configJS.match(/"stagingBackendConnected":(true|false)/)?.[1] || '';
 const productionProjectHost = 'xwkjvoyicrrwjybjolld.supabase.co';
 const configuredIsolated = backendReady === 'true' &&
-  /^https:\/\/[a-z0-9]{20}\\.supabase\\.co$/.test(backendURL) &&
+  /^https:\/\/[a-z0-9]{20}\.supabase\.co$/.test(backendURL) &&
   backendURL !== 'https://' + productionProjectHost &&
   /^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(backendKey);
 const configuredOffline = backendReady === 'false' &&
