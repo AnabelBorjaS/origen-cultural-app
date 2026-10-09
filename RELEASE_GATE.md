@@ -125,3 +125,10 @@ Public beta remains NO-GO until:
 - [ ] Revisar contenido legal y registro probatorio con asesoría jurídica antes de público.
 
 **Importante:** 0 alertas de Security Advisor no equivale a prueba de consentimiento obligatorio en servidor. No GO hasta que todo lo anterior quede verificado.
+
+## Data API grants + RLS regression baseline
+
+- [x] 2026-10-09: consulta **solo lectura** en Production confirmó **11/11 PASS** para RLS habilitado y los GRANT de tabla esperados de `anon` y `authenticated`.
+- [x] Auditoría SQL reusable en `supabase/proposals/ORIGEN_DATA_API_GRANTS_RLS_AUDIT_READ_ONLY.sql`.
+- [ ] Repetir la auditoría tras cada migración/permisos nuevos; documentar revisión explícita de `GRANT/REVOKE` y RLS para tablas y funciones nuevas.
+- [ ] Completar pruebas reales con dos cuentas en Supabase staging **separado**. La consulta de permisos no sustituye pruebas adversariales ni cierra los bloqueos P0 de consentimiento/medios/moderación.
