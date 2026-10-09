@@ -1822,7 +1822,7 @@
             'Tu solicitud está preparada, pero todavía NO se ha enviado. Abre tu aplicación de correo y pulsa Enviar.',
             'Your request is prepared but has NOT been sent. Open your email app and press Send.'
           )}</p>
-          <a id="rights-email-link" class="btn secondary" href="mailto:info.origencultural@gmail.com">${L('Abrir correo para enviarlo','Open email to send it')} ↗</a>
+          <a id="rights-email-link" class="btn secondary">${L('Abrir correo para enviarlo','Open email to send it')} ↗</a>
         </div>
       </form>
     </div></section>${footer()}`;
