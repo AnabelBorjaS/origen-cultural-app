@@ -442,7 +442,12 @@
       ...(Array.isArray(existing.media_urls) ? existing.media_urls : []),
       existing.image_url
     ].filter(Boolean))];
-    const results = await Promise.allSettled(media.map(url => removeOwnMedia(url)));
+    const results = await Promise.allSettled(media.map(url => {
+      // Removing a post must never delete an avatar or profile-cover asset,
+      // even if a post row references one of the author's own media URLs.
+      const parsed = parseManagedMediaUrl(url);
+      return parsed?.bucket === 'post-media' ? removeOwnMedia(url) : false;
+    }));
     const unresolvedMediaCount = results.filter(result =>
       result.status !== 'fulfilled' || result.value !== true
     ).length;
