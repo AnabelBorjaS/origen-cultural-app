@@ -432,6 +432,95 @@ async function roleChecks(role) {
   await page.close();
 }
 
+async function publicCulturalStoryChecks() {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const postId = '11111111-1111-4111-8111-111111111111';
+  const creatorId = '22222222-2222-4222-8222-222222222222';
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  await page.addInitScript(({ postId, creatorId }) => {
+    window.__storyQA = { reads: [], copied: '', exists: true };
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true, value: { writeText: async url => { window.__storyQA.copied = url; } }
+    });
+    let currentApi;
+    Object.defineProperty(window, 'ORIGEN_API', {
+      configurable: true,
+      get() { return currentApi; },
+      set(api) {
+        currentApi = api;
+        api.restoreSession = async () => null;
+        api.listPosts = async () => [];
+        api.listCulturalProfiles = async () => [];
+        api.listPublicProfiles = async () => {
+          api.cache.publicProfiles = [{
+            id: creatorId, role: 'creator', display_name: 'Artesana de prueba',
+            country: 'Ecuador', city: 'Yaruquí', bio: '', links: {},
+            categories: ['Artesanía']
+          }];
+          return api.cache.publicProfiles;
+        };
+        api.getPublicPost = async id => {
+          window.__storyQA.reads.push(id);
+          if (!window.__storyQA.exists || id !== postId) return null;
+          return {
+            id: postId, authorId: creatorId, type: 'video', title: 'Arte del tejido',
+            description: 'Una historia de tejido, narrada con permiso.',
+            timestamp: new Date().toISOString(), territory: 'Ecuador', media: [],
+            contentPurpose: 'education', tags: [], likes: 0, category: 'Artesanía'
+          };
+        };
+      }
+    });
+  }, { postId, creatorId });
+
+  try {
+    await page.goto(baseURL + '#publicacion/' + postId, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.locator('#public-story-content .post-card').waitFor({ timeout: 18000 });
+    check(await page.locator('#public-story-content .post-title').innerText() === 'Arte del tejido',
+      'Anonymous visitor can read exact public cultural story without logging in');
+    check(await page.locator('#public-story-content .post-author-info strong').innerText().then(t => t.includes('Artesana de prueba')),
+      'Shared story keeps its Cultural Agent attribution');
+    check(await page.locator('#public-story-content .post-desc').innerText().then(t => t.includes('con permiso')),
+      'Shared story keeps cultural explanation and context');
+    check(await page.locator('#public-story-content .post-author-link').getAttribute('href') === '#usuario/' + creatorId,
+      'Shared story links to its creator profile');
+    check(await page.locator('#public-story-content .post-title a').getAttribute('href') === '#publicacion/' + postId,
+      'Story title links to its own permanent route');
+
+    await page.locator('#public-story-content [data-share]').click();
+    await page.waitForFunction(() => !!window.__storyQA.copied, null, { timeout: 6000 });
+    const copied = await page.evaluate(() => window.__storyQA.copied);
+    check(copied.endsWith('#publicacion/' + postId) && !copied.includes('#feed'),
+      'Share action copies URL for the exact post, not generic feed');
+
+    check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      'Public story must not overflow mobile viewport');
+
+    await page.evaluate(() => { document.getElementById('language-toggle').click(); });
+    await page.waitForFunction(() => document.documentElement.lang === 'en');
+    check((await page.locator('#main-content h1').innerText()).includes('A story to discover'),
+      'Public story works in English');
+
+    await page.evaluate(() => { window.__storyQA.exists = false; location.hash = '#publicacion/33333333-3333-4333-8333-333333333333'; });
+    await page.locator('#public-story-content .empty-feed').waitFor({ timeout: 10000 });
+    check((await page.locator('#public-story-content').innerText()).includes('Story unavailable'),
+      'Missing/unpublished post route does not show previous story');
+    check(!await page.locator('#public-story-content .post-card').count(),
+      'No stale story remains visible after post becomes unavailable');
+
+    await page.evaluate(() => { location.hash = '#publicacion/javascript:alert(1)'; });
+    await page.waitForFunction(() => (document.querySelector('#public-story-content')?.innerText || '').includes('Story unavailable'));
+    check(!await page.locator('#public-story-content .post-card').count(),
+      'Malformed permalink does not display cultural content');
+    check(pageErrors.length === 0, 'Public cultural story has no uncaught browser errors: ' + pageErrors.join(' | '));
+  } catch (error) {
+    failures.push('Public cultural story regression: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 async function publicRightsReviewChecks() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
   const pageErrors = [];
@@ -846,6 +935,7 @@ async function registrationUploadFailureChecks() {
 try {
   await desktopChecks();
   await mobileChecks();
+  await publicCulturalStoryChecks();
   await publicRightsReviewChecks();
   await publicProfileStatusChecks();
   await roleChecks('explorer');
