@@ -56,6 +56,32 @@ for (const forbidden of ['PROJECT_STATUS.md','SECURITY_BASELINE.md','schema.sql'
   record(`Internal file not publicly served: ${forbidden}`, response.status === 404, String(response.status));
 }
 
+// Verify that the DEPLOYED asset, not merely the CI workspace, cannot
+// connect a test account to ORIGEN's Production Supabase project.
+const backendAsset = await get('/supabase-client.js');
+const configAsset = await get('/runtime-config.js');
+const backendJS = backendAsset.ok ? await backendAsset.text() : '';
+const configJS = configAsset.ok ? await configAsset.text() : '';
+const backendURL = backendJS.match(/^  const PROJECT_URL = "([^"]+)";$/m)?.[1] || '';
+const backendKey = backendJS.match(/^  const PUBLISHABLE_KEY = "([^"]+)";$/m)?.[1] || '';
+const backendReady = configJS.match(/"stagingBackendConnected":(true|false)/)?.[1] || '';
+const productionProjectHost = 'xwkjvoyicrrwjybjolld.supabase.co';
+const configuredIsolated = backendReady === 'true' &&
+  /^https:\/\/[a-z0-9]{20}\\.supabase\\.co$/.test(backendURL) &&
+  backendURL !== 'https://' + productionProjectHost &&
+  /^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(backendKey);
+const configuredOffline = backendReady === 'false' &&
+  backendURL === 'https://unconfigured-staging.invalid' &&
+  backendKey === 'sb_publishable_disabled_staging_preview';
+record('Deployed staging never embeds Production Supabase host',
+  backendAsset.ok && !backendJS.includes(productionProjectHost));
+record('Deployed staging declares isolated backend or visual-only mode',
+  configAsset.ok && (configuredIsolated || configuredOffline));
+record('Staging is correctly isolated before Auth testing',
+  configAsset.ok && configuredIsolated,
+  configuredOffline ? 'Visual-only preview: intentionally blocks real Auth tests' :
+    configuredIsolated ? 'Separate Supabase project configured' : 'Configuration invalid or unavailable');
+
 const sw = await get('/service-worker.js');
 record('Service worker JavaScript content type', sw.ok && /javascript|text\/plain/.test(sw.headers.get('content-type') || ''), sw.headers.get('content-type') || '');
 
