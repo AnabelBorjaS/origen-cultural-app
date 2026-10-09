@@ -3,7 +3,7 @@
 Status: **NO-GO until Critical/High checks pass**
 Candidate branch: `reconcile-main-beta-2026-10-07`
 Release PR: **#3**
-Last updated: 8 October 2026
+Last updated: 9 October 2026
 
 ## Test accounts
 
@@ -26,6 +26,22 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Password recovery | Approved recovery link works | ⬜ |
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
+
+## P1 — Compartir historias culturales sin cuenta (issue #10)
+
+| Prueba | Resultado esperado | Estado |
+|---|---|---|
+| Compartir una publicación | URL exacta `#publicacion/<UUID>`, nunca el feed genérico | ✅ Código + Chromium mock #197 |
+| Abrir URL anónima | Carga su publicación pública, autoría y contexto sin pedir login | ✅ Chromium mock; ⬜ staging real |
+| ID malformado/inyección | No consulta el backend ni revela material de otras publicaciones | ✅ Node mock + Chromium mock; ⬜ API real |
+| Publicación no publicada o eliminada | Respuesta de indisponible sin título/medios anteriores | ✅ Node mock + Chromium mock; ⬜ staging real |
+| Cuenta A/B y API directa | RLS bloquea lectura de borradores/retiradas ajenas | ⬜ **P0 de seguridad pendiente** |
+| Compartir con teléfono/WhatsApp/redes | Enlace abre destino real; decidir si hacen falta tarjetas OG individuales | ⬜ dispositivos reales, proyecto no desplegado |
+| Lectura ES/EN y viewport de 390 px | Página traducida sin desbordes | ✅ Chromium mock; ⬜ dispositivo real |
+| Moderación | Ocultar un contenido invalida su permalink público según backend | ⬜ bloqueo P0 issue #8 |
+| Permisos culturales | Declaración exigida y auditable server-side antes de publicaciones públicas | ⬜ bloqueo P0 issue #7 |
+
+Estas pruebas automatizadas no prueban la política real de Supabase ni que proveedores sociales generen previsualizaciones dinámicas. Mantener **Public Beta NO-GO** hasta completar seguridad, Consentimiento y QA real.
 
 ## P0 — Seguridad del reporte autenticado
 
