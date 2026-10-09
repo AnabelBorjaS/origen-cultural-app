@@ -70,6 +70,13 @@
     state.editCoverPreview = null;
     state.openComments.clear();
     state.carIdx = {};
+    // A moderation form opened for account A must never remain available
+    // with its complaint text or target after a switch to account B.
+    if ($report?.open) $report.close();
+    document.getElementById('report-form')?.reset();
+    if ($report) { delete $report.dataset.targetId; delete $report.dataset.targetType; }
+    const reportStatus = document.getElementById('report-status');
+    if (reportStatus) reportStatus.textContent = '';
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -3135,6 +3142,13 @@
         if (status) status.textContent = state.lang === 'es' ? 'Selecciona un motivo.' : 'Select a reason.';
         return;
       }
+      const submittingUserId = me()?.id;
+      if (!submittingUserId) {
+        if (status) status.textContent = state.lang === 'es'
+          ? 'Inicia sesión nuevamente antes de enviar el reporte.'
+          : 'Sign in again before submitting the report.';
+        return;
+      }
 
       if (submit) {
         submit.disabled = true;
@@ -3146,12 +3160,14 @@
           target_id: $report.dataset.targetId || '',
           reason,
           details: details.trim().slice(0, 6000)
-        });
+        }, submittingUserId);
+        if (me()?.id !== submittingUserId) return;
         close();
         showToast(state.lang === 'es'
           ? 'Reporte recibido. Gracias por ayudarnos a cuidar ORIGEN.'
           : 'Report received. Thank you for helping keep ORIGEN safe.');
       } catch (error) {
+        if (me()?.id !== submittingUserId) return;
         if (status) status.textContent = error?.message || (state.lang === 'es'
           ? 'No pudimos enviar el reporte.'
           : 'We could not submit the report.');
