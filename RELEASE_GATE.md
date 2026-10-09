@@ -159,3 +159,9 @@ Public beta remains NO-GO until:
 - [ ] Antes de ejecutar la QA real: configurar y validar consentimiento Auth del servidor (#6), preparar dos cuentas y fixtures ficticios autorizados únicamente en Staging, mantener acceso protegido, luego ejecutar `npm run qa:staging:auth:readonly` con secretos efímeros fuera del repo.
 - [ ] El script de solo lectura **NO sustituye** pruebas adversariales con INSERT/UPDATE, atomicidad de eventos culturales, recuperación de cuentas, retirada Storage, moderación y revisión legal.
 
+## P0 — Editorial/privilegios y Auth Staging — 10 Oct 2026
+
+- [x] Auditoría SELECT-only `ORIGEN_STAGING_EDITORIAL_BYPASS_AUDIT_READ_ONLY.sql`: **13/13 PASS** de políticas y triggers (configuración, no adversarial).
+- [ ] Probar con dos JWT de cuentas sintéticas la falsificación de `is_editorial=true`, origen y contadores, mutación de publicaciones ajenas y derechos incompletos.
+- [ ] Evaluar menor privilegio mediante GRANT por columna; el permiso de tabla actual es amplio pero RLS/trigger controlan su uso. Evitar cambios sin pruebas de compatibilidad del cliente.
+- [ ] Habilitar/validar `Before User Created` en Supabase Auth exclusivamente en Staging conforme a `STAGING_AUTH_HOOK_ACTIVATION.md`. SQL instalado no equivale a configuración de Auth.

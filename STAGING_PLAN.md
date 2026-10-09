@@ -200,3 +200,9 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - La aceptación de publicación cultural se configuró exclusivamente en staging; existe una tabla de eventos privada, CHECK de dos booleanos y triggers de auditoría. No se ha probado todavía ante dos usuarios con tokens reales ni la retirada del material.
 - El registro legal continúa pendiente: `origen_before_user_created` **no existe todavía en Staging** según comprobación de catálogo, y no hay hook Auth habilitado/comprobado. La propuesta SQL para registro no pudo aplicarse en la ejecución anterior; no se reintentó automáticamente tras el bloqueo.
 - No construir ni desplegar un frontend contra Production. Crear una web protegida de staging con costo aprobado, configurar Auth, legal y CAPTCHA y realizar QA A/B antes de invitar voluntarios.
+
+## Auth pendiente y protección editorial — 10 Oct 2026
+
+- Revisión SQL de campos editoriales y derechos culturales: **13/13 comprobaciones de catálogo PASS** en Staging, sin operaciones de escritura ni usuarios creados. La QA real A/B aún no comenzó.
+- Configuración aún NO comprobada/activada con estas herramientas: `Authentication → Hooks → Before User Created → Postgres Function → public.origen_before_user_created` exclusivamente en `egujmptgnrpajgfpjjxu`.
+- Pasos, pruebas de aceptación y rollback documentados en `STAGING_AUTH_HOOK_ACTIVATION.md`. No ejecutar en Production.

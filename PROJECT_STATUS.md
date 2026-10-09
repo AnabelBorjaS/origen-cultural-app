@@ -524,3 +524,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Nueva auditoría `supabase/proposals/ORIGEN_STAGING_AUTH_CONFIGURATION_AUDIT_READ_ONLY.sql` ejecutada solo sobre Staging con resultado **11/11 PASS**: trigger Auth de creación, aceptación obligatoria y versiones fijadas en servidor, provider email, no-anónimo, función Before User Created y permisos reservados a `supabase_auth_admin`, RLS y restricciones de inserción de registros legales, sin usuarios de prueba creados.
 - ⛔ **No se ha verificado la activación del Before User Created en la configuración de Supabase Auth**. Tener creada la función SQL no demuestra configuración del servicio ni validación end-to-end. Tampoco hay dos cuentas ficticias, ensayos de registros directos, recuperación de contraseña ni Cloudflare Access protegido. Issue #6 NO-GO.
 - ✅ Production y `origencultural.com` sin cambios. Sin pagos ni despliegue público.
+
+## Editorial privileges QA y activación de Auth — 10 octubre 2026
+
+- ✅ Nueva auditoría SELECT-only `supabase/proposals/ORIGEN_STAGING_EDITORIAL_BYPASS_AUDIT_READ_ONLY.sql` ejecutada en Staging: **13/13 PASS**, comprobando controles estructurales contra suplantar `is_editorial`, fuentes editoriales y contadores, restricciones a la modificación de autor, RLS, derechos culturales y permisos anónimos. **No se efectuaron intentos de ataque REST con JWT reales**.
+- ⚠️ `authenticated` conserva privilegios amplios de INSERT/UPDATE en `public.cultural_posts`, compensados actualmente por políticas RLS y triggers; considerar reducir grants por columna sólo con pruebas de compatibilidad de cliente. No se cambiaron permisos de Staging/Production.
+- ✅ Nuevo `STAGING_AUTH_HOOK_ACTIVATION.md`: instrucción de habilitar la función ya instalada en `Authentication → Hooks → Before User Created` del proyecto Staging, más QA y rollback seguro. **La activación de Auth NO ha sido comprobada ni realizada desde las herramientas**; P0 #6 abierto.
+- 🔒 No se crearon usuarios, publicaciones ni hosting público en este avance. Production y `origencultural.com` sin cambios. Beta NO-GO.
