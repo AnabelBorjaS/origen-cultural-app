@@ -170,6 +170,21 @@ const ownedMedia = `${projectURL}/storage/v1/object/public/post-media/${selfId}/
   assert.equal(h.removals.length, 1);
 }
 
+// Deleting a post must not delete an author's avatar or cover, even when
+// media_urls accidentally references these other managed Storage buckets.
+{
+  const avatar = `${projectURL}/storage/v1/object/public/avatars/${selfId}/1700000000000-avatar.webp`;
+  const cover = `${projectURL}/storage/v1/object/public/covers/${selfId}/1700000000000-cover.webp`;
+  const h = makeHarness({ mediaUrls: [ownedMedia, avatar, cover] });
+  h.api.cache.session = { user: { id: selfId } };
+  const result = await h.api.deletePost('post-1');
+  assert.equal(result.postDeleted, true);
+  assert.equal(result.mediaCleanup, 'incomplete');
+  assert.equal(result.unresolvedMediaCount, 2);
+  assert.equal(h.removals.length, 1, 'Only post-media is eligible for post cleanup');
+  assert.equal(h.removals[0].bucket, 'post-media');
+}
+
 // External media cannot be removed through ORIGEN Storage and must remain
 // explicitly marked unresolved, not reported as a successful cleanup.
 {
