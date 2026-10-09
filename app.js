@@ -550,7 +550,7 @@
     return `<aside class="profile-trust-notice profile-trust-${trust.kind}" aria-label="${esc(trust.label)}">
       <div>${profileTrustChip(profile)}<strong>${esc(trust.label)}</strong></div>
       <p>${esc(trust.description)}</p>
-      <div class="profile-trust-links">${claimLink}<a href="#solicitar-revision/${profile._kind === 'user' ? 'usuario' : 'perfil'}/${encodeURIComponent(profile.id)}">${state.lang === 'es' ? 'Solicitar corrección o revisión' : 'Request correction or review'} →</a><a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'} →</a></div>
+      <div class="profile-trust-links">${claimLink}<a href="#solicitar-revision/${profile?.referenceProfile === true || profile?.profileStatus === 'reference' ? 'perfil' : 'usuario'}/${encodeURIComponent(profile.id)}">${state.lang === 'es' ? 'Solicitar corrección o revisión' : 'Request correction or review'} →</a><a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'} →</a></div>
     </aside>`;
   }
   function verBadge(p) {
