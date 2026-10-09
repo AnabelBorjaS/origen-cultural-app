@@ -165,3 +165,10 @@ Public beta remains NO-GO until:
 - [ ] Probar con dos JWT de cuentas sintéticas la falsificación de `is_editorial=true`, origen y contadores, mutación de publicaciones ajenas y derechos incompletos.
 - [ ] Evaluar menor privilegio mediante GRANT por columna; el permiso de tabla actual es amplio pero RLS/trigger controlan su uso. Evitar cambios sin pruebas de compatibilidad del cliente.
 - [ ] Habilitar/validar `Before User Created` en Supabase Auth exclusivamente en Staging conforme a `STAGING_AUTH_HOOK_ACTIVATION.md`. SQL instalado no equivale a configuración de Auth.
+
+## P0 — Approved Staging identity check — 10 Oct 2026
+
+- [x] Staging builder is restricted to the **exact founder-approved** Supabase project URL `https://egujmptgnrpajgfpjjxu.supabase.co`, rather than any unrelated Supabase host; offline visual preview continues to use a disabled endpoint.
+- [x] Deployed Staging audit requires the same exact identity; a different but valid Supabase project must cause failure.
+- [x] Regression tests cover Production, unrelated Supabase projects, invalid host, insecure HTTP, reusable Production key and secret misuse.
+- [ ] Live protected deployment and Auth hook E2E with two synthetic users remain pending. No production release.

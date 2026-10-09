@@ -51,6 +51,8 @@ if (!urlMatch || !keyMatch) {
   rejectStagingBuild('Supabase client configuration shape changed; refusing staging build until reviewed.');
 }
 const productionURL = new URL(urlMatch[1]);
+// Founder-approved isolated Free Staging project (not just any Supabase project).
+const approvedStagingOrigin = 'https://egujmptgnrpajgfpjjxu.supabase.co';
 const stagingURL = String(process.env.ORIGEN_STAGING_SUPABASE_URL || '').trim();
 const stagingKey = String(process.env.ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY || '').trim();
 if (Boolean(stagingURL) !== Boolean(stagingKey)) {
@@ -68,8 +70,9 @@ if (stagingURL) {
       !/^[a-z0-9]{20}\.supabase\.co$/.test(target.hostname) ||
       target.username || target.password || target.port ||
       target.pathname !== '/' || target.search || target.hash ||
-      target.origin === productionURL.origin) {
-    rejectStagingBuild('Staging backend must be a separate Supabase HTTPS project, never Production.');
+      target.origin === productionURL.origin ||
+      target.origin !== approvedStagingOrigin) {
+    rejectStagingBuild('Staging backend must match the approved isolated ORIGEN Staging project, never Production or another project.');
   }
   if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(stagingKey) || stagingKey === keyMatch[1]) {
     rejectStagingBuild('Staging requires its own publishable key; never use a secret or Production key.');

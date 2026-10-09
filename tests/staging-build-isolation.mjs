@@ -9,6 +9,8 @@ const source = fs.readFileSync(path.join(root, 'supabase-client.js'), 'utf8');
 const productionURL = source.match(/^  const PROJECT_URL = '([^']+)';$/m)?.[1];
 const productionKey = source.match(/^  const PUBLISHABLE_KEY = '([^']+)';$/m)?.[1];
 assert.ok(productionURL && productionKey, 'Must recognize the checked-in Supabase client config');
+const approvedStagingURL = 'https://egujmptgnrpajgfpjjxu.supabase.co';
+const alternateSupabaseURL = 'https://abcdefghijklmnopqrst.supabase.co';
 
 function build(vars = {}) {
   const env = { ...process.env };
@@ -44,36 +46,40 @@ function rejects(vars, expected) {
   assert.match(attempt.stderr, expected);
   assert.ok(!fs.existsSync(dist), 'A failed build must remove unsafe partial dist');
 }
-rejects({ ORIGEN_STAGING_SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co' }, /must both be set/);
+rejects({ ORIGEN_STAGING_SUPABASE_URL: alternateSupabaseURL }, /must both be set/);
 rejects({ ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789' }, /must both be set/);
 rejects({
   ORIGEN_STAGING_SUPABASE_URL: productionURL,
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789'
-}, /never Production/);
+}, /approved isolated ORIGEN Staging project/);
 rejects({
-  ORIGEN_STAGING_SUPABASE_URL: 'http://abcdefghijklmnopqrst.supabase.co',
+  ORIGEN_STAGING_SUPABASE_URL: 'http://egujmptgnrpajgfpjjxu.supabase.co',
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789'
-}, /separate Supabase HTTPS project/);
+}, /approved isolated ORIGEN Staging project/);
 rejects({
-  ORIGEN_STAGING_SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co.evil.example',
+  ORIGEN_STAGING_SUPABASE_URL: 'https://egujmptgnrpajgfpjjxu.supabase.co.evil.example',
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789'
-}, /separate Supabase HTTPS project/);
+}, /approved isolated ORIGEN Staging project/);
 rejects({
-  ORIGEN_STAGING_SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co',
+  ORIGEN_STAGING_SUPABASE_URL: approvedStagingURL,
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_unsafe_never_for_browsers'
 }, /own publishable key/);
 rejects({
-  ORIGEN_STAGING_SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co',
+  ORIGEN_STAGING_SUPABASE_URL: approvedStagingURL,
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: productionKey
 }, /own publishable key/);
-console.log('✓ Partial settings, Production, insecure hosts, secret and reused keys are blocked');
+rejects({
+  ORIGEN_STAGING_SUPABASE_URL: alternateSupabaseURL,
+  ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789'
+}, /approved isolated ORIGEN Staging project/);
+console.log('✓ Incorrect Supabase project, Production, insecure hosts, secrets and reused keys are blocked');
 
 result = build({
-  ORIGEN_STAGING_SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co',
+  ORIGEN_STAGING_SUPABASE_URL: approvedStagingURL,
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789'
 });
 assert.equal(result.status, 0, result.stderr);
-assertSafeArtifact('https://abcdefghijklmnopqrst.supabase.co', true);
+assertSafeArtifact(approvedStagingURL, true);
 console.log('✓ Explicit isolated staging project can be configured without a production endpoint');
 
 // Leave the artifact in its safest mode for subsequent local release checks.
