@@ -5,6 +5,7 @@ const index = read('index.html');
 const app = read('app.js');
 const supabase = read('supabase-client.js');
 const styles = read('styles.css');
+const manifest = read('manifest.webmanifest');
 const mundo = read('mundo.js');
 const trust = read('trust.js');
 const headers = read('_headers');
