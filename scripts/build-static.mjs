@@ -39,18 +39,22 @@ for (const entry of runtimeEntries) {
 // targets the Production project. A Pages build must NEVER publish that
 // endpoint/key. Visual previews get an intentionally unreachable endpoint;
 // authenticated staging requires a different, explicitly provided project.
+const rejectStagingBuild = message => {
+  fs.rmSync(out, { recursive: true, force: true });
+  rejectStagingBuild(message);
+};
 const clientPath = path.join(out, 'supabase-client.js');
 const clientSource = fs.readFileSync(clientPath, 'utf8');
 const urlMatch = clientSource.match(/^  const PROJECT_URL = '([^']+)';$/m);
 const keyMatch = clientSource.match(/^  const PUBLISHABLE_KEY = '([^']+)';$/m);
 if (!urlMatch || !keyMatch) {
-  throw new Error('Supabase client configuration shape changed; refusing staging build until reviewed.');
+  rejectStagingBuild('Supabase client configuration shape changed; refusing staging build until reviewed.');
 }
 const productionURL = new URL(urlMatch[1]);
 const stagingURL = String(process.env.ORIGEN_STAGING_SUPABASE_URL || '').trim();
 const stagingKey = String(process.env.ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY || '').trim();
 if (Boolean(stagingURL) !== Boolean(stagingKey)) {
-  throw new Error('Staging Supabase URL and publishable key must both be set or both be absent.');
+  rejectStagingBuild('Staging Supabase URL and publishable key must both be set or both be absent.');
 }
 
 let apiURL = 'https://unconfigured-staging.invalid';
@@ -59,16 +63,16 @@ let stagingBackendConnected = false;
 if (stagingURL) {
   let target;
   try { target = new URL(stagingURL); }
-  catch { throw new Error('Staging Supabase URL must be valid and HTTPS.'); }
+  catch { rejectStagingBuild('Staging Supabase URL must be valid and HTTPS.'); }
   if (target.protocol !== 'https:' ||
-      !/^[a-z0-9]{20}\\.supabase\\.co$/.test(target.hostname) ||
+      !/^[a-z0-9]{20}\.supabase\.co$/.test(target.hostname) ||
       target.username || target.password || target.port ||
       target.pathname !== '/' || target.search || target.hash ||
       target.origin === productionURL.origin) {
-    throw new Error('Staging backend must be a separate Supabase HTTPS project, never Production.');
+    rejectStagingBuild('Staging backend must be a separate Supabase HTTPS project, never Production.');
   }
   if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(stagingKey) || stagingKey === keyMatch[1]) {
-    throw new Error('Staging requires its own publishable key; never use a secret or Production key.');
+    rejectStagingBuild('Staging requires its own publishable key; never use a secret or Production key.');
   }
   apiURL = target.origin;
   apiKey = stagingKey;
@@ -80,7 +84,7 @@ const patchedClient = clientSource
   .replace(keyMatch[0], '  const PUBLISHABLE_KEY = ' + JSON.stringify(apiKey) + ';');
 if (patchedClient.includes(productionURL.hostname) ||
     patchedClient.includes(keyMatch[1])) {
-  throw new Error('Production Supabase credentials found in staging runtime; refusing to build.');
+  rejectStagingBuild('Production Supabase credentials found in staging runtime; refusing to build.');
 }
 fs.writeFileSync(clientPath, patchedClient);
 console.log(stagingBackendConnected
