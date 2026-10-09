@@ -1734,11 +1734,11 @@
       <div class="values-grid">${values.map((v, i) => `<article class="value-card"><span class="number">0${i + 1}</span><h3>${v[0]}</h3><p>${v[1]}</p></article>`).join('')}</div>
     </div></section>
     <section class="section impact-band"><div class="section-inner">
-      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
+      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De historias auténticas a una comunidad global</h2></div><p>Primero crecemos con Agentes que comparten cultura y Exploradores que descubren, siguen y comparten historias libremente. La publicidad pagada solo tendría sentido después de lograr una audiencia real.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
         <div class="impact-item"><strong>1</strong><span>Piloto Ecuador: hasta 10 Agentes Culturales voluntarios, después de aprobar seguridad y consentimiento</span></div>
-        <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
+        <div class="impact-item"><strong>2</strong><span>Comunidad orgánica: publicar historias culturales, descubrir Agentes, seguir, guardar y compartir sin pagar</span></div>
         <div class="impact-item"><strong>3+</strong><span>Futuro: promociones pagadas opcionales; después, posibles comisiones acordadas por ventas derivadas a webs oficiales</span></div>
       </div>
     </div></section>${footer()}`;
