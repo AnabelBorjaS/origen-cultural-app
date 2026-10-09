@@ -517,3 +517,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ⛔ **NO CONFIGURADO NI PROBADO:** activar el hook `Before User Created` en Supabase Auth. Crear la función SQL NO activa el hook. Faltan altas Auth directas de cuentas ficticias, rechazo servidor de altas inválidas, confirmación email, recuperación y verificación del registro legal tras inscripción.
 - ℹ️ Security Advisor: un aviso INFO `rls_enabled_no_policy` para tabla privada de derechos culturales sin políticas públicas, intencional y con permisos de navegador revocados; ninguna alerta crítica/alta reportada en esta lectura.
 - ⛔ P0 #6 sigue abierto. No desplegar a `origencultural.com` ni fusionar PR #3. Production no recibió modificaciones.
+
+## Staging Auth y migraciones reproducibles — 10 octubre 2026
+
+- ✅ Recuperadas desde el historial de Staging las **3 migraciones experimentales ya aplicadas**, en `supabase/staging-applied/` con `MANIFEST.json`, **separadas** de `supabase/migrations/`. No volver a ejecutarlas ni promocionarlas automáticamente a Production.
+- ✅ Nueva auditoría `supabase/proposals/ORIGEN_STAGING_AUTH_CONFIGURATION_AUDIT_READ_ONLY.sql` ejecutada solo sobre Staging con resultado **11/11 PASS**: trigger Auth de creación, aceptación obligatoria y versiones fijadas en servidor, provider email, no-anónimo, función Before User Created y permisos reservados a `supabase_auth_admin`, RLS y restricciones de inserción de registros legales, sin usuarios de prueba creados.
+- ⛔ **No se ha verificado la activación del Before User Created en la configuración de Supabase Auth**. Tener creada la función SQL no demuestra configuración del servicio ni validación end-to-end. Tampoco hay dos cuentas ficticias, ensayos de registros directos, recuperación de contraseña ni Cloudflare Access protegido. Issue #6 NO-GO.
+- ✅ Production y `origencultural.com` sin cambios. Sin pagos ni despliegue público.
