@@ -132,3 +132,13 @@ Public beta remains NO-GO until:
 - [x] Auditoría SQL reusable en `supabase/proposals/ORIGEN_DATA_API_GRANTS_RLS_AUDIT_READ_ONLY.sql`.
 - [ ] Repetir la auditoría tras cada migración/permisos nuevos; documentar revisión explícita de `GRANT/REVOKE` y RLS para tablas y funciones nuevas.
 - [ ] Completar pruebas reales con dos cuentas en Supabase staging **separado**. La consulta de permisos no sustituye pruebas adversariales ni cierra los bloqueos P0 de consentimiento/medios/moderación.
+
+## P0 — Derechos culturales: contrato SQL en propuesta (9 Oct 2026)
+
+- [x] Auditoría solo lectura confirmó: INSERT directo de `cultural_posts` no verifica ni registra declaraciones de derechos culturales en Production.
+- [x] Existe **propuesta review-only no aplicada** `supabase/proposals/ORIGEN_CULTURAL_POST_RIGHTS_STAGING_REVIEW_ONLY.sql`: dos booleanos obligatorios para publicaciones no editoriales, evento privado atómico al INSERT, versiones asignadas por servidor y bloqueo temporal de ediciones materiales sin nueva declaración.
+- [x] `supabase-client.js` en rama beta envía ambos booleanos explícitos después de validarlos; los mocks prueban que valores faltantes, falsos y falsos positivos como `"true"`/1 no llegan al INSERT.
+- [ ] **Bloqueo funcional deliberado:** Supabase Production NO tiene las nuevas columnas. No fusionar ni desplegar este cliente beta sobre Production sin el esquema autorizado y probado. La propuesta no constituye ejecución del backend ni evidencia de protección real.
+- [ ] Crear Supabase staging independiente; revisar con especialista legal/versiones/retención; aprobar migración versionada; probar rechazos a Data API, atomicidad, cambios de contenido, cuentas A/B, RLS, privacidad y rol admin; ejecutar Security Advisor.
+- [ ] Validar específicamente el borrado/retención del evento privado ante la retirada de un post o una solicitud de privacidad antes del lanzamiento.
+
