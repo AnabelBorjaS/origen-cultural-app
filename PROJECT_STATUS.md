@@ -447,3 +447,11 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Browser QA #54 passed on runtime head `19fd47a0712f4450602bc40f1e46b87688a210cb`, matching Quality Gate #189.
 - ✅ Current release runtime includes Turnstile-ready public config, privacy/account-deletion request pathway and all prior accessibility/PWA/XSS hardening.
 - ⚠️ GitHub branch-protection details and Security/Dependabot alert endpoints are not readable through the current integration; verify them manually before GO. Repository code search found no obvious service-role/secret/JWT/database-URL patterns on `main`.
+
+## Contrato de publicación segura preparado en beta — 9 Oct 2026
+
+- ✅ Creada propuesta SQL **únicamente para revisión y staging aislado** en `supabase/proposals/ORIGEN_CULTURAL_POST_RIGHTS_STAGING_REVIEW_ONLY.sql`. Plantea exigir dos declaraciones de derechos culturales y registrar un evento privado con versión del servidor en la misma transacción que crea el post.
+- ✅ `supabase-client.js` de rama beta envía los dos booleanos explícitos; tests de contrato simulado comprueban confirmaciones estrictas y versiones no proporcionadas por el usuario.
+- ⚠️ **NO HABILITADO EN SERVIDOR**: staging no existe todavía; la propuesta no se ha ejecutado; no hay evidencia de pruebas de base de datos reales. La rama beta actual exige nuevas columnas que Production no tiene, por lo que **NO DEBE desplegarse contra Production** sin migración aprobada, plan de pruebas y revisión legal.
+- ⛔ Issue #7 permanece **P0 abierto**. No se han modificado Production, permisos, datos, dominio ni suscripciones.
+
