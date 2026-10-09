@@ -653,9 +653,14 @@
     if (!parsed.path.startsWith(uid + '/')) {
       throw new Error('No puedes eliminar archivos que no pertenecen a tu cuenta.');
     }
-    const { error } = await client.storage.from(parsed.bucket).remove([parsed.path]);
+    const { data, error } = await client.storage.from(parsed.bucket).remove([parsed.path]);
     if (error) throw error;
-    return true;
+    // Storage may answer with data: [] and error: null when no object was
+    // actually removed (e.g. an RLS denial). Never call that successful cleanup.
+    // The documented response is a list of deleted FileObjects.
+    return Array.isArray(data) && data.some(file =>
+      file && (file.name === parsed.path || file.path === parsed.path)
+    );
   }
 
   async function upload(bucket, file, nameHint='media') {
