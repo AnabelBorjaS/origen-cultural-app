@@ -168,3 +168,11 @@ With authorised service credentials, the workflow verifies:
 - service worker is available with a JavaScript-compatible content type.
 
 A failed staging audit is a **NO-GO** for Auth QA or release.
+
+## Creación verificada — 9 octubre 2026
+
+- ✅ **ORIGEN Cultural Staging** creado con aprobación expresa de la fundadora en organización **ORIGEN Cultural**, región **ap-southeast-2 (Sydney)**, plan Free, **costo confirmado $0/mes**.
+- Referencia de proyecto de pruebas: `egujmptgnrpajgfpjjxu`. Production: `xwkjvoyicrrwjybjolld`. Son proyectos distintos; jamás reutilizar datos ni credenciales de Production.
+- ✅ El proyecto responde `ACTIVE_HEALTHY`; inventario inicial **0 migraciones**, **0 tablas públicas de aplicación** y Security Advisor **0 lints**. Esta comprobación no valida aún la seguridad de la beta.
+- ⛔ **Aún no instalado**: 14 migraciones recuperadas, propuestas P0 de consentimiento, protección cultural, frontend aislado, protección Cloudflare Access y QA de dos cuentas. **No existe URL de aplicación Staging desplegada**.
+- Próximo paso: recuperar/validar la secuencia de migraciones y esquema en este proyecto aislado antes de crear usuarios sintéticos. Las propuestas `REVIEW_ONLY` no se ejecutan sin revisión de permisos, versión legal, rollback y pruebas.
