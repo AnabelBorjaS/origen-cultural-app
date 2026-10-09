@@ -142,3 +142,12 @@ Public beta remains NO-GO until:
 - [ ] Crear Supabase staging independiente; revisar con especialista legal/versiones/retención; aprobar migración versionada; probar rechazos a Data API, atomicidad, cambios de contenido, cuentas A/B, RLS, privacidad y rol admin; ejecutar Security Advisor.
 - [ ] Validar específicamente el borrado/retención del evento privado ante la retirada de un post o una solicitud de privacidad antes del lanzamiento.
 
+
+## Staging QA de declaraciones culturales — 9 Oct 2026
+
+- [x] En Staging, las 14 migraciones de base quedaron instaladas y la propuesta adicional de derechos culturales quedó aplicada solo al entorno aislado.
+- [x] Auditoría read-only reutilizable `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` **10/10 PASS** sobre catálogo y restricciones de acceso a la tabla privada de eventos.
+- [ ] **NO-GO P0 #7**: probar con dos cuentas reales ficticias las solicitudes REST directas, rechazo de declaraciones ausentes/falsas, creación simultánea del evento, cambios de contenido, retirada de medios, moderación y retención legal. Los 10 checks no prueban estos comportamientos.
+- [ ] **NO-GO P0 #6**: instalar, habilitar y probar el hook de Auth de consentimiento legal y el registro de versiones fijadas por servidor en Staging; la función de hook no existe al último audit read-only.
+- [ ] **NO-GO P0 #5**: desplegar frontend Staging aislado detrás de Access y confirmar HTTPS/redirecciones sin conectar a Production.
+

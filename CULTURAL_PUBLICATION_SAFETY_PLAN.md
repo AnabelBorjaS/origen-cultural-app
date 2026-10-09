@@ -1,7 +1,7 @@
 # ORIGEN Cultural — Plan de autorización y trazabilidad de publicaciones
 
 **Fecha:** 9 de octubre de 2026  
-**Estado:** Documento de diseño. **No implementado en Supabase.**  
+**Estado:** Implementación de control de catálogo **solo en Supabase Staging**; sin QA real con dos cuentas; **no implementado en Production.**  
 **Responsable de aprobación:** Fundadora y revisión técnica/legal correspondiente.  
 **Regla:** Public Beta **NO-GO** hasta verificar controles reales del backend.
 
@@ -90,3 +90,9 @@ Utilizar **cuentas y datos sintéticos** para todas las pruebas. No ejecutar mig
 7. **Puerta de despliegue**: primero Supabase staging separado, usuarios ficticios, prueba adversarial A/B, revisión legal y respaldo; **después** considerar migración a Production con autorización expresa. No publicar beta basándose solo en casillas UI, Quality Gate o CodeQL.
 
 **Fuentes técnicas:** [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [triggers](https://supabase.com/docs/guides/database/postgres/triggers), [funciones seguras](https://supabase.com/docs/guides/database/functions). Este apartado es diagnóstico y especificación de revisión, **no una migración ejecutable ni evidencia de funcionamiento en staging**.
+
+## 8. Auditoría de configuración de Staging (9 octubre 2026)
+
+La propuesta `ORIGEN_CULTURAL_POST_RIGHTS_STAGING_REVIEW_ONLY.sql` fue aplicada exclusivamente en `ORIGEN Cultural Staging`. El script **read-only** `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` produjo **10/10 PASS** al inspeccionar las dos columnas booleanas, restricción de publicación no editorial, triggers, función y versiones internas, RLS de la bitácora privada y permisos revocados a cuentas de navegador.
+
+Esta evidencia **no demuestra** que una llamada REST firmada no pueda eludir RLS, que el trigger inserte el evento cuando corresponde, que un fallo produzca rollback o que retirada y retención cumplan políticas. El P0 #7 no se cierra hasta pruebas adversariales end-to-end con usuarios ficticios y revisión legal. No se modifica Production ni se habilita registro público.

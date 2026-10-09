@@ -1,5 +1,14 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Validación reproducible en Supabase Staging — 9 octubre 2026
+
+- ✅ Se creó `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` y se ejecutó sin escrituras sobre `ORIGEN Cultural Staging` (`egujmptgnrpajgfpjjxu`): **10/10 comprobaciones de configuración PASS** (CHECK de dos derechos culturales, campos NOT NULL/default FALSE, dos triggers habilitados, tabla privada RLS y revocación de accesos, restricciones de ejecución y revisión estructural de identidad/versiones de la función). No se crearon cuentas ni publicaciones.
+- ⛔ **No se ha demostrado el flujo de extremo a extremo**: aún faltan cuentas sintéticas A/B, inserciones inválidas vía API, creación atómica de post+evento, intentos de acceso entre usuarios, retiradas de medios, moderación y requisitos legales. **Issue #7 P0 sigue abierto**.
+- ⛔ **Issue #6 P0 también sigue abierto**: el proyecto de Staging no tiene instalada la función `origen_before_user_created` ni activado un hook de Auth. Una ejecución anterior para instalar esta propuesta fue bloqueada por las herramientas; no afirmar consentimiento obligatorio en servidor ni que versiones de registro son verificadas.
+- ✅ La última rama beta anterior obtuvo Quality Gate, CodeQL y Browser QA exitosos. Una auditoría SQL read-only nunca sustituye el CI, pruebas funcionales ni revisión legal.
+- ✅ Production y `origencultural.com` permanecen sin modificaciones, y la PR #3 sigue pendiente de aprobación para merge.
+
+
 ## Ruta rápida: historial de esquema recuperado — 9 Oct 2026
 
 - ✅ Restauradas desde el historial interno de migraciones de Supabase (SELECT-only) las **7 migraciones antiguas** que faltaban en GitHub. El repositorio beta incluye ahora 14/14 archivos históricos; las consultas no modificaron Production.

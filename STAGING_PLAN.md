@@ -1,10 +1,10 @@
 # ORIGEN Cultural — Staging Plan
 
-Status: planned, not yet deployed
-Cost target: **AUD/USD $0 hosting during controlled beta**
+Status: Supabase staging database ACTIVE and seeded with schema; web hosting and access policies NOT DEPLOYED
+Cost: **Supabase Staging $0/month confirmed**; web hosting target $0, NOT provisioned or verified yet
 Last reviewed: 9 October 2026
 
-**Verified faster path (9 Oct):** Supabase organization `ORIGEN Cultural` reports `free`, and the provider `get_cost(project)` returns **$0/month** for a second project in that organization. Requires explicit founder selection/approval and final $0 confirmation; no project has been created. All 14 historical migrations have now been recovered to GitHub from read-only migration history, but no local/staging replay or equivalence test has yet run. `npm run preflight:staging:schema:strict` validates file-presence parity only, not database correctness.
+**Verified faster path (9 Oct):** Supabase organization `ORIGEN Cultural` reports `free`, and the provider `get_cost(project)` returns **$0/month** for a second project in that organization. Founder approved; a separate project `egujmptgnrpajgfpjjxu` was created at confirmed $0/month. No web staging deployment exists. All 14 historical migrations have now been recovered to GitHub from read-only migration history, but all 14 migrations were applied in isolated Staging; initial 11-table/33-policy/14-private-function/3-bucket counts matched Production (not full schema equivalence). `npm run preflight:staging:schema:strict` validates file-presence parity only, not database correctness.
 
 ## Decision
 
@@ -193,3 +193,10 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - ℹ️ Security Advisor indica **1 aviso informativo** `rls_enabled_no_policy` sobre la tabla **privada sin políticas públicas**; es restricción deliberada de acceso, no prueba de vulnerabilidad. Ver https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
 - ⚠️ Faltan **pruebas de integración reales con dos cuentas sintéticas**, casos de POST válido/inválido vía Data API, rollback al fallar la bitácora, edición, eliminación y revisión legal de retención. Hasta entonces P0 #7 sigue ABIERTO y el lanzamiento sigue NO-GO.
 - ⚠️ Se añadió una migración de pruebas en Staging con versión propia. Antes de hacer futuros despliegues es obligatorio revisar la concordancia de historial y generar una migración versionada aprobada. La propuesta no debe tratarse como lista para Production.
+
+## Evidencia adicional del control de publicaciones — 9 Oct 2026
+
+- `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` se ejecutó en el Supabase Staging aislado: **10/10 checks PASS** de estructura/permisos del control cultural. No se alteraron datos.
+- La aceptación de publicación cultural se configuró exclusivamente en staging; existe una tabla de eventos privada, CHECK de dos booleanos y triggers de auditoría. No se ha probado todavía ante dos usuarios con tokens reales ni la retirada del material.
+- El registro legal continúa pendiente: `origen_before_user_created` **no existe todavía en Staging** según comprobación de catálogo, y no hay hook Auth habilitado/comprobado. La propuesta SQL para registro no pudo aplicarse en la ejecución anterior; no se reintentó automáticamente tras el bloqueo.
+- No construir ni desplegar un frontend contra Production. Crear una web protegida de staging con costo aprobado, configurar Auth, legal y CAPTCHA y realizar QA A/B antes de invitar voluntarios.

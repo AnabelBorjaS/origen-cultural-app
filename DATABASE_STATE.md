@@ -101,3 +101,10 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 - Comparación SELECT-only de Staging vs Production: **11 tablas públicas**, **33 políticas**, **14 funciones privadas**, y **3 buckets (avatars/covers/post-media)** en ambos. Cero tablas públicas de aplicación con RLS desactivado. Staging Security Advisor: **0 active lints**.
 - No es una prueba de igualdad columna-por-columna o grants, ni una prueba adversarial de Auth/RLS/Storage. **0 usuarios y 0 publicaciones** en Staging. Los controles de consentimiento y declaraciones culturales `REVIEW_ONLY` no se instalaron.
 - Estado: baseline de staging preparado, **NO-GO** para pilotos reales, producción inalterada.
+
+## Configuration audit in isolated Staging — 9 October 2026
+
+- Original 14 schema migrations plus experimental cultural-rights migration are installed in Staging only.
+- `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` ran SELECT-only and passed **10/10** schema/privilege/triggers checks; SQL is repeatable and checked into GitHub.
+- Registered Auth consent hook remains **absent in Staging** at last catalog check. Server-side signup consent remains a P0; no Auth settings changed and no users created.
+- Passing metadata checks does NOT establish authenticated A/B RLS, Storage cleanup or cultural authorization validity. Production unchanged.
