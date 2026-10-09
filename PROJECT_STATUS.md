@@ -2,6 +2,16 @@
 
 Última actualización: 9 de octubre de 2026
 
+## La comunidad orgánica es la prioridad del MVP — 9 Oct 2026
+
+- ✅ La fundadora define **crecimiento orgánico primero**: motivar a Agentes Culturales a crear contenidos reales y a Exploradores Culturales a descubrir, seguir, guardar y **compartir** esos contenidos por interés propio.
+- ✅ El crecimiento debe producirse antes de la oferta de promociones de pago. No tiene sentido vender anuncios cuando ORIGEN aún no dispone de una audiencia activa comprobada. La «viralidad» es aspiración creativa, nunca promesa de alcance ni motivo para divulgar material cultural restringido.
+- ✅ Se creó `ORGANIC_COMMUNITY_GROWTH_PLAN.md` con ciclo Agente → historia → Explorador → interacción → difusión orgánica → retorno y fases de validación responsables.
+- ✅ Se actualizó `BUSINESS_MODEL.md`, el piloto `PILOT_ECUADOR_PLAYBOOK.md` y el roadmap de la página de Impacto para priorizar historias y descubrimiento antes que publicidad.
+- ✅ Se define una cohorte exploratoria propuesta de **hasta 10 Agentes Culturales y 30–50 Exploradores Culturales invitados**, condicionada a superar primero el release gate. No representa usuarios registrados ni métricas alcanzadas.
+- ✅ Se abrió issue **#10 (P1)** para permitir compartir una **publicación específica**: el botón actual copia un enlace general al feed y debe mejorarse con un deep link real, seguro y accesible sin cuenta. La issue comercial **#9** se pospone hasta validar tracción real.
+- ⛔ No se habilitaron anuncios, pagos, campañas, seguimiento publicitario ni referidos. Sin merge, sin despliegue y sin cambios en Production.
+
 ## Decisión de modelo de negocio — 9 Oct 2026
 
 - ✅ La fundadora define **ORIGEN como red social cultural de acceso gratuito**: alta, perfiles, publicaciones y exploración gratuitas para Agentes y Exploradores Culturales; un Agente Cultural puede ser una persona, colectivo, negocio u organización, sin que "comunidad" sea sinónimo automático de cuenta.
