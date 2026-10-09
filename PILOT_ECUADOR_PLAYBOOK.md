@@ -1,5 +1,5 @@
 # ORIGEN Cultural — Ecuador Pilot Playbook
-**Versión:** 0.1 · 8 October 2026  
+**Versión:** 0.2 · 9 October 2026  
 **Estado:** Preparación interna, no invitación pública ni compromiso comercial.  
 **Responsable:** Fundadora / Dirección ORIGEN.  
 **Regla de lanzamiento:** NO-GO hasta cumplir `RELEASE_GATE.md` y `RELEASE_QA_RUNBOOK.md`.
@@ -14,7 +14,7 @@ Piloto inicial propuesto con un máximo de **10 Agentes Culturales participantes
 3. Un Explorador descubre, guarda, sigue o comenta perfiles sin confundir perfiles de referencia con perfiles reclamados.
 4. Se puede recopilar feedback útil y resolver reclamaciones, reportes y solicitudes de privacidad sin perjudicar a una comunidad.
 
-**Alcance de la beta:** perfiles, historias, feed cultural, seguir, favoritos, guardar, comentarios, Pasaporte Cultural y reportes. **NO incluye reservas, cobros, pagos a comunidades, ventas, mensajería privada, certificación automática ni Academia operativa.** El modelo económico 80/20 es una propuesta de monetización futura, no una promesa vigente ni una transacción habilitada.
+**Alcance de la beta:** perfiles, historias, feed cultural, seguir, favoritos, guardar, comentarios, Pasaporte Cultural y reportes. **NO incluye reservas, cobros, promociones pagadas, comisiones, ventas, mensajería privada, certificación automática ni Academia operativa.** El acceso de Agentes y Exploradores Culturales es gratuito. La primera monetización futura será la **promoción opcional de perfiles/publicaciones**; más adelante podrán negociarse **comisiones de derivación por ventas atribuidas en webs oficiales de cada Agente Cultural**, sin checkout en ORIGEN. Ver `BUSINESS_MODEL.md`. El antiguo esquema 80/20 ya no es el modelo comercial vigente.
 
 ## 2. Orden de activación
 
@@ -71,7 +71,8 @@ Preguntas sugeridas — no son resultados recopilados:
 3. ¿Con qué frecuencia tendrías tiempo de publicar sin que esto altere tu actividad principal?
 4. ¿Qué idiomas y formatos (foto, video, texto descriptivo) te serían más cómodos?
 5. ¿Qué necesitarías ver para confiar en ORIGEN y recomendarlo?
-6. Si en el futuro se habilitan servicios pagados, ¿qué condiciones y costos te parecerían justos? *Aclarar que actualmente no se reciben pagos.*
+6. Si pudieras destacar voluntariamente tu perfil o una publicación ante más Exploradores, ¿qué información, precio y garantías de transparencia necesitarías para considerar pagar una promoción? *Dejar claro que ahora es gratis y que no existen campañas pagadas activas.*
+7. ¿Tienes una página oficial para ofrecer tus productos o servicios? En un futuro, ¿considerarías razonable un acuerdo de comisión por ventas realmente atribuidas a ORIGEN, sin que la plataforma cobre al comprador? *No proponer porcentajes fijos ni recoger datos confidenciales de ventas.*
 
 ## 5. Indicadores propuestos (no métricas actuales)
 
@@ -83,7 +84,9 @@ Preguntas sugeridas — no son resultados recopilados:
 | Experiencia inicial | Participantes que indican entender privacidad/reportes al final del onboarding | 8 de 10 |
 | Seguridad | Incidentes de exposición de datos / propiedad cruzada confirmados | 0 |
 | Retención cualitativa | Participantes que desean continuar tras 30 días | Medir, no asumir |
-| Ingresos | Transacciones reales procesadas en beta | 0: pagos aún no habilitados |
+| Ingresos reales | Cobros de promociones, ventas o comisiones | 0: no hay cobros habilitados en la beta |
+| Interés comercial (cualitativo) | Agentes que consideran útil una promoción opcional, y por qué | Entrevistar sin inducir compra |
+| Canales propios | Agentes que desean mostrar su enlace oficial de venta/contacto | Medir voluntariamente, sin seguimiento invasivo |
 
 Estos umbrales son **criterios de trabajo sugeridos**, no compromisos con patrocinadores ni resultados obtenidos.
 
@@ -92,7 +95,7 @@ Estos umbrales son **criterios de trabajo sugeridos**, no compromisos con patroc
 - El titular del contenido mantiene sus derechos; ORIGEN no debe presentarse como dueño del conocimiento tradicional.
 - Un consentimiento individual **no** sustituye permisos colectivos cuando existen derechos o protocolos culturales colectivos.
 - Nunca publicar un perfil de referencia como «reclamado», «verificado» o «aliado» sin el proceso correspondiente.
-- No representar el indicador 80/20 como un porcentaje actualmente distribuido mientras no existan pagos.
+- No presentar el antiguo reparto 80/20 como plan vigente: el modelo acordado es acceso gratuito, promociones opcionales y posibles acuerdos de comisiones por ventas externas verificables a futuro. Nunca cobrar en la beta ni representar un clic como una venta.
 - No usar testimonios, logos de instituciones o datos de impacto sin permiso verificable.
 - Las condiciones legales deben revisarse para los países/mercados concretos; no afirmar inmunidad legal mundial.
 
