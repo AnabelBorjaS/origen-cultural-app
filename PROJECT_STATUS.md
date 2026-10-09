@@ -2,6 +2,15 @@
 
 Última actualización: 9 de octubre de 2026
 
+## Conciliación de identidad digital 2026–2030 — 9 Oct 2026
+
+- ✅ En la rama beta se aplicó el negro de referencia `#0D0D0D` al token CSS `--black`, coherente con el color del manifiesto PWA y de la barra del navegador.
+- ✅ La prioridad de fuentes en CSS pasa a `Cormorant Garamond` para titulares y `DM Sans` para interfaz; mantienen alternativas de sistema para cuando estas fuentes no estén disponibles. **No están cargadas/distribuidas como fuentes web**, por lo que la apariencia exacta puede variar en equipos distintos.
+- ✅ `BRAND_SYSTEM.md` ahora documenta la dirección digital moderna e intuitiva 2026–2030, diseño mobile-first, cultura primero, accesibilidad, video y crecimiento orgánico, diferenciando decisiones y pruebas pendientes.
+- ✅ Quality Gate **#325**, Browser QA **#189** y CodeQL **#130**: **PASS** en la última revisión de código.
+- ⚠️ Aún se debe comparar con el manual original de identidad, revisar licencias y formas de cargar las fuentes, evaluar contraste WCAG y realizar QA visual con dispositivos/personas reales. Ver issue **#11**.
+- ⛔ Conciliación **provisional**, sin modificación del logotipo, sin merge, sin despliegue público, sin proveedores de fuentes externos ni cambios a Supabase Production.
+
 ## La comunidad orgánica es la prioridad del MVP — 9 Oct 2026
 
 - ✅ La fundadora define **crecimiento orgánico primero**: motivar a Agentes Culturales a crear contenidos reales y a Exploradores Culturales a descubrir, seguir, guardar y **compartir** esos contenidos por interés propio.
