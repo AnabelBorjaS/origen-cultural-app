@@ -46,6 +46,14 @@ No incluye:
 **Modelo aprobado para planificar, no habilitado:** primero promoción opcional pagada de contenido claramente identificado como patrocinado; después, posibles comisiones contractuales por ventas reales atribuidas en las webs oficiales de los Agentes Culturales. Ver `BUSINESS_MODEL.md`. El reparto 80/20 anterior ya no es la política comercial vigente.
 
 
+## P0 — Aislamiento del backend de staging
+
+- El artefacto generado por `npm run build:static` **no puede incluir URL ni clave del Supabase de Production**.
+- Una preview sin backend de staging debe mostrarse claramente como **solo visual** y no permite pruebas de registro real. Ningún resultado de QA de esa preview sirve para afirmar consentimiento, seguridad RLS o Auth validado.
+- Para las pruebas de usuarios A/B se exige proyecto Supabase **separado**, build con variables `ORIGEN_STAGING_SUPABASE_URL` y `ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY` compatibles con clave `sb_publishable_...`, además de Cloudflare Access verificado en la URL principal y previews.
+- El auditor de staging debe demostrar que el `supabase-client.js` **desplegado** no usa Production y que la conexión separada es válida; el control automatizado **no reemplaza** la prueba de cuentas y políticas RLS reales.
+- La autorización de creación de nuevos proyectos o costes es independiente de la autorización para desarrollar código en GitHub.
+
 ## Security & abuse
 Public beta remains NO-GO until:
 - Supabase Security Advisor has no unresolved security lints.
