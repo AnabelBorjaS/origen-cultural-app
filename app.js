@@ -1739,7 +1739,7 @@
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
         <div class="impact-item"><strong>1</strong><span>Piloto Ecuador: hasta 10 Agentes Culturales voluntarios, después de aprobar seguridad y consentimiento</span></div>
         <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
-        <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
+        <div class="impact-item"><strong>3+</strong><span>Futuro: promociones pagadas opcionales; después, posibles comisiones acordadas por ventas derivadas a webs oficiales</span></div>
       </div>
     </div></section>${footer()}`;
   }
