@@ -4,7 +4,7 @@ Aplicación web progresiva, responsive y lista para GitHub Pages. El prototipo c
 
 ## Visión del producto
 
-Origen Cultural es una red social cultural global que conecta **Exploradores Culturales** con **Creadores Culturales**. La primera etapa no administra ventas, inventario ni pagos: funciona como una puerta digital hacia los canales propios de cada creador.
+Origen Cultural es una **red social cultural global de acceso gratuito** que conecta **Exploradores Culturales** con **Agentes Culturales**. Registrarse, mantener un perfil, compartir cultura y descubrir perfiles no requiere pagar. El piloto no administra ventas, inventario, pagos, publicidad cobrada ni comisiones. La futura monetización contempla **promociones opcionales** para obtener mayor visibilidad y, más adelante, **acuerdos de comisiones por ventas atribuidas** en las páginas oficiales de cada Agente Cultural, sin checkout en ORIGEN. Ver [BUSINESS_MODEL.md](BUSINESS_MODEL.md).
 
 ## Funcionalidades incluidas
 
