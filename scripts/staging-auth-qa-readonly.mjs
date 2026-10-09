@@ -32,7 +32,7 @@ async function request(cfg,path,token,method='GET',body) {
   if(url.origin!==cfg.url||(method!=='GET'&&!(method==='POST'&&url.pathname==='/auth/v1/token'))) throw Error('Unsafe method or origin');
   const res=await fetch(url,{
     method,redirect:'error',signal:AbortSignal.timeout(12000),
-    headers:{apikey:cfg.key,Authorization:'Bearer '+(token||cfg.key),'Content-Type':'application/json'},
+    headers:{apikey:cfg.key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},
     ...(body?{body:JSON.stringify(body)}:{})
   });
   let data=null;
