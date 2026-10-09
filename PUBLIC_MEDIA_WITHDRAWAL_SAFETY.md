@@ -35,6 +35,10 @@ La retirada de la fila de la base de datos evita su presentación normal en el f
 - Ante limpieza incompleta, la interfaz avisa: publicación retirada, pero no se pudo confirmar la eliminación de todos los archivos, y presenta `info.origencultural@gmail.com`.
 - Pruebas unitarias simuladas cubren: no sesión, otro autor, DELETE de cero filas, limpieza de medios de autor, `image_url` heredado, URLs externas, fallo de Storage y espera real de la resolución. **No prueban un objeto real ni invalidación de CDN.**
 
+### Ajuste de seguridad del cliente (9 octubre 2026)
+
+El método `removeOwnMedia` ahora requiere que la respuesta de Storage incluya el identificador exacto del archivo solicitado entre los objetos eliminados. Una respuesta exitosa pero vacía, sin error, o con otro archivo deja la limpieza en estado no confirmado. El flujo de post y los de limpieza auxiliar reportan esa incertidumbre. Se añadieron pruebas simuladas para ambos casos. Esto **no demuestra** que una URL pública haya quedado inaccesible y tampoco sustituye una cola de reintentos ni auditoría del servidor. Comprobar en staging con medios sintéticos antes del piloto.
+
 ## 4. Procedimiento propuesto para retirada administrativa
 
 **No implementar en Production sin aprobación, proyecto staging aislado y revisión de permisos.**
