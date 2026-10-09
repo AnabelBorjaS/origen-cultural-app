@@ -34,12 +34,16 @@ Incluye:
 - ES/EN.
 
 No incluye:
-- pagos;
+- pagos, suscripciones o cuotas de acceso (registrarse y mantener perfil es gratuito);
+- promociones pagadas de perfiles/publicaciones o anuncios comercializados;
+- seguimiento de afiliación, comisiones de ventas o enlaces remunerados con medición;
 - reservas;
 - mensajería privada;
 - payouts;
-- marketplace;
+- marketplace o checkout interno;
 - verificación automática.
+
+**Modelo aprobado para planificar, no habilitado:** primero promoción opcional pagada de contenido claramente identificado como patrocinado; después, posibles comisiones contractuales por ventas reales atribuidas en las webs oficiales de los Agentes Culturales. Ver `BUSINESS_MODEL.md`. El reparto 80/20 anterior ya no es la política comercial vigente.
 
 
 ## Security & abuse
