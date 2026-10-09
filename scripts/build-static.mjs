@@ -91,6 +91,19 @@ console.log(stagingBackendConnected
   ? 'Staging bundle: separate Supabase project configured (public key not logged).'
   : 'Staging bundle: VISUAL PREVIEW ONLY; no Supabase Auth or database available.');
 
+// A visual-only preview must be visibly labelled, not disguised as a live
+// community where registration or uploads are available.
+if (!stagingBackendConnected) {
+  const indexPath = path.join(out, 'index.html');
+  const originalHTML = fs.readFileSync(indexPath, 'utf8');
+  if (!originalHTML.includes('<body>')) rejectStagingBuild('Cannot label offline staging HTML safely.');
+  fs.writeFileSync(indexPath, originalHTML.replace('<body>', `<body>
+  <div id="staging-preview-banner" role="status">
+    Vista previa interna / Internal preview — sin base de datos de pruebas conectada.
+    Registro y publicaciones reales deshabilitados. / No live accounts or uploads.
+  </div>`));
+}
+
 const turnstileSiteKey = String(process.env.ORIGEN_TURNSTILE_SITE_KEY || '').trim();
 fs.writeFileSync(
   path.join(out, 'runtime-config.js'),
