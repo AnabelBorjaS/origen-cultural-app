@@ -469,3 +469,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Aislamiento comprobado por referencia distinta de Production `xwkjvoyicrrwjybjolld`; inicio con **0 migraciones**, **0 tablas públicas de aplicación** y **0 avisos Security Advisor**.
 - ⚠️ Staging aún **vacío**, no se han aplicado las 14 migraciones ni configurado Auth, Storage, Cloudflare Access o pruebas reales. No se creó URL web de staging ni cuentas de prueba.
 - ⛔ Sigue NO-GO para usuarios y merge público; Production permanece sin cambios.
+
+## Esquema Staging instalado y comparado — 9 octubre 2026
+
+- ✅ **14/14 migraciones aplicadas** al Supabase aislado `ORIGEN Cultural Staging`. Estado inicial de aplicación: 11 tablas públicas, 33 políticas, 14 funciones privadas y 3 buckets; comparación de métricas con Production coincide. RLS habilitado en todas las tablas públicas; 0 alertas Security Advisor.
+- ✅ **0 usuarios, 0 publicaciones** en Staging al finalizar. Production sin cambios; coste de la nueva instancia $0/mes confirmado.
+- ⚠️ Todavía no probados Auth, dos cuentas A/B, consentimientos, Storage real, publicación/retirada ni una web protegida. Los P0 #5–#8 y #12 siguen abiertos: **NO-GO** para invitaciones al piloto y merge público.
