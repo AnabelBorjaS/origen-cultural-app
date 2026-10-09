@@ -3182,10 +3182,19 @@
         confirmBtn.disabled = true;
         confirmBtn.textContent = state.lang === 'es' ? 'Eliminando…' : 'Deleting…';
       }
+      const initiatingUserId = me()?.id || null;
       try {
-        await window.ORIGEN_API.deletePost(postId);
+        const deletion = await window.ORIGEN_API.deletePost(postId);
+        // Never show account A's deletion result in account B's interface.
+        if (!initiatingUserId || me()?.id !== initiatingUserId) return;
         close();
-        showToast(state.lang === 'es' ? 'Publicación eliminada.' : 'Post deleted.');
+        if (deletion?.mediaCleanup === 'incomplete') {
+          showToast(state.lang === 'es'
+            ? 'Publicación retirada. No se pudo confirmar la eliminación de todos sus archivos públicos; contacta a info.origencultural@gmail.com.'
+            : 'Post removed. Some public media may still be accessible; contact info.origencultural@gmail.com.', 11000);
+        } else {
+          showToast(state.lang === 'es' ? 'Publicación eliminada.' : 'Post deleted.');
+        }
         render(currentRoute(), false);
       } catch (error) {
         if (status) status.textContent = error?.message || (state.lang === 'es'
