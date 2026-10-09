@@ -1,6 +1,9 @@
 -- ORIGEN Cultural — cultural publication rights, staged backend proposal
--- P0 #7. REVIEW ONLY. NOT APPLIED to Production or any database.
--- Target: NEW, ISOLATED Supabase staging only, following schema/backups/legal review.
+-- P0 #7. REVIEW ONLY FOR PRODUCTION. Already APPLIED IN ISOLATED STAGING
+-- on 2026-10-09 under migration name staging_cultural_post_rights_atomic_record_test_only.
+-- DO NOT REAPPLY to the same Staging project: this candidate is not idempotent.
+-- Target used: ISOLATED Supabase Staging egujmptgnrpajgfpjjxu.
+-- No Production application; pending independent Auth/RLS/Storage and legal review.
 -- Do not put this under supabase/migrations until approved and staging-tested.
 -- Drafted against read-only public.cultural_posts audit of 2026-10-09.
 --
@@ -21,7 +24,7 @@
 -- * full RLS/GRANT/storage safety and rollback review;
 -- * future edit-and-reattest workflow (currently edits fail closed).
 --
--- STAGING-ONLY SQL CANDIDATE:
+-- ARCHIVED STAGING-ONLY SQL CANDIDATE (already applied once; DO NOT RE-RUN):
 begin;
 
 -- Existing editorial content is exempt from USER attestation, not from rights
