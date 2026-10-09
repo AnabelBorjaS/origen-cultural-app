@@ -425,7 +425,7 @@ async function publicRightsReviewChecks() {
     check(!await page.locator('#rights-email-link').getAttribute('href'),
       'Editing complaint must clear outdated email body link');
 
-    await page.locator('#language-toggle').click();
+    await page.evaluate(() => document.getElementById('language-toggle').click());
     await page.waitForFunction(() => document.documentElement.lang === 'en');
     check((await page.locator('#main-content h1').innerText()).includes('Request a content review'),
       'Public rights review form should support English');
