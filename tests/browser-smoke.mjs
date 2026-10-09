@@ -460,6 +460,14 @@ async function publicCulturalStoryChecks() {
           }];
           return api.cache.publicProfiles;
         };
+        api.listComments = async id => {
+          api.cache.comments = [{
+            id: 'story-comment-qa', post_id: id, user_id: creatorId,
+            body: 'Gracias por compartir esta historia',
+            created_at: new Date().toISOString()
+          }];
+          return api.cache.comments;
+        };
         api.getPublicPost = async id => {
           window.__storyQA.reads.push(id);
           if (!window.__storyQA.exists || id !== postId) return null;
@@ -493,6 +501,11 @@ async function publicCulturalStoryChecks() {
     const copied = await page.evaluate(() => window.__storyQA.copied);
     check(copied.endsWith('#publicacion/' + postId) && !copied.includes('#feed'),
       'Share action copies URL for the exact post, not generic feed');
+
+    await page.locator('#public-story-content [data-tcoms]').click();
+    await page.locator('#public-story-content .com-bubble').waitFor({ timeout: 7000 });
+    check((await page.locator('#public-story-content .com-bubble').innerText()).includes('Gracias por compartir'),
+      'Comments can be opened on a permalink not present in the paginated feed cache');
 
     check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
       'Public story must not overflow mobile viewport');
