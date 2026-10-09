@@ -1,0 +1,64 @@
+{
+  "project": "ORIGEN Cultural Production",
+  "snapshot_date": "2026-10-09",
+  "source": "Supabase list_migrations (read-only)",
+  "note": "Migration history metadata only; not an audited database schema, not permission to access or clone real Production data.",
+  "versions": [
+    {
+      "version": "20261006053729",
+      "name": "initial_origen_beta_schema"
+    },
+    {
+      "version": "20261006053813",
+      "name": "harden_security_and_indexes"
+    },
+    {
+      "version": "20261006072529",
+      "name": "align_webapp_social_beta_model"
+    },
+    {
+      "version": "20261006072749",
+      "name": "record_legal_acceptance_at_signup"
+    },
+    {
+      "version": "20261006080924",
+      "name": "allow_personal_social_posts_and_video_media"
+    },
+    {
+      "version": "20261006082339",
+      "name": "abuse_prevention_rate_limits_and_content_bounds"
+    },
+    {
+      "version": "20261007003848",
+      "name": "add_cultural_post_purpose"
+    },
+    {
+      "version": "20261007125206",
+      "name": "protect_cultural_profile_privileged_fields"
+    },
+    {
+      "version": "20261007135902",
+      "name": "harden_claim_report_insert_integrity_and_grants"
+    },
+    {
+      "version": "20261007140601",
+      "name": "harden_social_privileged_fields_and_grants"
+    },
+    {
+      "version": "20261007140657",
+      "name": "scope_social_interactions_to_published_content"
+    },
+    {
+      "version": "20261007141841",
+      "name": "limit_public_profiles_to_creators"
+    },
+    {
+      "version": "20261007143630",
+      "name": "restrict_touch_updated_at_execution"
+    },
+    {
+      "version": "20261007144230",
+      "name": "restrict_beta_post_creation_to_creators"
+    }
+  ]
+}
