@@ -2,6 +2,16 @@
 
 Última actualización: 9 de octubre de 2026
 
+## Auditoría P0 de retirada de material cultural y multimedia — 9 Oct 2026
+
+- ✅ Auditoría **solo lectura** en Supabase Production: `cultural_posts` tiene RLS y la lectura pública se condiciona a `is_published`; **0 publicaciones existentes** al momento del conteo.
+- ⚠️ El bucket de Storage `post-media` es **público**. Ocultar el post o deshabilitar el permalink **no revoca** por sí mismo las URLs de sus videos/fotos que alguien ya haya copiado.
+- ✅ En rama beta, `deletePost` espera la limpieza de `media_urls` e `image_url` heredado y retorna `mediaCleanup` completo/incompleto/no-media. La UI notifica cuando no se pudo confirmar retirada de todos los archivos públicos; no divulga el aviso de otra cuenta tras cambio de sesión.
+- ✅ Pruebas de cliente en `tests/client-ownership.mjs` incluyen Storage fallido, medios externos/no gestionados, imágenes heredadas, archivos repetidos y operaciones asíncronas todavía pendientes. No hubo operaciones de eliminación reales.
+- ✅ Nuevo `PUBLIC_MEDIA_WITHDRAWAL_SAFETY.md` documenta limitaciones CDN/URLs, prueba real requerida, procedimiento de contención, retirada y trazabilidad administrativa.
+- ⛔ **P0 issue #12 abierto**, coordinado con #8. Aún no hay retirada administrativa segura, cola de limpieza de servidor, bitácora de moderación ni pruebas de objetos reales con dos cuentas. Public Beta: **NO-GO**.
+- ⛔ Sin cambios de tablas, medios, permisos ni costos en Production; sin merge ni despliegue.
+
 ## Enlaces directos para compartir historias culturales — 9 Oct 2026
 
 - ✅ En el código de la rama beta, cada publicación **pública** con UUID admite una URL individual `#publicacion/<UUID>`; el botón «Compartir» ya no apunta al feed genérico. Se usa compartición nativa cuando está disponible y, si no, copia del enlace con mensajes ES/EN.
