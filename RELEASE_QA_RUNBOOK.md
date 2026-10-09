@@ -43,6 +43,24 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 
 Estas pruebas automatizadas no prueban la política real de Supabase ni que proveedores sociales generen previsualizaciones dinámicas. Mantener **Public Beta NO-GO** hasta completar seguridad, Consentimiento y QA real.
 
+## P0 — Media pública y retirada completa (issues #8 y #12)
+
+**Hecho auditado:** el bucket `post-media` de Supabase Production es público. Despublicar una fila con `is_published=false` no elimina la URL pública del objeto. **Esto exige validación real y un protocolo operativo antes del piloto.**
+
+| Prueba | Resultado exigido | Estado |
+|---|---|---|
+| Cuenta A elimina post propio con imagen/video de `post-media` | Se borra el post A y se confirma eliminación Storage del archivo exacto | ✅ Node mock; ⬜ staging Storage real |
+| `media_urls` + `image_url` heredado | Se rastrean ambos, sin borrar dos veces el mismo archivo | ✅ Node mock; ⬜ staging |
+| Storage falla tras borrar el post | La UI advierte retirada parcial; incidente queda pendiente de atención humana | ✅ Node mock; ⬜ flujo admin real |
+| Cuenta A intenta eliminar medio B | RLS y propiedad de Storage lo bloquean, sin filtrar medios | ✅ Node mock; ⬜ staging A/B |
+| Moderador recibe solicitud legítima | Puede ocultar, retirar medios autorizados, registrar decisión y permitir revisión | ⬜ P0 #8/#12 |
+| Anónimo abre permalink de publicación oculta | No recibe título, medio ni perfil relacionado no publicado | ✅ mock; ⬜ RLS real |
+| Alguien conoce URL pública de medio de post oculto | Se reconoce que puede seguir descargando hasta borrar objeto | ✅ riesgo documentado; ⬜ prueba real |
+| Medio borrado y copia en caché | Se verifican efectos CDN y se explica imposibilidad de retirar copias externas | ⬜ staging / políticas |
+| Usuarios no reportan voluntariamente | Sigue habiendo canal privado de retirada y protección a menores | ⬜ moderación operativa |
+
+**Nunca declarar «eliminado por completo de Internet» ni prometer revocación inmediata de cachés.** Ver `PUBLIC_MEDIA_WITHDRAWAL_SAFETY.md`. El release sigue NO-GO.
+
 ## P0 — Seguridad del reporte autenticado
 
 | Prueba | Resultado esperado | Estado |
