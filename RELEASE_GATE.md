@@ -151,3 +151,11 @@ Public beta remains NO-GO until:
 - [ ] **NO-GO P0 #6**: instalar, habilitar y probar el hook de Auth de consentimiento legal y el registro de versiones fijadas por servidor en Staging; la función de hook no existe al último audit read-only.
 - [ ] **NO-GO P0 #5**: desplegar frontend Staging aislado detrás de Access y confirmar HTTPS/redirecciones sin conectar a Production.
 
+## P0 — Verificador A/B seguro preparado, no ejecutado
+
+- [x] Verificador `scripts/staging-auth-qa-readonly.mjs` y documentación `STAGING_AB_RLS_READONLY_QA.md` en beta: acceso solo a Supabase Staging concreto, solo login de dos usuarios ficticios **ya existentes**, y lecturas REST de perfil/aceptación privada, guardados privados, post no publicado y bitácora cultural. No crea/modifica datos.
+- [x] Tests offline de aislamiento de URL de producción, clave y fixtures en Quality Gate.
+- [x] Predicado **propuesto** de aceptación legal validado por SQL SELECT-only en Staging, **8/8 PASS**; test robusto ante `NULL`, sin habilitar un hook.
+- [ ] Antes de ejecutar la QA real: configurar y validar consentimiento Auth del servidor (#6), preparar dos cuentas y fixtures ficticios autorizados únicamente en Staging, mantener acceso protegido, luego ejecutar `npm run qa:staging:auth:readonly` con secretos efímeros fuera del repo.
+- [ ] El script de solo lectura **NO sustituye** pruebas adversariales con INSERT/UPDATE, atomicidad de eventos culturales, recuperación de cuentas, retirada Storage, moderación y revisión legal.
+
