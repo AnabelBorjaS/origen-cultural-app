@@ -85,3 +85,12 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 - Existing post ownership/editorial/counter restrictions remain in the same INSERT policy.
 - The rule aligns the database with the current Beta product model: Cultural Agents publish; Explorers discover and interact.
 - Supabase Security Advisor after migration: **0 active security lints**.
+
+## Auditoría read-only de permisos Data API — 9 October 2026
+
+- En Supabase Production se ejecutó una comprobación SELECT-only de permisos por tabla para `anon` y `authenticated` junto con `relrowsecurity`. **11/11 tablas públicas: PASS** con la línea base declarada. No se creó, modificó ni eliminó ningún dato.
+- Comprobación reusable versionada: `supabase/proposals/ORIGEN_DATA_API_GRANTS_RLS_AUDIT_READ_ONLY.sql`. Ejecutar tras cambios de esquema, permisos, políticas o al preparar un release.
+- Supabase Security Advisor: **0 lints** en esta lectura. Los avisos de rendimiento sobre índices no utilizados son informativos en esta base todavía sin actividad de usuarios; no eliminarlos por ese motivo.
+- **Límites de la evidencia:** coincidencia de GRANT + RLS habilitado **no comprueba** eficacia de políticas ante dos cuentas reales, ejecución de funciones, Storage, consentimiento exigido por Auth, autorizaciones culturales, retirada de medios ni moderación.
+- La documentación actual de Supabase está pasando de privilegios automáticos amplios a concesiones explícitas para nuevos objetos. Toda migración nueva debe declarar y revisar `GRANT/REVOKE` y su política RLS deliberadamente; no dar permisos por defecto a tablas sensibles. Ver https://supabase.com/docs/guides/api/securing-your-api
+- **Estado GO/NO-GO sin cambios: NO-GO.** No habilitar registro público, no fusionar PR #3 y no conectar staging al backend de Production.
