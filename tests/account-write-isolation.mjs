@@ -96,6 +96,15 @@ await assert.rejects(
   api.createPost({ title: 'Craft', type: 'photo', rightsAcknowledged: false, culturalAcknowledged: true }, A),
   /Confirma derechos de contenido/i
 );
+// Reject truthy lookalikes too: only literal boolean true is accepted.
+await assert.rejects(
+  api.createPost({ title: 'Craft', rightsAcknowledged: 'true', culturalAcknowledged: true }, A),
+  /Confirma derechos de contenido/i
+);
+await assert.rejects(
+  api.createPost({ title: 'Craft', rightsAcknowledged: true, culturalAcknowledged: 1 }, A),
+  /Confirma derechos de contenido/i
+);
 assert.equal(postWrites.length, 0, 'Incomplete declarations cannot issue a post insert');
 console.log('✓ Client API blocks incomplete cultural rights declarations before database writes');
 
@@ -110,6 +119,10 @@ const pendingPost = api.createPost({
 }, A);
 assert.equal(postWrites.length, 1);
 assert.equal(postWrites[0].row.author_id, A);
+assert.equal(postWrites[0].row.rights_acknowledged, true, 'The staged DB needs an explicit rights boolean');
+assert.equal(postWrites[0].row.cultural_acknowledged, true, 'The staged DB needs an explicit cultural boolean');
+assert.equal(postWrites[0].row.rights_statement_version, undefined, 'Document versions must be set by the server');
+assert.equal(postWrites[0].row.cultural_statement_version, undefined, 'Cultural versions must be set by the server');
 setAccount(B);
 postResolve({ data: { id: 'post-qa', author_id: A }, error: null });
 const savedPost = await pendingPost;
