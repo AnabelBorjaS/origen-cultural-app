@@ -4,6 +4,8 @@ Status: planned, not yet deployed
 Cost target: **AUD/USD $0 hosting during controlled beta**
 Last reviewed: 9 October 2026
 
+**Verified faster path (9 Oct):** Supabase organization `ORIGEN Cultural` reports `free`, and the provider `get_cost(project)` returns **$0/month** for a second project in that organization. Requires explicit founder selection/approval and final $0 confirmation; no project has been created. All 14 historical migrations have now been recovered to GitHub from read-only migration history, but no local/staging replay or equivalence test has yet run. `npm run preflight:staging:schema:strict` validates file-presence parity only, not database correctness.
+
 ## Decision
 
 Use a dedicated HTTPS staging deployment before any migration of `origencultural.com`.

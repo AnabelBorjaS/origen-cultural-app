@@ -20,7 +20,7 @@ Piloto privado con hasta **10 Agentes Culturales voluntarios de Ecuador** y Expl
 
 | Orden | Entregable y criterio verificable | Bloqueo/estado |
 |---|---|---|
-| 0 | **Restaurar historial de migraciones sin datos reales.** En Supabase Production constan 14 migraciones, pero GitHub sólo versiona las últimas 7. Reconstruir/importar la línea base exacta y revisar funciones, RLS, buckets y Auth de forma reproducible. Pasar `npm run preflight:staging:schema:strict` antes de bootstrap. | **P0 abierto: faltan 7** |
+| 0 | **Restaurar historial de migraciones sin datos reales.** En Supabase Production constan 14 migraciones. El 9 de octubre se recuperaron **los 7 SQL históricos ausentes** desde el historial de migraciones (lectura solamente), por lo que el inventario versionado es ahora **14/14**. Resta ejecutar la reconstrucción en un entorno aislado y comparar funciones, RLS, buckets, triggers y Auth. Pasar `npm run preflight:staging:schema:strict` antes de bootstrap. | **Inventario 14/14 recuperado; reconstrucción real aún sin validar** |
 | 1 | **Staging aislado** Free, sin acceso a Production. Verificar explícitamente el coste $0 y la organización antes de crear. Credenciales publicables separadas; hosting web protegido y build aislado; pruebas de aislamiento sobre assets servidos. | Issue #5 abierto |
 | 2 | **Controles ineludibles del servidor**: consentimiento legal al crear cuenta (#6), declaraciones + registro atómico de derechos culturales al publicar (#7), sin falsificar roles. Propuestas SQL **solo revisión**, no ejecutar en Production. | Issues #6 y #7 abiertos |
 | 3 | **Protección comunitaria**: canal real de moderación/apelaciones y retirada de medios públicos con trazabilidad (#8 y #12), privacidad y eliminación de cuenta. | Issues #8 y #12 abiertos |
@@ -44,3 +44,10 @@ Mientras se recupera el esquema (0), avanzar por separado en los textos de onboa
 
 ## Próxima aprobación concreta
 La fundadora debe autorizar expresamente **crear `ORIGEN Cultural Staging` en la organización `ORIGEN Cultural`, con importe comprobado de $0/mes y exclusivamente plan Free**. Antes de cualquier creación, volver a confirmar elegibilidad y mostrar coste exacto; detenerse si deja de ser $0. No desplegar ni poblar cuentas reales automáticamente.
+
+## Actualización del sprint — 9 octubre 2026
+
+- ✅ **14/14 migraciones recuperadas** del historial SQL original mediante SELECT, sin clonar datos reales ni ejecutar SQL de cambios en Production; revisión básica de patrones sensibles antes de escribir al repositorio. Commit `f6a67f5a72c4dceec81cc9bbb9de5affe06deb2b`.
+- ✅ Quality Gate exige ahora `npm run preflight:staging:schema:strict` antes de aprobar el artefacto estático: perder una migración histórica hace fallar el proceso.
+- ⚠️ Restaurar los ficheros no significa que el esquema local se haya reconstruido: no se ejecutaron migraciones en staging, Auth ni Storage, y deben probarse cuidadosamente antes de invitar usuarios.
+- **Próximo único bloqueo de infraestructura:** aprobación explícita para crear `ORIGEN Cultural Staging` en organización `ORIGEN Cultural`, con tarifa comprobada **$0/mes** bajo Free y sin añadir complementos de pago.

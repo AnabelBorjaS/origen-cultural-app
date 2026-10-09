@@ -1,5 +1,13 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Ruta rápida: historial de esquema recuperado — 9 Oct 2026
+
+- ✅ Restauradas desde el historial interno de migraciones de Supabase (SELECT-only) las **7 migraciones antiguas** que faltaban en GitHub. El repositorio beta incluye ahora 14/14 archivos históricos; las consultas no modificaron Production.
+- ✅ Control de inventario `scripts/staging-schema-preflight.mjs`; el comando estricto se integra al Quality Gate para bloquear pérdidas futuras de la línea base versionada.
+- ⚠️ No equivale a migraciones ejecutadas ni a una instalación de staging: siguen pendientes proyecto aislado, reproducción y pruebas reales de schema, RLS, Auth, Storage, derechos y moderación.
+- ✅ Coste de segundo proyecto **$0/mes**, verificado para organización Supabase `ORIGEN Cultural` plan Free, pero pendiente aprobación de creación. Ni staging ni suscripciones creadas.
+
+
 ## Actualización de confirmación de borrado — beta, 9 octubre 2026
 
 - La limpieza de un archivo ahora exige que la API de Storage confirme el nombre exacto del objeto eliminado. Una respuesta vacía sin error se considera inconclusa.

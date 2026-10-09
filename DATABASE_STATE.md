@@ -35,7 +35,7 @@ As of 7 October 2026:
 
 Database changes made in Production must be represented in GitHub before release. The newest privileged-field migration is stored under `supabase/migrations/`.
 
-Older migrations predate this repository migration folder and remain recorded in Supabase's migration history. They should be pulled/reconstructed into repository migration files before the project moves to a mature multi-environment deployment workflow.
+The seven oldest migrations were recovered on 9 October 2026 by reading `supabase_migrations.schema_migrations.statements` without writing to Production. GitHub now tracks **all 14 historical migration SQL files** under `supabase/migrations/` (commit `f6a67f5a72c4dceec81cc9bbb9de5affe06deb2b`). This is historical-file parity, **not** a successful staging replay or proof of database equivalence. Before use, validate local/staging migration replay, functions, Auth, RLS, grants, Storage, and security evidence.
 
 Do not treat the legacy root `schema.sql` as a complete representation of current Production.
 
