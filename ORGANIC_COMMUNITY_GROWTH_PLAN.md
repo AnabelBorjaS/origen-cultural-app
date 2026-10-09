@@ -94,7 +94,7 @@ Ninguna de estas metas se ha alcanzado ni medido todavía.
 ## 7. Backlog de producto por impacto
 
 **P1 — antes de abrir orgánicamente**
-- Compartir una **publicación concreta** mediante enlace directo que abra su historia original, no solamente la página general del feed. Debe funcionar sin sesión para contenido público y respetar retirada/privacidad; implementar tras revisar API de carga individual y diseño de rutas.
+- **Implementado en código beta, pendiente de prueba real aislada:** compartir una **publicación concreta** como `#publicacion/<UUID>`, con apertura anónima desde un enlace propio, consulta filtrada `id + is_published=true` y estados «Historia no disponible». No depende del feed paginado. Antes de lanzar se debe verificar RLS y moderación desde staging, enlaces en teléfonos reales y permisos culturales en servidor.
 - Presentar correctamente nombre, contexto, territorio, derechos y Agente autor en la experiencia compartida.
 - CTA discreto de **seguir, guardar o explorar** que se entienda en móvil. Sin muros artificiales para leer contenido público.
 - Moderación/reportes accesibles y autorizaciones culturales validadas.
