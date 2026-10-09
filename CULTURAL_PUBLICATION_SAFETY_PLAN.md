@@ -16,7 +16,7 @@ No se debe interpretar la confirmación de una casilla como prueba independiente
 - En el editor de Agente Cultural se solicitan **dos confirmaciones independientes**: derecho o permiso sobre material, fotografías, videos y testimonios; y autorización pertinente para conocimiento cultural restringido o sujeto a consentimiento comunitario.
 - Los cambios posteriores de contenido o archivo **invalidan las confirmaciones anteriores** en el borrador.
 - El cliente rechaza iniciar una publicación si falta alguna confirmación, antes de subir archivos.
-- La API de navegador también bloquea llamadas accidentales a `createPost` sin ambos valores.
+- La API de navegador también bloquea llamadas accidentales a `createPost` sin ambos valores y los prepara para el esquema de staging **todavía no instalado**.
 - **Limitación crítica:** estas son barreras de experiencia de usuario, no reglas ineludibles del servidor. No persisten por sí solas una prueba de autorización, no verifican a quien declara y no bloquean necesariamente una llamada directa a la base de datos.
 
 ## 3. Backend propuesto (solo en un entorno de pruebas separado)
@@ -77,7 +77,7 @@ Utilizar **cuentas y datos sintéticos** para todas las pruebas. No ejecutar mig
 - Su política RLS `creator posts own insert` exige identidad/propiedad, rol `creator`, no editorialidad, contadores iniciales y propiedad del perfil vinculado; **no exige las dos declaraciones**.
 - El rol `authenticated` tiene permiso `INSERT` en la tabla: una petición directa a Data API puede omitir las confirmaciones del navegador y satisfacer la política actual.
 - Los triggers existentes `cultural_posts_spam_guard`, `cultural_posts_protect_privileged_fields` y `cultural_posts_touch_updated_at` **no registran ni verifican** declaraciones culturales. La validación de frecuencia de publicación no sustituye consentimiento.
-- El cliente `createPost` revisa `rightsAcknowledged === true` y `culturalAcknowledged === true` pero los valores **no se envían** a `cultural_posts`; por tanto, no constituyen evidencia persistente ni protección del backend.
+- El cliente beta `createPost` comprueba ambos valores booleanos estrictos y, desde esta revisión, envía `rights_acknowledged=true` y `cultural_acknowledged=true` al INSERT. **Production todavía no tiene esas columnas**, y ni la transmisión ni los tests mock aportan protección o evidencia persistente hasta activar el control del servidor en staging.
 
 ### Diseño recomendado para implementar SOLO en un Supabase staging aislado
 
