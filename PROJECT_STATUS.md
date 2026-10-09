@@ -23,6 +23,16 @@
 - ⚠️ **Falta aún QA con datos reales en staging aislado**: RLS desde anónimo y cuentas A/B, publicación oculta/retirada, permisos de contenido, dispositivos reales, metadatos de vista previa en mensajería/redes y casos de moderación. Los enlaces con `#` no garantizan tarjetas OG dinámicas. La issue **#10 permanece abierta**.
 - ⛔ Sin publicar el cambio en `origencultural.com`, sin merge y sin modificaciones a Supabase Production.
 
+## P0 · Staging sin acceso accidental a Production — 9 Oct 2026
+
+- ✅ Auditoría de código detectó que el cliente fuente utiliza la URL y clave publicable de **ORIGEN Cultural Production**. Una web con URL `pages.dev` no implica base de datos independiente.
+- ✅ Ahora `npm run build:static` reemplaza el backend en `dist/`: por defecto genera una preview visual inalcanzable desde Supabase, con aviso visible de que no permite registros ni publicaciones reales.
+- ✅ Una instancia de pruebas con Auth real solo se construye cuando `ORIGEN_STAGING_SUPABASE_URL` y `ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY` están juntas, corresponden a un proyecto distinto de Production y superan validaciones de URL/clave publicable. La compilación aborta y elimina artefactos inseguros ante errores.
+- ✅ Se añadieron pruebas negativas en `tests/staging-build-isolation.mjs`, además de comprobación adicional de aislamiento del asset desplegado en `scripts/verify-staging.mjs`.
+- ✅ El checklist `STAGING_PLAN.md` y GitHub issue #5 fueron actualizados con los pasos exactos para el entorno independiente.
+- ⚠️ **Todavía no hay proyecto de Supabase staging verificado**; la única instancia visible en la conexión es Production. Ningún dato de producción se modificó. **No hay staging público desplegado**.
+- ⛔ La publicación o merge sigue NO-GO hasta completar consentimiento legal server-side, derechos culturales auditables, moderación y QA con dos cuentas reales en staging aislado, detrás de Access.
+
 ## Conciliación de identidad digital 2026–2030 — 9 Oct 2026
 
 - ✅ En la rama beta se aplicó el negro de referencia `#0D0D0D` al token CSS `--black`, coherente con el color del manifiesto PWA y de la barra del navegador.
