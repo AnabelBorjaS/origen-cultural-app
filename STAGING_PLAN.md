@@ -185,3 +185,11 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - ⚠️ Las comparaciones de conteos **no validan equivalencia completa**, permisos de un usuario real, flujos Auth ni políticas Storage con dos usuarios. Los 3 buckets son públicos como en Production: el P0 de retirada de medios persiste.
 - ⛔ Propuestas de consentimiento legal y derechos culturales **NO aplicadas**. Antes de usarlas hay que revisar y probar Auth/server checks/rollback en Staging. Sin hosting web, Cloudflare Access ni cuentas reales creadas.
 - ⛔ `origencultural.com` y Supabase Production **sin cambios**. Release NO-GO.
+
+## Derechos culturales instalados en STAGING — 9 Oct 2026
+
+- ✅ En **ORIGEN Cultural Staging** (`egujmptgnrpajgfpjjxu`) se aplicó la propuesta `ORIGEN_CULTURAL_POST_RIGHTS_STAGING_REVIEW_ONLY.sql` (sin envoltura BEGIN/COMMIT para la herramienta de migración), con nombre de ejecución `staging_cultural_post_rights_atomic_record_test_only`. **No se aplicó a Production**.
+- ✅ Comprobación SELECT-only: columnas `rights_acknowledged` y `cultural_acknowledged` presentes, tabla privada `private.cultural_post_rights_events` existente con RLS, triggers `origen_post_rights_after_insert` y `origen_post_rights_before_update` activos; el rol `authenticated` no posee SELECT sobre la bitácora.
+- ℹ️ Security Advisor indica **1 aviso informativo** `rls_enabled_no_policy` sobre la tabla **privada sin políticas públicas**; es restricción deliberada de acceso, no prueba de vulnerabilidad. Ver https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+- ⚠️ Faltan **pruebas de integración reales con dos cuentas sintéticas**, casos de POST válido/inválido vía Data API, rollback al fallar la bitácora, edición, eliminación y revisión legal de retención. Hasta entonces P0 #7 sigue ABIERTO y el lanzamiento sigue NO-GO.
+- ⚠️ Se añadió una migración de pruebas en Staging con versión propia. Antes de hacer futuros despliegues es obligatorio revisar la concordancia de historial y generar una migración versionada aprobada. La propuesta no debe tratarse como lista para Production.
