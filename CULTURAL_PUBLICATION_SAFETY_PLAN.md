@@ -68,3 +68,25 @@ Utilizar **cuentas y datos sintéticos** para todas las pruebas. No ejecutar mig
 - Validación legal por jurisdicción pertinente; no existe una garantía razonable de que una sola cláusula cubra automáticamente todos los países.
 
 **No implementado:** este documento no constituye una migración, un registro real de permisos o un dictamen legal. La versión pública no debe anunciar esas capacidades como activas.
+
+## 7. Diagnóstico técnico comprobado en Production (solo lectura, 9 Oct 2026)
+
+**Resultado: P0 confirmado, sin cambios de datos ni esquema.** Se inspeccionaron las columnas, GRANT, reglas RLS y triggers de `public.cultural_posts` mediante consultas informativas, sin crear usuarios, posts o archivos.
+
+- `cultural_posts` **no tiene** columnas de declaración de derechos o autorización cultural, versiones de aceptación ni relación con un registro de auditoría por publicación.
+- Su política RLS `creator posts own insert` exige identidad/propiedad, rol `creator`, no editorialidad, contadores iniciales y propiedad del perfil vinculado; **no exige las dos declaraciones**.
+- El rol `authenticated` tiene permiso `INSERT` en la tabla: una petición directa a Data API puede omitir las confirmaciones del navegador y satisfacer la política actual.
+- Los triggers existentes `cultural_posts_spam_guard`, `cultural_posts_protect_privileged_fields` y `cultural_posts_touch_updated_at` **no registran ni verifican** declaraciones culturales. La validación de frecuencia de publicación no sustituye consentimiento.
+- El cliente `createPost` revisa `rightsAcknowledged === true` y `culturalAcknowledged === true` pero los valores **no se envían** a `cultural_posts`; por tanto, no constituyen evidencia persistente ni protección del backend.
+
+### Diseño recomendado para implementar SOLO en un Supabase staging aislado
+
+1. **Contrato obligatorio**: campos booleanos de declaración explícita, versión legal/cultural asignada por el **servidor**, hora del servidor e identidad derivada de `auth.uid()`; nunca aceptar `author_id` u otra identidad como prueba suministrada por el cliente. El control de declaración es una manifestación del usuario, **no** verificación externa del permiso.
+2. **Control ineludible**: rechazar desde la base de datos cualquier `INSERT` de publicación de usuario con declaración ausente, incompleta o falsa, incluso si la petición evita completamente `app.js`. Conservar el control RLS de autor, rol y propiedad del perfil.
+3. **Atomicidad**: validar declaración y crear registro privado de evento dentro de la **misma transacción** del INSERT del post. Un trigger interno puede ser candidato, siempre que se revise su propietario, privilegios, búsqueda de esquemas, eventuales políticas RLS y errores; no conceder ejecución directa a `anon`/`authenticated` ni crear funciones elevadas expuestas vía Data API. Si falla el evento, abortar todo el INSERT.
+4. **Auditoría protegida**: ubicar los eventos en un esquema no expuesto, impedir INSERT/UPDATE/DELETE por roles de navegador y registrar cambios por *eventos adicionales*, no sobreescritura. Definir retención y borrado de datos personales antes de aplicar; el registro de una declaración **no** equivale a autorización comunitaria validada.
+5. **Actualizaciones y retirada**: decidir cómo se invalida o renueva la declaración cuando cambian texto/medios, cómo se trata contenido editorial heredado y cómo se retira un post sin destruir inadvertidamente evidencias requeridas ni incumplir solicitudes de privacidad.
+6. **Pruebas de rechazo**: insertar vía Data API sin campos, solo un campo, `false`, `null`, una versión inventada, otro `author_id`, un Explorador, una referencia cultural ajena y una publicación bien declarada; comprobar que solo la última publicación autorizada crea **post + evento** y que los fallos producen rollback. Verificar que otros usuarios no puedan consultar ni alterar eventos.
+7. **Puerta de despliegue**: primero Supabase staging separado, usuarios ficticios, prueba adversarial A/B, revisión legal y respaldo; **después** considerar migración a Production con autorización expresa. No publicar beta basándose solo en casillas UI, Quality Gate o CodeQL.
+
+**Fuentes técnicas:** [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [triggers](https://supabase.com/docs/guides/database/postgres/triggers), [funciones seguras](https://supabase.com/docs/guides/database/functions). Este apartado es diagnóstico y especificación de revisión, **no una migración ejecutable ni evidencia de funcionamiento en staging**.
