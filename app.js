@@ -379,7 +379,7 @@
             const cleanup = await Promise.allSettled(
               uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))
             );
-            if (cleanup.some(item => item.status === 'rejected')) {
+            if (cleanup.some(item => item.status !== 'fulfilled' || item.value !== true)) {
               console.warn('[ORIGEN] Registration media cleanup incomplete.');
             }
           }
@@ -2887,7 +2887,7 @@
       } catch (error) {
         if (uploaded.length) {
           Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))).then(results => {
-            if (results.some(result => result.status === 'rejected')) {
+            if (results.some(result => result.status !== 'fulfilled' || result.value !== true)) {
               console.warn('ORIGEN post upload cleanup incomplete after failed post creation.');
             }
           });
@@ -2987,7 +2987,7 @@
         }
         if (cleanup.length) {
           Promise.allSettled(cleanup).then(results => {
-            if (results.some(result => result.status === 'rejected')) {
+            if (results.some(result => result.status !== 'fulfilled' || result.value !== true)) {
               console.warn('ORIGEN media cleanup incomplete; new profile media remains saved.');
             }
           });
@@ -3004,7 +3004,7 @@
         // storage from accumulating unreferenced profile photos/cover images.
         if (uploaded.length) {
           const results = await Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url)));
-          if (results.some(item => item.status === 'rejected')) {
+          if (results.some(item => item.status !== 'fulfilled' || item.value !== true)) {
             console.warn('[ORIGEN] Unreferenced profile media cleanup incomplete.');
           }
         }
