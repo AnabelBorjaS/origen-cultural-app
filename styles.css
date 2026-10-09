@@ -1571,3 +1571,23 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 .cultural-feed-note p:last-child { margin-bottom:0; color:#3f3a34; line-height:1.6; }
 .post-context-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
 .post-purpose { display:inline-flex; align-items:center; min-height:25px; padding:4px 9px; border:1px solid #d9c6aa; background:var(--sand-soft); color:#6f5434; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+
+/* Unauthenticated correction and cultural-rights requests: email is never sent by ORIGEN. */
+.rights-hero { background: var(--grey-2); }
+.rights-layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); align-items: start; max-width: 1050px; }
+.rights-context { font-size: 14px; line-height: 1.75; color: var(--ink-soft); }
+.rights-context h2 { font-family: var(--serif); font-size: clamp(26px, 3vw, 40px); margin-bottom: 12px; color: var(--black); }
+.rights-context p { margin-bottom: 17px; }
+.rights-context a { font-weight: 700; color: var(--black); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.rights-form { padding: clamp(20px, 3vw, 30px); background: var(--white); border: 1px solid var(--grey); }
+.rights-email-ready { background: #f7f4ee; border-left: 4px solid var(--sand); padding: 18px; font-size: 14px; line-height: 1.6; }
+.rights-email-ready p { margin: 0 0 14px; }
+.rights-email-ready a { display: inline-flex; width: fit-content; max-width: 100%; justify-content: center; }
+.post-rights-link { padding: 0 18px 16px; font-size: 12px; }
+.post-rights-link a { text-decoration: underline; text-underline-offset: 3px; color: var(--ink-soft); }
+.post-rights-link a:hover, .post-rights-link a:focus-visible { color: var(--black); }
+@media (max-width: 760px) {
+  .rights-layout { grid-template-columns: 1fr; }
+  .rights-form { padding: 20px 16px; }
+  .rights-email-ready a { width: 100%; }
+}
