@@ -37,6 +37,7 @@
     user: null,
     authReady: false,
     feedLoading: false,
+    publicStoryPost: null,
     wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 120),
     wellbeingElapsedMs: 0,
     wellbeingLastTick: Date.now(),
@@ -1124,6 +1125,7 @@
       container.removeAttribute('role');
       container.removeAttribute('aria-live');
       container.innerHTML = card;
+      state.publicStoryPost = post;
       bindPostInteractions();
       bindFollowButtons();
       bindFeedVideos();
@@ -1952,6 +1954,9 @@
     route = route !== undefined ? route : currentRoute();
     refreshSession();
 
+    // Keep permalink stories isolated from the general paginated feed cache.
+    state.publicStoryPost = null;
+
     // Destroy globes when leaving their sections
     if (_prevRoute === 'mundo'  && route !== 'mundo'  && window.MundoCultural) window.MundoCultural.destroy();
     if (_prevRoute === 'inicio' && route !== 'inicio' && window.HeroGlobe)     window.HeroGlobe.destroy();
@@ -2332,7 +2337,9 @@
   function rerenderPost(pid) {
     const card = document.querySelector(`[data-pid="${pid}"]`);
     if (!card) return;
-    const post = allPosts().find(p => p.id === pid);
+    const post = allPosts().find(p => p.id === pid) ||
+      (currentRoute() === 'publicacion/' + pid && state.publicStoryPost?.id === pid
+        ? state.publicStoryPost : null);
     if (!post) return;
     const tmp = document.createElement('div');
     tmp.innerHTML = postCard(post);
