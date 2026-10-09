@@ -389,6 +389,63 @@ async function roleChecks(role) {
   await page.close();
 }
 
+async function publicRightsReviewChecks() {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  try {
+    await page.goto(baseURL + '#solicitar-revision/post/qa-culture-post', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.locator('#rights-review-form').waitFor({ timeout: 15000 });
+    check((await page.locator('#main-content h1').innerText()).includes('Solicitar revisión'),
+      'Unauthenticated visitor should see public review request form');
+    check((await page.locator('#rights-reference').inputValue()) === 'post: qa-culture-post',
+      'Linked post ID should prefill the human support reference');
+    check(await page.locator('#rights-email-ready').isHidden(),
+      'Review request must not falsely claim email was sent');
+    check(!await page.locator('#rights-email-link').getAttribute('href'),
+      'No active email sending action exists until user prepares their request');
+
+    await page.locator('#rights-reason').selectOption('cultural_knowledge');
+    await page.locator('#rights-description').fill('Este contenido comparte un conocimiento comunitario sin autorización.');
+    await page.locator('#rights-review-form button[type="submit"]').click();
+    await page.locator('#rights-email-ready:visible').waitFor({ timeout: 5000 });
+    const link = await page.locator('#rights-email-link').getAttribute('href');
+    const email = new URL(link);
+    const body = email.searchParams.get('body') || '';
+    check(link.startsWith('mailto:info.origencultural@gmail.com?'),
+      'Prepared review request must use only the official ORIGEN contact address');
+    check(body.includes('qa-culture-post') && body.includes('Cultural knowledge') && body.includes('comunitario sin autorización'),
+      'Prepared email should contain selected reason, accurate reference, and complaint details');
+    check((await page.locator('#rights-email-ready').innerText()).includes('NO se ha enviado'),
+      'Prepared email must clearly say that it has not been submitted');
+
+    await page.locator('#rights-description').fill('Contenido actualizado con información corregida.');
+    check(await page.locator('#rights-email-ready').isHidden(),
+      'Editing details must hide outdated prepared email');
+    check(!await page.locator('#rights-email-link').getAttribute('href'),
+      'Editing complaint must clear outdated email body link');
+
+    await page.locator('#language-toggle').click();
+    await page.waitForFunction(() => document.documentElement.lang === 'en');
+    check((await page.locator('#main-content h1').innerText()).includes('Request a content review'),
+      'Public rights review form should support English');
+    check((await page.locator('#main-content').innerText()).includes('does not guarantee automatic removal'),
+      'Public rights review should not promise automatic takedown');
+    check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      'Public request flow must not overflow a 390px mobile viewport');
+    check(pageErrors.length === 0, 'Public review page should not throw JavaScript errors: ' + pageErrors.join(' | '));
+
+    await page.evaluate(() => { location.hash = '#perfil/pakarina'; });
+    await page.locator('.profile-trust-notice').waitFor({ timeout: 10000 });
+    check(await page.locator('.profile-trust-notice a[href="#solicitar-revision/perfil/pakarina"]').count() === 1,
+      'Editorial reference must offer direct correction route with profile context');
+  } catch (error) {
+    failures.push('Public rights review regression: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 async function publicProfileStatusChecks() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
   try {
@@ -746,6 +803,7 @@ async function registrationUploadFailureChecks() {
 try {
   await desktopChecks();
   await mobileChecks();
+  await publicRightsReviewChecks();
   await publicProfileStatusChecks();
   await roleChecks('explorer');
   await roleChecks('creator');
