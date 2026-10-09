@@ -508,3 +508,12 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Se verificó por consulta de catálogo que la función contiene los controles. No es una prueba de creación/rechazo real mediante Auth.
 - No se configuró el hook independiente `Before User Created`; su propuesta sigue pendiente. Antes de cerrar issue #6 se necesitan pruebas Auth reales, correos de confirmación, recuperación y revisión legal.
 - Production y el dominio público no se modificaron. NO-GO para usuarios reales.
+
+## Avance Auth Staging — 10 octubre 2026
+
+- ✅ **Staging exclusivamente:** aplicada migración `staging_pre_auth_legal_ack_hook_function_only` en `egujmptgnrpajgfpjjxu`. Existe `public.origen_before_user_created(jsonb)` con `SECURITY INVOKER`. `supabase_auth_admin` tiene `EXECUTE`; `anon` y `authenticated` no lo tienen.
+- ✅ Ejecutada la consulta `supabase/proposals/ORIGEN_CONSENT_STAGING_QA_READ_ONLY.sql` contra la **función instalada**: **8/8 PASS** (email con JSON true, consentimiento ausente/false/nulo/string/número, OAuth y anónimo). No se crearon usuarios.
+- ✅ La función `private.handle_new_user()` ya tenía instalada en Staging la defensa adicional de aceptación explícita y versiones legales de servidor (migración `staging_strict_signup_consent_trigger_validation`).
+- ⛔ **NO CONFIGURADO NI PROBADO:** activar el hook `Before User Created` en Supabase Auth. Crear la función SQL NO activa el hook. Faltan altas Auth directas de cuentas ficticias, rechazo servidor de altas inválidas, confirmación email, recuperación y verificación del registro legal tras inscripción.
+- ℹ️ Security Advisor: un aviso INFO `rls_enabled_no_policy` para tabla privada de derechos culturales sin políticas públicas, intencional y con permisos de navegador revocados; ninguna alerta crítica/alta reportada en esta lectura.
+- ⛔ P0 #6 sigue abierto. No desplegar a `origencultural.com` ni fusionar PR #3. Production no recibió modificaciones.
