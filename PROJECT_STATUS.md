@@ -5,6 +5,7 @@
 - La limpieza de un archivo ahora exige que la API de Storage confirme el nombre exacto del objeto eliminado. Una respuesta vacía sin error se considera inconclusa.
 - Se añadieron dos pruebas simuladas: respuesta vacía y respuesta con nombre de otro archivo.
 - Los flujos de limpieza auxiliar avisan también si reciben `false` sin excepción.
+- El borrado de una publicación se limita ahora a objetos del bucket `post-media`; URLs de avatar/portada no se eliminan automáticamente aunque aparezcan en un post. La prueba aislada correspondiente comprueba que ambos buckets quedan fuera del borrado.
 - No se ha verificado la eliminación de archivos reales ni la invalidación de cachés. Issue #12 sigue abierto; no hay despliegue ni cambios en Production.
 
 
