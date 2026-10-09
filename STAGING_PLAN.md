@@ -2,7 +2,7 @@
 
 Status: planned, not yet deployed
 Cost target: **AUD/USD $0 hosting during controlled beta**
-Last reviewed: 8 October 2026
+Last reviewed: 9 October 2026
 
 ## Decision
 
@@ -67,6 +67,28 @@ Official:
 - https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/
 
 Cost rule: select only **Free** options and verify a $0 charge before any billing/payment authorisation. Cloudflare Zero Trust Free includes Access for small teams but may request billing information; do not accept a paid plan.
+
+## P0 · Aislamiento obligatorio del backend (9 de octubre de 2026)
+
+**Hallazgo corregido en la compilación de staging:** el cliente fuente `supabase-client.js` incluye una URL y una clave publicable del **Supabase de Production**. Copiarlo directamente a una web `*.pages.dev` podría conducir las pruebas de Auth o publicaciones al backend real, aun cuando la URL de la web sea diferente.
+
+El proceso `npm run build:static` ahora:
+1. Reescribe **únicamente el artefacto `dist/supabase-client.js`** para eliminar completamente URL y clave publicable de Production.
+2. Por defecto genera una **previsualización visual sin backend**, mediante un host `.invalid` inalcanzable y una clave no funcional. Coloca aviso bilingüe visible; **no se permiten pruebas de creación real de cuentas o publicaciones** en este modo.
+3. Para pruebas reales requiere conjuntamente las dos variables de entorno de build `ORIGEN_STAGING_SUPABASE_URL` y `ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY`, pertenecientes a un **proyecto Supabase separado**. Rechaza valores incompletos, URL de Production, dominios no oficiales, HTTP, claves secretas y la clave publicable de Production. Solo se admiten claves `sb_publishable_...` de frontend.
+4. Si una comprobación falla, elimina `dist/` y detiene el build, en vez de dejar una copia peligrosa lista para subir.
+5. El test `tests/staging-build-isolation.mjs` simula escenarios inválidos y válidos, sin tocar ninguna base de datos.
+
+**Cuidado:** el fichero fuente bajo control de versiones conserva por ahora la configuración histórica de Production para desarrollo. La protección se aplica al artefacto generado por `build:static`. **Nunca** subir el repositorio crudo a Pages, omitir el build, apuntar las variables al proyecto real, ni copiar claves a issues o al chat.
+
+Antes de conectar staging a un proyecto Supabase aislado:
+- Confirmar que el proyecto nuevo y el plan siguen dentro de un coste autorizado de **$0**; **no crear ni contratar automáticamente**.
+- Configurar ambas variables en el entorno de compilación de **Cloudflare Pages**; la clave publicable está destinada al frontend y no sustituye RLS ni el control legal de Auth.
+- Verificar que el artefacto desplegado coincide con el manifest de release y que **no contiene** la URL ni clave de Production.
+- El auditor `npm run audit:staging` comprueba ahora aislamiento real del **asset desplegado**; una previsualización sin backend **no pasa la puerta de QA de Auth**, aunque sirva para inspección visual.
+- Conectar la beta únicamente al proyecto aislado, protegido detrás de Cloudflare Access; después ejecutar las pruebas adversariales de los issues #6–#8.
+
+**Estado al 9 de octubre de 2026:** se comprobó que en la conexión Supabase disponible solo figura **ORIGEN Cultural Production**. No existe otro proyecto de staging confirmado. No se creó ningún proyecto ni se modificó Production.
 
 ## Supabase Auth integration after staging URL exists
 
