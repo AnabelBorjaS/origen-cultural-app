@@ -27,6 +27,22 @@ Never reuse the same browser session to prove cross-account isolation. Use separ
 | Session on second device | Same account/data available after login | ⬜ |
 | Invalid/expired links | Safe error; no session created | ⬜ |
 
+## P0 — Seguridad del reporte autenticado
+
+| Prueba | Resultado esperado | Estado |
+|---|---|---|
+| Cuenta A reporta una publicación | `reporter_user_id` se deriva de la sesión A, con referencia y motivo seleccionados | ✅ mock Node + Chromium #170; ⬜ staging real |
+| Intentar reportar sin sesión | Cliente no emite INSERT, propone iniciar sesión | ✅ mock Node; ⬜ navegador real |
+| Origen de reporte indica cuenta B durante sesión A | Rechazo antes de INSERT | ✅ mock Node; ⬜ staging real |
+| Inyectar motivo arbitrario/ID inválido/contexto mayor a 6000 caracteres | Rechazo antes de INSERT | ✅ mock Node; ⬜ backend |
+| Cambiar de cuenta con reporte abierto | El diálogo se cierra y borra texto y destino antiguos | ✅ código; ⬜ navegador multiusuario real |
+| Completar INSERT y cambiar a B antes de respuesta | La respuesta se atribuye a A; no aparece como resultado en la interfaz de B | ✅ mock Node + guardia UI; ⬜ staging |
+| A intenta consultar los reportes de B | RLS lo deniega incluso por REST directa | ⬜ **P0 pendiente de verificación** |
+| Envíos masivos o repetidos sin respetar el frontend | Backend aplica protección antiabuso y límites adecuados | ⬜ **P0 pendiente de implementar/verificar** |
+| Equipo autorizado modera y responde | Decisión trazable sin exposición pública de denunciante ni clave privilegiada en frontend | ⬜ issue #8 |
+
+El reporte autenticado **solo** utiliza controles de navegador en estas pruebas: los sistemas y permisos reales de moderación no se consideran verificados hasta superar las pruebas de backend aislado.
+
 ## P0 — Retirada y corrección solicitada por titulares sin cuenta
 
 | Comprobación | Resultado esperado | Estado |
