@@ -1,5 +1,6 @@
 :root {
-  --black: #000000;
+  /* Provisional brand reconciliation. Compare with signed identity manual before release. */
+  --black: #0d0d0d;
   --white: #ffffff;
   --sand: #c8a97e;
   --sand-soft: #efe5d8;
@@ -7,8 +8,9 @@
   --grey-2: #f6f5f2;
   --ink-soft: #5c5c5c;
   --success: #355d4b;
-  --serif: "Libre Baskerville", Georgia, "Times New Roman", serif;
-  --sans: "Garet", "Avenir Next", Avenir, "Segoe UI", Arial, sans-serif;
+  /* No third-party font calls: use brand families if locally available, safe system fallbacks otherwise. */
+  --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --sans: "DM Sans", "Avenir Next", Avenir, "Segoe UI", Arial, sans-serif;
   --max: 1240px;
   --radius-sm: 10px;
   --radius: 18px;
