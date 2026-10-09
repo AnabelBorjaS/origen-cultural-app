@@ -11,8 +11,9 @@ Piloto inicial propuesto con un máximo de **10 Agentes Culturales participantes
 **Hipótesis a medir:**
 1. Un Agente Cultural comprende y puede completar su perfil sin apoyo técnico intensivo.
 2. Puede publicar contenido cultural con un propósito claro (por ejemplo historia, técnica, territorio, gastronomía), conservando el control de su contenido.
-3. Un Explorador descubre, guarda, sigue o comenta perfiles sin confundir perfiles de referencia con perfiles reclamados.
-4. Se puede recopilar feedback útil y resolver reclamaciones, reportes y solicitudes de privacidad sin perjudicar a una comunidad.
+3. Un Explorador descubre, guarda, sigue, comparte de manera voluntaria o comenta historias culturales sin confundir perfiles de referencia con perfiles reclamados.
+4. Podemos identificar qué historias despiertan interés genuino, qué facilita compartirlas y qué hace regresar a los Exploradores, sin comprar impresiones ni fabricar viralidad.
+5. Se puede recopilar feedback útil y resolver reclamaciones, reportes y solicitudes de privacidad sin perjudicar a una comunidad.
 
 **Alcance de la beta:** perfiles, historias, feed cultural, seguir, favoritos, guardar, comentarios, Pasaporte Cultural y reportes. **NO incluye reservas, cobros, promociones pagadas, comisiones, ventas, mensajería privada, certificación automática ni Academia operativa.** El acceso de Agentes y Exploradores Culturales es gratuito. La primera monetización futura será la **promoción opcional de perfiles/publicaciones**; más adelante podrán negociarse **comisiones de derivación por ventas atribuidas en webs oficiales de cada Agente Cultural**, sin checkout en ORIGEN. Ver `BUSINESS_MODEL.md`. El antiguo esquema 80/20 ya no es el modelo comercial vigente.
 
@@ -71,8 +72,11 @@ Preguntas sugeridas — no son resultados recopilados:
 3. ¿Con qué frecuencia tendrías tiempo de publicar sin que esto altere tu actividad principal?
 4. ¿Qué idiomas y formatos (foto, video, texto descriptivo) te serían más cómodos?
 5. ¿Qué necesitarías ver para confiar en ORIGEN y recomendarlo?
-6. Si pudieras destacar voluntariamente tu perfil o una publicación ante más Exploradores, ¿qué información, precio y garantías de transparencia necesitarías para considerar pagar una promoción? *Dejar claro que ahora es gratis y que no existen campañas pagadas activas.*
-7. ¿Tienes una página oficial para ofrecer tus productos o servicios? En un futuro, ¿considerarías razonable un acuerdo de comisión por ventas realmente atribuidas a ORIGEN, sin que la plataforma cobre al comprador? *No proponer porcentajes fijos ni recoger datos confidenciales de ventas.*
+6. ¿Qué tipo de videos, fotos o historias culturales te gustaría que otros compartieran espontáneamente y por qué?
+7. ¿Qué ayudaría a que los Exploradores descubrieran y compartieran tu contenido sin necesitar publicidad pagada?
+8. ¿Qué comentarios o interacciones de los Exploradores te harían sentir que ORIGEN aporta valor real?
+
+**No preguntar por precios de anuncios ni comisiones en esta primera entrevista de crecimiento.** Estudiar monetización en una etapa posterior, solo cuando exista comunidad activa y resultados orgánicos. Ver `ORGANIC_COMMUNITY_GROWTH_PLAN.md`.
 
 ## 5. Indicadores propuestos (no métricas actuales)
 
@@ -85,8 +89,11 @@ Preguntas sugeridas — no son resultados recopilados:
 | Seguridad | Incidentes de exposición de datos / propiedad cruzada confirmados | 0 |
 | Retención cualitativa | Participantes que desean continuar tras 30 días | Medir, no asumir |
 | Ingresos reales | Cobros de promociones, ventas o comisiones | 0: no hay cobros habilitados en la beta |
-| Interés comercial (cualitativo) | Agentes que consideran útil una promoción opcional, y por qué | Entrevistar sin inducir compra |
-| Canales propios | Agentes que desean mostrar su enlace oficial de venta/contacto | Medir voluntariamente, sin seguimiento invasivo |
+| Exploradores de prueba | Personas que aceptan voluntariamente explorar una beta cerrada tras pasar el Release GO | Cohorte propuesta de 30–50; no son usuarios existentes |
+| Descubrimiento orgánico | Exploradores que realizan alguna interacción voluntaria (seguir, guardar, comentar) | Medir línea base real, sin estimar tracción inexistente |
+| Compartir historias | Voluntad de compartir enlaces a contenidos autorizados | Medir solo con mecanismos respetuosos de privacidad |
+| Retorno de Exploradores | Personas que regresan a explorar dentro de 7 y 30 días | Medir línea base antes de fijar metas de crecimiento |
+| Interés comercial futuro | No se ofrece ni se cobra publicidad mientras no exista audiencia activa | Fuera de las metas del piloto |
 
 Estos umbrales son **criterios de trabajo sugeridos**, no compromisos con patrocinadores ni resultados obtenidos.
 
