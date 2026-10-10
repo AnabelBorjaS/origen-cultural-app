@@ -204,6 +204,29 @@ async function mobileChecks() {
     'Mobile creator social link must persist when revisiting legal step');
   check(await page.locator('#reg-social [name="acceptedLegal"]').isChecked(),
     'Explicit user-ticked legal acceptance must stay checked after going back');
+
+  // Real-browser regression: reading legal terms must not navigate away from
+  // or erase the partially completed multi-step mobile registration wizard.
+  const legalLink = page.locator('#reg-social .legal-consent a[href="#confianza"]');
+  check(await legalLink.getAttribute('target') === '_blank',
+    'Trust Center review link must open a separate tab');
+  check(await legalLink.getAttribute('rel') === 'noopener noreferrer',
+    'Legal review link must not expose the original signup tab via window.opener');
+  const [trustTab] = await Promise.all([
+    page.waitForEvent('popup', { timeout: 10000 }),
+    legalLink.click()
+  ]);
+  await trustTab.waitForSelector('#main-content h1', { timeout: 10000 });
+  check((await trustTab.locator('#main-content h1').innerText()).includes('Centro de confianza'),
+    'Opening legal review should show the Trust Center in a new tab');
+  check(await page.evaluate(() => location.hash === '#registro'),
+    'Opening legal review must keep the original registration route intact');
+  check(await page.locator('#reg-social [name="instagram"]').inputValue() === '@tejidosyaruqui',
+    'Legal review must not discard social links entered in mobile registration');
+  check(await page.locator('#reg-social [name="acceptedLegal"]').isChecked(),
+    'Legal review must preserve the explicit consent checkbox without resetting it');
+  await trustTab.close();
+
   check((await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)),
     'Mobile signup must not overflow viewport horizontally');
 
