@@ -4,7 +4,9 @@ import vm from 'node:vm';
 
 // An isolated browser-client contract test. No live Supabase requests or test users.
 const source = fs.readFileSync(new URL('../supabase-client.js', import.meta.url), 'utf8');
-const projectURL = 'https://xwkjvoyicrrwjybjolld.supabase.co';
+const projectURL = source.match(/^  const PROJECT_URL = '([^']+)';$/m)?.[1];
+assert.equal(projectURL, 'https://unconfigured-staging.invalid',
+  'Checked-in beta fixtures must use the disconnected client, never Production');
 const selfId = '11111111-1111-4111-8111-111111111111';
 const otherId = '22222222-2222-4222-8222-222222222222';
 
