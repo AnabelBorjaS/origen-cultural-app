@@ -565,3 +565,8 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Cambio en `service-worker.js`: caché de versión `origen-cultural-v8`, precache sin el cliente Supabase; toda solicitud de `supabase-client.js` o `runtime-config.js` usa exclusivamente red con `cache: 'no-store'`, sin fallback offline. La activación elimina solo versiones obsoletas de la caché propia ORIGEN (sin borrar la de otras apps bajo el mismo origen).
 - Nuevos checks en `tests/smoke.mjs` y `tests/browser-smoke.mjs` para vigilar el almacenamiento y verificar que archivos de configuración no ingresan en Cache Storage tras peticiones de navegador. **Resultado CI pendiente de la nueva revisión.**
 - Alcance limitado: este cambio protege futuros despliegues que reciban el nuevo SW; un dispositivo con SW antiguo deberá volver a conectarse para actualizarlo. No equivale a borrar remotamente los cachés de navegadores desconectados. Sin alteraciones a Production, y pilotos aún NO-GO.
+
+## Evidencia CI PWA v8 — 10 octubre 2026
+
+- ✅ El commit técnico `2573611802f0b193b2d7bfa009a377a4a6c693a9` completó las tres verificaciones **3/3 PASS**: Quality Gate, CodeQL y Browser QA. La prueba Chromium revisó además que `supabase-client.js` y `runtime-config.js` no aparecen en Cache Storage ni después de un fetch directo.
+- 🔒 Sigue pendiente desplegar bajo Cloudflare Access y ensayar migración real de navegadores con caché v7 al nuevo service worker v8. La comprobación CI es sobre un bundle local, **no sobre un dominio Staging o Production**. Registro/Auth hook, cuentas A/B, retirada de medios y piloto siguen NO-GO.

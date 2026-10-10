@@ -184,6 +184,6 @@ Public beta remains NO-GO until:
 
 - [x] Versionar el SW v8 y eliminar `supabase-client.js` del pre-cache; excluir tanto el cliente como `runtime-config.js` de cualquier cache y fallback offline.
 - [x] Mantener los demás recursos de presentación estáticos cacheables, y limitar limpieza de caché obsoleta al prefijo de ORIGEN.
-- [ ] Validar CI (Quality Gate, CodeQL y Browser QA) para el cambio de cache.
+- [x] CI del cambio de caché (commit `2573611802f0b193b2d7bfa009a377a4a6c693a9`): Quality Gate, CodeQL y Browser QA **3/3 success**.
 - [ ] En un despliegue aprobado, probar actualización v7→v8 de dispositivos que regresan online, junto a borrado de cache histórico y la imposibilidad de recuperar configuración antigua.
 - [ ] Auth real con consentimiento/Cloudflare Access, A/B JWT y revisión de permisos siguen P0.
