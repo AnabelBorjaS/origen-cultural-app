@@ -3,8 +3,11 @@
 (() => {
   'use strict';
 
-  const PROJECT_URL = 'https://xwkjvoyicrrwjybjolld.supabase.co';
-  const PUBLISHABLE_KEY = 'sb_publishable_iB0fDGrUAgykebiFgsmAqg_7Fx9FX0t';
+  // Checked-in beta intentionally has NO live backend; a controlled build
+  // injects the single founder-approved Staging project URL and public key.
+  // Never copy Production credentials into branch sources.
+  const PROJECT_URL = 'https://unconfigured-staging.invalid';
+  const PUBLISHABLE_KEY = 'sb_publishable_disabled_staging_preview';
 
   if (!window.supabase?.createClient) {
     console.error('[ORIGEN] Supabase library not loaded.');

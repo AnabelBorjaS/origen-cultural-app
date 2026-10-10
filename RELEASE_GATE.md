@@ -172,3 +172,10 @@ Public beta remains NO-GO until:
 - [x] Deployed Staging audit requires the same exact identity; a different but valid Supabase project must cause failure.
 - [x] Regression tests cover Production, unrelated Supabase projects, invalid host, insecure HTTP, reusable Production key and secret misuse.
 - [ ] Live protected deployment and Auth hook E2E with two synthetic users remain pending. No production release.
+
+## Source-level Production disconnection — 10 Oct 2026
+
+- [x] La rama beta guarda `supabase-client.js` con una URL `.invalid` y una clave ficticia. Ninguna copia directa del código beta debe contactar Production.
+- [x] El builder comprueba las sentinelas, conecta únicamente el Staging autorizado y rechaza la clave pública histórica de Production por digest, sin copiar la clave al repositorio.
+- [ ] Confirmar las tres CI para el commit, además de la auditoría del **artefacto desplegado** en Pages (aún no existente).
+- [ ] Diseñar un release build de Production por separado, revisado y aprobado al cerrar P0; no fusionar una beta con backend deshabilitado esperando un release automático.

@@ -206,3 +206,10 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - Revisión SQL de campos editoriales y derechos culturales: **13/13 comprobaciones de catálogo PASS** en Staging, sin operaciones de escritura ni usuarios creados. La QA real A/B aún no comenzó.
 - Configuración aún NO comprobada/activada con estas herramientas: `Authentication → Hooks → Before User Created → Postgres Function → public.origen_before_user_created` exclusivamente en `egujmptgnrpajgfpjjxu`.
 - Pasos, pruebas de aceptación y rollback documentados en `STAGING_AUTH_HOOK_ACTIVATION.md`. No ejecutar en Production.
+
+## Desconexión segura del archivo fuente beta — 10 Oct 2026
+
+- El archivo **versionado** `supabase-client.js` ya no incluye ni el endpoint ni la clave publicable de Production. Si se abre desde GitHub Pages, una copia local o un servidor de desarrollo, la URL predeterminada es `https://unconfigured-staging.invalid` con una clave ficticia inservible: **fail-closed por defecto**.
+- `scripts/build-static.mjs` exige exactamente estas sentinelas en el archivo versionado, permite conectar sólo `https://egujmptgnrpajgfpjjxu.supabase.co` con su propia clave pública durante el build Staging e impide reutilizar la clave publicable histórica de Production mediante su hash SHA-256 (sin guardar la clave).
+- La compilación visual sin variables sigue sin backend; los cambios reales en Production necesitarán un **pipeline de release independiente, explícitamente aprobado y auditado**, nunca copiar manualmente credenciales a la rama beta.
+- Actualizar/verificar los tests de aislamiento y las tres CI tras esta modificación. Esto **no** despliega ni activa una web Staging ni habilita Auth Hooks.

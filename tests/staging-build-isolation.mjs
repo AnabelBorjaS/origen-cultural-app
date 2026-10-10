@@ -6,9 +6,13 @@ import { spawnSync } from 'node:child_process';
 const root = process.cwd();
 const dist = path.join(root, 'dist');
 const source = fs.readFileSync(path.join(root, 'supabase-client.js'), 'utf8');
-const productionURL = source.match(/^  const PROJECT_URL = '([^']+)';$/m)?.[1];
-const productionKey = source.match(/^  const PUBLISHABLE_KEY = '([^']+)';$/m)?.[1];
-assert.ok(productionURL && productionKey, 'Must recognize the checked-in Supabase client config');
+const sourceURL = source.match(/^  const PROJECT_URL = '([^']+)';$/m)?.[1];
+const sourceKey = source.match(/^  const PUBLISHABLE_KEY = '([^']+)';$/m)?.[1];
+const productionURL = 'https://xwkjvoyicrrwjybjolld.supabase.co';
+const knownProductionKeySha256 = '0842eb46eeee05ba28d3c3be1d5d529ed84ceaf8528d11886e3629f631594c5a';
+assert.equal(sourceURL, 'https://unconfigured-staging.invalid', 'Beta source must never connect a real backend');
+assert.equal(sourceKey, 'sb_publishable_disabled_staging_preview', 'Beta source must never include Production public key');
+assert.ok(!source.includes(productionURL), 'Source must never embed Production URL');
 const approvedStagingURL = 'https://egujmptgnrpajgfpjjxu.supabase.co';
 const alternateSupabaseURL = 'https://abcdefghijklmnopqrst.supabase.co';
 
@@ -26,7 +30,9 @@ function assertSafeArtifact(expectedHost, backendConnected) {
   const output = fs.readFileSync(path.join(dist, 'supabase-client.js'), 'utf8');
   const config = fs.readFileSync(path.join(dist, 'runtime-config.js'), 'utf8');
   assert.ok(!output.includes(productionURL), 'Production URL must not be deployable');
-  assert.ok(!output.includes(productionKey), 'Production public key must not be deployable');
+  assert.ok(!output.includes('sb_secret_'), 'Service-role/secret keys must never enter the runtime');
+  assert.ok(!output.includes(sourceKey) || !backendConnected,
+    'A connected Staging bundle must replace its disabled sentinel key');
   assert.ok(output.includes(expectedHost), 'Expected safe project URL in artifact');
   assert.ok(config.includes('"stagingBackendConnected":' + backendConnected),
     'Visual-only versus isolated staging mode must be explicit');
@@ -66,13 +72,15 @@ rejects({
 }, /own publishable key/);
 rejects({
   ORIGEN_STAGING_SUPABASE_URL: approvedStagingURL,
-  ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: productionKey
+  ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: sourceKey
 }, /own publishable key/);
 rejects({
   ORIGEN_STAGING_SUPABASE_URL: alternateSupabaseURL,
   ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging_mock_123456789'
 }, /approved isolated ORIGEN Staging project/);
-console.log('✓ Incorrect Supabase project, Production, insecure hosts, secrets and reused keys are blocked');
+assert.ok(fs.readFileSync(path.join(root,'scripts/build-static.mjs'),'utf8').includes(knownProductionKeySha256),
+  'Builder must block known legacy Production publishable key by fingerprint');
+console.log('✓ Incorrect project, Production, insecure hosts, secrets and disabled keys are blocked');
 
 result = build({
   ORIGEN_STAGING_SUPABASE_URL: approvedStagingURL,
@@ -80,7 +88,7 @@ result = build({
 });
 assert.equal(result.status, 0, result.stderr);
 assertSafeArtifact(approvedStagingURL, true);
-console.log('✓ Explicit isolated staging project can be configured without a production endpoint');
+console.log('✓ Approved Staging project can be built without a Production endpoint or public key');
 
 // Leave the artifact in its safest mode for subsequent local release checks.
 result = build();

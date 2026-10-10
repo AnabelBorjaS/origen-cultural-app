@@ -35,10 +35,9 @@ for (const entry of runtimeEntries) {
   fs.cpSync(source, destination, { recursive: true });
 }
 
-// Fail-closed staging isolation: the checked-in browser client currently
-// targets the Production project. A Pages build must NEVER publish that
-// endpoint/key. Visual previews get an intentionally unreachable endpoint;
-// authenticated staging requires a different, explicitly provided project.
+// Fail-closed isolation: checked-in beta sources MUST be disconnected.
+// Only build-time injection for the single approved Staging project is allowed.
+// Neither a raw local preview nor a build may embed Production credentials.
 const rejectStagingBuild = message => {
   fs.rmSync(out, { recursive: true, force: true });
   throw new Error(message);
@@ -50,7 +49,15 @@ const keyMatch = clientSource.match(/^  const PUBLISHABLE_KEY = '([^']+)';$/m);
 if (!urlMatch || !keyMatch) {
   rejectStagingBuild('Supabase client configuration shape changed; refusing staging build until reviewed.');
 }
-const productionURL = new URL(urlMatch[1]);
+const disabledClientURL = 'https://unconfigured-staging.invalid';
+const disabledClientKey = 'sb_publishable_disabled_staging_preview';
+if (urlMatch[1] !== disabledClientURL || keyMatch[1] !== disabledClientKey) {
+  rejectStagingBuild('Checked-in beta browser client must have a disabled, non-Production backend.');
+}
+// Do not reintroduce Production's public key into source control. Only its
+// SHA-256 digest is needed to reject accidental reuse at build time.
+const productionHost = 'xwkjvoyicrrwjybjolld.supabase.co';
+const legacyProductionPublicKeySha256 = '0842eb46eeee05ba28d3c3be1d5d529ed84ceaf8528d11886e3629f631594c5a';
 // Founder-approved isolated Free Staging project (not just any Supabase project).
 const approvedStagingOrigin = 'https://egujmptgnrpajgfpjjxu.supabase.co';
 const stagingURL = String(process.env.ORIGEN_STAGING_SUPABASE_URL || '').trim();
@@ -70,11 +77,13 @@ if (stagingURL) {
       !/^[a-z0-9]{20}\.supabase\.co$/.test(target.hostname) ||
       target.username || target.password || target.port ||
       target.pathname !== '/' || target.search || target.hash ||
-      target.origin === productionURL.origin ||
+      target.hostname === productionHost ||
       target.origin !== approvedStagingOrigin) {
     rejectStagingBuild('Staging backend must match the approved isolated ORIGEN Staging project, never Production or another project.');
   }
-  if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(stagingKey) || stagingKey === keyMatch[1]) {
+  if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(stagingKey) ||
+      stagingKey === disabledClientKey ||
+      crypto.createHash('sha256').update(stagingKey).digest('hex') === legacyProductionPublicKeySha256) {
     rejectStagingBuild('Staging requires its own publishable key; never use a secret or Production key.');
   }
   apiURL = target.origin;
@@ -85,8 +94,8 @@ if (stagingURL) {
 const patchedClient = clientSource
   .replace(urlMatch[0], '  const PROJECT_URL = ' + JSON.stringify(apiURL) + ';')
   .replace(keyMatch[0], '  const PUBLISHABLE_KEY = ' + JSON.stringify(apiKey) + ';');
-if (patchedClient.includes(productionURL.hostname) ||
-    patchedClient.includes(keyMatch[1])) {
+if (patchedClient.includes(productionHost) ||
+    /sb_secret_[A-Za-z0-9_-]+/.test(patchedClient)) {
   rejectStagingBuild('Production Supabase credentials found in staging runtime; refusing to build.');
 }
 fs.writeFileSync(clientPath, patchedClient);
