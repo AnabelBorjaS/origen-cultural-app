@@ -576,3 +576,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Se agregó a la rama beta un aviso bilingüe, accesible y reversible de conectividad (`#connection-status`, `role=status`, `aria-live=polite`), que indica cuándo el navegador parece no tener internet y advierte que el registro, las publicaciones y los cambios de cuenta requieren conexión.
 - Respeta el idioma elegido (ES/EN); se muestra solo cuando `navigator.onLine === false`, sin almacenar datos privados ni hacer consultas periódicas. Es un indicador del navegador, NO una prueba de disponibilidad del backend.
 - Incluye pruebas smoke y Chromium de desconexión/reconexión en escritorio y móvil, y traducción inglesa. **CI 3/3 aprobadas (Quality Gate, CodeQL, Browser QA)** para el commit de código `4d0904ce28aa9cd30e09cd35641dde528c4c64b3`. No hay publicación pública ni cambios de Auth/DB.
+
+## Historia compartida → inicio de sesión → misma historia — 10 Oct 2026
+
+- ✅ Se corrigió en rama beta el recorrido de invitados que abren una historia pública individual: la página ofrece **inicio de sesión opcional**, sin exigir cuenta para leer, e indica claramente que seguir y guardar son elecciones posteriores. El enlace de retorno es efímero, restringido al UUID de la historia que se está mostrando y no se almacena en URL externa, localStorage ni cookies.
+- ✅ Al iniciar sesión desde esta invitación, la aplicación vuelve a `#publicacion/<UUID>`, no al feed. También mantiene el contexto si la visita toca `Guardar` o `Me gusta` desde la historia anónima; las operaciones de interacción **no** se ejecutan por el solo hecho de autenticarse.
+- ✅ Nueva prueba Chromium 390px con API de Auth simulada: visualización anónima, invitación de ingreso, login, recuperación de permalink original y botones de seguir/guardar disponibles bajo usuario, sin registros de escritura automáticos. Se valida mediante CI antes de habilitar piloto real.
+- ⛔ Sin conexión Auth real, cuentas de Staging, sugerencias algorítmicas ni publicación del dominio. Issue #10 permanece abierto por pruebas reales y metadatos dinámicos de redes.

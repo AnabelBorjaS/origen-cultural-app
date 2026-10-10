@@ -19,6 +19,8 @@ const checks = [
   ['Offline notice does not claim backend/server health', app.includes('navigator.onLine !== false') && app.includes('You appear to be offline.')],
   ['Trust route exists', app.includes("route === 'confianza'") && app.includes('trustCenterView')],
   ['Signup shows explicit consent', app.includes('name="acceptedLegal" required')],
+  ['Public permalink offers consent-neutral optional sign-in and return', app.includes('data-story-login href="#login"') && app.includes("state.authReturnRoute = 'publicacion/' + id") && app.includes("go(returnRoute || 'feed')")],
+  ['Shared-story authentication never auto-follows or saves', app.includes('No automatic follows, saves or post writes after sign-in.')],
   ['Registration legal documents open in a separate tab, preserving the wizard', app.includes('href="#confianza" target="_blank" rel="noopener noreferrer"') && app.includes('id="reg-accepted-legal"') && app.includes('new tab') && app.includes('nueva pestaña')],
   ['Browser Auth client requires explicit boolean legal consent', supabase.includes("payload?.acceptedLegal !== true")],
   ['Auth client is CAPTCHA-ready for signup', supabase.includes('payload.captchaToken') && supabase.includes('options.captchaToken = payload.captchaToken')],

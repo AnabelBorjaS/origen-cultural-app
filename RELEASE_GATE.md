@@ -193,3 +193,9 @@ Public beta remains NO-GO until:
 - [x] Aviso de conexión del navegador accesible (`role=status`) en interfaz desktop/móvil, sin almacenar datos de navegación ni sugerir que se conoce el estado del backend.
 - [x] QA de navegador offline/online y traducciones: **3/3 CI success** para `4d0904ce28aa9cd30e09cd35641dde528c4c64b3` (Quality Gate, CodeQL, Browser QA).
 - [ ] Validar el mismo comportamiento al desplegar Staging protegido, y verificar los errores de Auth/API por separado. La conectividad detectada por el navegador no prueba estado del servidor.
+
+## P1 — Descubrimiento después de compartir historia (10 Oct 2026)
+
+- [x] Invitación opcional a autenticarse dentro de una historia pública, sin bloquear lectura anónima, con regreso seguro a la historia exacta y sin interacciones automáticas.
+- [x] QA de navegador con login simulado y comprobación de botón de seguimiento/guardado tras retornar; no implica una petición real a Supabase.
+- [ ] Validar login y persistencia con usuarios A/B sintéticos de Staging, compartir desde teléfonos reales, metadatos de previsualización aprobados y derechos de imágenes.

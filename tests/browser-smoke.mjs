@@ -507,7 +507,7 @@ async function publicCulturalStoryChecks() {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.addInitScript(({ postId, creatorId }) => {
-    window.__storyQA = { reads: [], copied: '', exists: true };
+    window.__storyQA = { reads: [], copied: '', exists: true, logins: 0, writes: 0 };
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true, value: { writeText: async url => { window.__storyQA.copied = url; } }
     });
@@ -520,6 +520,15 @@ async function publicCulturalStoryChecks() {
         api.restoreSession = async () => null;
         api.listPosts = async () => [];
         api.listCulturalProfiles = async () => [];
+        api.myFollows = async () => [];
+        api.myFavorites = async () => [];
+        api.signIn = async () => {
+          window.__storyQA.logins += 1;
+          const id = '44444444-4444-4444-8444-444444444444';
+          api.cache.session = { user: { id } };
+          return { id, email: 'reader@qa.invalid', name: 'QA Explorer',
+            role: 'explorer', accountType: 'explorer', categories: [], links: {} };
+        };
         api.listPublicProfiles = async () => {
           api.cache.publicProfiles = [{
             id: creatorId, role: 'creator', display_name: 'Artesana de prueba',
@@ -582,6 +591,30 @@ async function publicCulturalStoryChecks() {
     await page.waitForFunction(() => document.documentElement.lang === 'en');
     check((await page.locator('#main-content h1').innerText()).includes('A story to discover'),
       'Public story works in English');
+
+    const storyCTA = page.locator('#public-story-content [data-story-login]');
+    check(await storyCTA.count() === 1,
+      'Anonymous cultural story should offer optional sign-in after attribution and context');
+    check((await page.locator('.public-story-join').innerText()).includes('Reading does not require an account.'),
+      'Shared stories clearly remain readable without registration');
+    await storyCTA.click();
+    await page.waitForFunction(() => location.hash === '#login');
+    await page.locator('#login-form [name="email"]').fill('reader@qa.invalid');
+    await page.locator('#login-form [name="password"]').fill('ExamplePassword2026!');
+    await page.locator('#login-form button[type="submit"]').click();
+    await page.waitForFunction(id => location.hash === '#publicacion/' + id, postId, { timeout: 12000 });
+    await page.locator('#public-story-content .post-card').waitFor({ timeout: 12000 });
+    check((await page.locator('#public-story-content .post-title').innerText()) === 'Arte del tejido',
+      'Signing in from an exact shared story returns to that same story, not the generic feed');
+    check(await page.locator('#public-story-content [data-save]').count() === 1,
+      'Authenticated visitors can choose whether to save the shared story');
+    check(await page.locator('#public-story-content [data-fuser]').count() === 1,
+      'Authenticated visitors can choose whether to follow the Cultural Agent');
+    const authCheck = await page.evaluate(() => ({...window.__storyQA}));
+    check(authCheck.logins === 1 && authCheck.writes === 0,
+      'Signing in from a cultural permalink does not automatically follow, save or write post interactions');
+    check(await page.locator('#public-story-content [data-story-login]').count() === 0,
+      'Guest-only sign-in prompt disappears for signed-in readers');
 
     await page.evaluate(() => { window.__storyQA.exists = false; location.hash = '#publicacion/33333333-3333-4333-8333-333333333333'; });
     await page.locator('#public-story-content .empty-feed').waitFor({ timeout: 10000 });

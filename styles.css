@@ -1623,6 +1623,24 @@ h3 { font-size: clamp(22px, 2.7vw, 32px); line-height: 1.15; }
 .public-story-layout .post-title a { text-decoration: none; }
 .public-story-layout .post-title a:focus-visible { outline: 3px solid var(--sand); outline-offset: 4px; }
 .public-story-layout #public-story-content .empty-feed { margin: 12px 0 28px; }
+.public-story-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  margin-bottom: 30px;
+  border: 1px solid var(--sand);
+  border-radius: var(--radius-sm);
+  background: var(--sand-soft);
+}
+.public-story-join p { flex: 1 1 250px; margin: 0; font-size: 14px; line-height: 1.6; }
+.public-story-join .btn { flex: 0 0 auto; text-align: center; }
+@media (max-width: 600px) {
+  .public-story-join { padding: 18px 16px; }
+  .public-story-join .btn { width: 100%; }
+}
 @media (max-width: 600px) {
   .public-story-section { padding-top: 40px; }
   .public-story-heading h1 { font-size: clamp(32px, 8vw, 42px); }

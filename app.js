@@ -38,6 +38,8 @@
     authReady: false,
     feedLoading: false,
     publicStoryPost: null,
+    // Ephemeral same-tab return path, never persisted or supplied to redirects.
+    authReturnRoute: null,
     wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 120),
     wellbeingElapsedMs: 0,
     wellbeingLastTick: Date.now(),
@@ -65,6 +67,7 @@
     state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
     state.regStep = 1;
     state.regData = {}; // includes the unpersisted signup password
+    state.authReturnRoute = null; // never reuse another account's redirect
     state.editAvatar = null;
     state.editCover = null;
     state.editAvatarPreview = null;
@@ -1127,8 +1130,23 @@
       if (!card) { showNotFound(); return; }
       container.removeAttribute('role');
       container.removeAttribute('aria-live');
-      container.innerHTML = card;
+      const visitorInvite = !isAuth() ? `<aside class="public-story-join" aria-label="${es ? 'Conectar con esta historia' : 'Connect with this story'}">
+        <p>${es
+          ? '¿Quieres guardar esta historia o seguir a su Agente Cultural? Puedes leerla sin cuenta.'
+          : 'Want to save this story or follow its Cultural Agent? Reading does not require an account.'}</p>
+        <a class="btn" data-story-login href="#login">${es ? 'Iniciar sesión para interactuar' : 'Sign in to interact'}</a>
+      </aside>` : '';
+      container.innerHTML = card + visitorInvite;
       state.publicStoryPost = post;
+      // Only preserve a validated, currently visible cultural permalink. No
+      // automatic follows, saves or post writes after sign-in.
+      container.addEventListener('click', event => {
+        if (isAuth() || currentRoute() !== route) return;
+        const action = event.target.closest('[data-story-login], [data-needs-auth], .com-login a[href="#login"]');
+        if (action && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+          state.authReturnRoute = 'publicacion/' + id;
+        }
+      }, true);
       bindPostInteractions();
       bindFollowButtons();
       bindFeedVideos();
@@ -2472,9 +2490,12 @@
       if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Entrando…' : 'Signing in…'; }
       try {
         const captchaToken = requireCaptchaToken('login');
+        // Capture before doLogin clears account drafts on account switch.
+        const returnRoute = state.authReturnRoute;
         await doLogin(email, password, captchaToken);
+        state.authReturnRoute = null;
         updateShell();
-        go('feed');
+        go(returnRoute || 'feed');
       } catch (error) {
         const err = document.getElementById('login-error');
         if (err) {
