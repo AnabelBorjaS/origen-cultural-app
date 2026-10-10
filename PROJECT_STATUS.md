@@ -552,3 +552,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Mejora beta: el enlace al Centro de confianza en el quinto paso del registro ahora abre una **nueva pestaña** (`rel="noopener noreferrer"`) para permitir revisar documentos v1.2 sin navegar fuera del formulario incompleto. La casilla de aceptación sigue separada, asociada a una etiqueta accesible y siendo obligatoria; se evita anidar el enlace interactivo dentro de la etiqueta de la casilla.
 - Nueva verificación en `tests/smoke.mjs` para asegurar la apertura independiente y el requisito de aceptación. Validación CI por confirmar tras el commit.
 - Sin activación de Auth Hooks en Supabase ni cambios en Production. P0 #6 sigue abierto para pruebas completas con cuentas ficticias.
+
+## Resultado de CI — registro y lectura legal (10 octubre 2026)
+
+- ✅ El cambio funcional `a16132b5904ea3de9b8354359a91509b73bf5820` permite abrir documentos legales v1.2 en una pestaña nueva sin salir del registro de cinco pasos; separa enlace y casilla para accesibilidad. El commit `fdf4eea9068b54b646652fece4f9e8da1fdc0e2c` añadió una prueba real de Chromium móvil de apertura en pestaña separada, conservación de ruta `#registro`, redes sociales y casilla de aceptación.
+- ✅ **3/3 CI en `fdf4eea9068b54b646652fece4f9e8da1fdc0e2c`: Quality Gate, CodeQL y Browser QA (`success`).** No se utilizaron cuentas ni credenciales reales.
+- ⛔ P0 #6 sin cerrar: función SQL de consentimiento presente en Staging, pero no se ha validado activación real en Supabase Auth ni registros/rechazos por API. No se cambió producción, ni se hizo merge público.
