@@ -1,5 +1,5 @@
-// ORIGEN Cultural — Red Social Cultural Demo
-// localStorage-based · Supabase-ready architecture
+// ORIGEN Cultural — Red Social Cultural
+// Supabase-backed beta architecture
 (() => {
   'use strict';
 
@@ -8,7 +8,6 @@
   ═══════════════════════════════════════════════════════════ */
   const { creators, categories, impact } = window.ORIGEN_DATA;
   const SEED_POSTS = window.ORIGEN_DATA.posts || [];
-  const SB = window.ORIGEN_SUPABASE || null;
 
   /* ═══════════════════════════════════════════════════════════
      DOM REFS
@@ -16,6 +15,8 @@
   const $app    = document.getElementById('main-content');
   const $toast  = document.getElementById('toast');
   const $search = document.getElementById('search-dialog');
+  const $report = document.getElementById('report-dialog');
+  const $deletePost = document.getElementById('delete-post-dialog');
 
   /* ═══════════════════════════════════════════════════════════
      STATE
@@ -26,35 +27,61 @@
     query: '',
     regStep: 1,
     regData: {},
-    createData: { type: 'photo', media: [], tags: [] },
+    createData: { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' },
     openComments: new Set(),
     carIdx: {},
     editAvatar: null,
     editCover: null,
+    editAvatarPreview: null,
+    editCoverPreview: null,
+    user: null,
+    authReady: false,
+    feedLoading: false,
+    publicStoryPost: null,
+    // Ephemeral same-tab return path, never persisted or supplied to redirects.
+    authReturnRoute: null,
+    wellbeingMinutes: Number(localStorage.getItem('origen-wellbeing-minutes') || 120),
+    wellbeingElapsedMs: 0,
+    wellbeingLastTick: Date.now(),
+    wellbeingNextPromptMs: null,
   };
 
-  /* ═══════════════════════════════════════════════════════════
-     LOCAL DB (localStorage abstraction — swap for Supabase)
-  ═══════════════════════════════════════════════════════════ */
-  const DB = {
-    get(k, d)    { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : d; } catch { return d; } },
-    set(k, v)    { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { showToast('Almacenamiento lleno. Elimina imágenes para continuar.'); return false; } },
-    users()      { return this.get('oc-users', {}); },
-    setUsers(u)  { this.set('oc-users', u); },
-    session()    { return this.get('oc-session', null); },
-    setSession(u){ this.set('oc-session', u); },
-    clearSess()  { localStorage.removeItem('oc-session'); },
-    posts()      { return this.get('oc-posts', []); },
-    setPosts(p)  { this.set('oc-posts', p); },
-    likes()      { return this.get('oc-likes', {}); },
-    setLikes(l)  { this.set('oc-likes', l); },
-    comments()   { return this.get('oc-comments', {}); },
-    setComments(c){ this.set('oc-comments', c); },
-    saves()      { return this.get('oc-saves', {}); },
-    setSaves(s)  { this.set('oc-saves', s); },
-    follows()    { return this.get('oc-follows', {}); },
-    setFollows(f){ this.set('oc-follows', f); },
-  };
+  // Account-specific drafts must never survive a successful sign-out or
+  // a switch to another user on the same browser/device.
+  function releasePreview(url) {
+    if (typeof url === 'string' && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function clearAccountDrafts() {
+    for (const url of [
+      ...(state.createData.media || []),
+      state.regData.avatar,
+      state.regData.cover,
+      state.editAvatarPreview,
+      state.editCoverPreview
+    ]) releasePreview(url);
+
+    clearTimeout(bindCreatePost._prev);
+    state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
+    state.regStep = 1;
+    state.regData = {}; // includes the unpersisted signup password
+    state.authReturnRoute = null; // never reuse another account's redirect
+    state.editAvatar = null;
+    state.editCover = null;
+    state.editAvatarPreview = null;
+    state.editCoverPreview = null;
+    state.openComments.clear();
+    state.carIdx = {};
+    // A moderation form opened for account A must never remain available
+    // with its complaint text or target after a switch to account B.
+    if ($report?.open) $report.close();
+    document.getElementById('report-form')?.reset();
+    if ($report) { delete $report.dataset.targetId; delete $report.dataset.targetType; }
+    const reportStatus = document.getElementById('report-status');
+    if (reportStatus) reportStatus.textContent = '';
+  }
 
   /* ═══════════════════════════════════════════════════════════
      COPY / i18n
@@ -120,6 +147,31 @@
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function esc(s) { const d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+  function safeExternalUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^mailto:/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.origin);
+      if (!['http:','https:'].includes(u.protocol)) return '';
+      return u.href;
+    } catch {
+      return '';
+    }
+  }
+  function safeMediaUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^blob:/i.test(raw)) return raw;
+      if (/^data:image\/(?:png|jpe?g|webp);base64,/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.href);
+      if (!['http:','https:'].includes(u.protocol)) return '';
+      return u.href;
+    } catch {
+      return '';
+    }
+  }
   function timeAgo(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
     if (s < 60)     return 'ahora';
@@ -150,170 +202,297 @@
   /* ═══════════════════════════════════════════════════════════
      AUTH
   ═══════════════════════════════════════════════════════════ */
-  const me     = () => DB.session();
+  const me     = () => state.user;
   const isAuth = () => !!me();
 
-  function toAppUser(profile, authUser = null) {
-    if (!profile) return null;
-    return {
-      id: profile.id,
-      email: authUser?.email || me()?.email || '',
-      name: profile.display_name || 'Perfil cultural',
-      accountType: profile.role === 'creator' ? 'creator' : 'explorer',
-      location: profile.location || [profile.city, profile.country].filter(Boolean).join(', '),
-      story: profile.story || profile.bio || '',
-      categories: profile.categories || [],
-      links: profile.links || {},
-      avatar: profile.avatar_url || '',
-      cover: profile.cover_url || '',
-      createdAt: profile.created_at || null,
-    };
+  const captchaRuntime = {
+    scriptPromise: null,
+    widgets: new Map(),
+    tokens: new Map()
+  };
+
+  function turnstileEnabled() {
+    return !!String(window.ORIGEN_CONFIG?.turnstileSiteKey || '').trim();
   }
 
-  function cacheAppUser(user) {
-    if (!user) return;
-    const clean = { ...user };
-    delete clean.password;
-    const users = DB.users();
-    users[clean.id] = clean;
-    DB.setUsers(users);
-    DB.setSession(clean);
+  function captchaSlot(action) {
+    if (!turnstileEnabled()) return '';
+    return `<div class="form-field full turnstile-field">
+      <div id="turnstile-${action}" data-turnstile-action="${action}"></div>
+      <p id="turnstile-${action}-status" class="form-note" role="status" aria-live="polite"></p>
+    </div>`;
   }
 
-  async function fetchRemoteProfile(authUser) {
-    if (!SB || !authUser) return null;
-    const { data, error } = await SB
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
-    if (error) throw error;
-    return toAppUser(data, authUser);
-  }
+  function loadTurnstile() {
+    if (!turnstileEnabled()) return Promise.resolve(false);
+    if (window.turnstile) return Promise.resolve(true);
+    if (captchaRuntime.scriptPromise) return captchaRuntime.scriptPromise;
 
-  function dataUrlToBlob(dataUrl) {
-    const [head, body] = String(dataUrl || '').split(',');
-    const mime = (head.match(/data:([^;]+)/) || [,'application/octet-stream'])[1];
-    const bytes = atob(body || '');
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    return new Blob([arr], { type: mime });
-  }
-
-  async function uploadDataUrl(bucket, dataUrl, userId, prefix) {
-    if (!SB || !dataUrl || !dataUrl.startsWith('data:')) return dataUrl || '';
-    const blob = dataUrlToBlob(dataUrl);
-    const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
-    const path = `${userId}/${prefix}-${Date.now()}.${ext}`;
-    const { error } = await SB.storage.from(bucket).upload(path, blob, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: blob.type,
-    });
-    if (error) throw error;
-    const { data } = SB.storage.from(bucket).getPublicUrl(path);
-    return data?.publicUrl || '';
-  }
-
-  async function flushPendingProfileMedia(userId) {
-    if (!SB || !userId) return;
-    const pendingAvatar = localStorage.getItem('oc-pending-avatar');
-    const pendingCover  = localStorage.getItem('oc-pending-cover');
-    if (!pendingAvatar && !pendingCover) return;
-
-    const patch = {};
-    try {
-      if (pendingAvatar) patch.avatar_url = await uploadDataUrl('avatars', pendingAvatar, userId, 'avatar');
-      if (pendingCover)  patch.cover_url  = await uploadDataUrl('covers', pendingCover, userId, 'cover');
-      if (Object.keys(patch).length) {
-        const { error } = await SB.from('profiles').update(patch).eq('id', userId);
-        if (error) throw error;
+    captchaRuntime.scriptPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-origen-turnstile]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(true), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Turnstile no pudo cargarse.')), { once: true });
+        return;
       }
-      localStorage.removeItem('oc-pending-avatar');
-      localStorage.removeItem('oc-pending-cover');
-    } catch (err) {
-      console.warn('No se pudo completar la carga de imágenes del perfil:', err);
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.dataset.origenTurnstile = 'true';
+      script.addEventListener('load', () => resolve(true), { once: true });
+      script.addEventListener('error', () => reject(new Error('Turnstile no pudo cargarse.')), { once: true });
+      document.head.appendChild(script);
+    });
+    return captchaRuntime.scriptPromise;
+  }
+
+  async function mountTurnstile(action) {
+    if (!turnstileEnabled()) return null;
+    const container = document.getElementById(`turnstile-${action}`);
+    if (!container) return null;
+    const status = document.getElementById(`turnstile-${action}-status`);
+
+    try {
+      await loadTurnstile();
+      const oldId = captchaRuntime.widgets.get(action);
+      if (oldId !== undefined && window.turnstile?.remove) {
+        try { window.turnstile.remove(oldId); } catch (_) {}
+      }
+      captchaRuntime.tokens.delete(action);
+      const widgetId = window.turnstile.render(container, {
+        sitekey: String(window.ORIGEN_CONFIG.turnstileSiteKey).trim(),
+        action,
+        theme: 'auto',
+        size: 'flexible',
+        language: state.lang === 'es' ? 'es' : 'en',
+        'response-field': false,
+        callback: token => {
+          captchaRuntime.tokens.set(action, token);
+          if (status) status.textContent = '';
+        },
+        'expired-callback': () => {
+          captchaRuntime.tokens.delete(action);
+          if (status) status.textContent = state.lang === 'es'
+            ? 'La verificación expiró. Complétala nuevamente.'
+            : 'Verification expired. Please complete it again.';
+        },
+        'error-callback': () => {
+          captchaRuntime.tokens.delete(action);
+          if (status) status.textContent = state.lang === 'es'
+            ? 'No pudimos completar la verificación anti-bot.'
+            : 'We could not complete the anti-bot verification.';
+        }
+      });
+      captchaRuntime.widgets.set(action, widgetId);
+      return widgetId;
+    } catch (error) {
+      if (status) status.textContent = error?.message || (state.lang === 'es'
+        ? 'No pudimos cargar la verificación anti-bot.'
+        : 'We could not load anti-bot verification.');
+      return null;
     }
   }
 
-  async function hydrateSupabaseSession() {
-    if (!SB) {
-      DB.clearSess();
-      return null;
+  function requireCaptchaToken(action) {
+    if (!turnstileEnabled()) return null;
+    const token = captchaRuntime.tokens.get(action);
+    if (!token) {
+      throw new Error(state.lang === 'es'
+        ? 'Completa la verificación anti-bot para continuar.'
+        : 'Complete the anti-bot verification to continue.');
     }
-    const { data, error } = await SB.auth.getSession();
-    if (error || !data?.session?.user) {
-      DB.clearSess();
-      return null;
-    }
-    await flushPendingProfileMedia(data.session.user.id);
-    const appUser = await fetchRemoteProfile(data.session.user);
-    cacheAppUser(appUser);
-    return appUser;
+    return token;
   }
 
-  async function doLogin(email, pw) {
-    if (!SB) return { ok: false, error: 'La conexión segura no está disponible.' };
-    const { data, error } = await SB.auth.signInWithPassword({ email, password: pw });
-    if (error || !data?.user) return { ok: false, error: 'Correo o contraseña incorrectos.' };
-    const appUser = await fetchRemoteProfile(data.user);
-    cacheAppUser(appUser);
-    return { ok: true, user: appUser };
+  function resetTurnstile(action) {
+    if (!turnstileEnabled()) return;
+    captchaRuntime.tokens.delete(action);
+    const widgetId = captchaRuntime.widgets.get(action);
+    if (widgetId !== undefined && window.turnstile?.reset) {
+      try { window.turnstile.reset(widgetId); } catch (_) {}
+    }
+  }
+
+  async function doLogin(email, pw, captchaToken = null) {
+    if (!window.ORIGEN_API) throw new Error('Servicio de autenticación no disponible.');
+    const previousUid = state.user?.id || null;
+    const user = await window.ORIGEN_API.signIn(email, pw, captchaToken);
+    if (user?.id && user.id !== previousUid) clearAccountDrafts();
+    state.user = user;
+    await Promise.allSettled([
+      window.ORIGEN_API.listCulturalProfiles(),
+      window.ORIGEN_API.myFollows(),
+      window.ORIGEN_API.myFavorites()
+    ]);
+    return user;
   }
 
   async function doRegister(data) {
-    if (!SB) return { ok: false, error: 'La conexión segura no está disponible.' };
+    if (!window.ORIGEN_API) return { ok: false, error: 'Servicio de autenticación no disponible.' };
 
-    if (data.avatar) localStorage.setItem('oc-pending-avatar', data.avatar);
-    if (data.cover)  localStorage.setItem('oc-pending-cover', data.cover);
-
-    const metadata = {
-      account_type: data.accountType === 'creator' ? 'creator' : 'explorer',
-      display_name: data.name || '',
-      location: data.location || '',
-      story: data.story || '',
-      categories: data.categories || [],
-      links: data.links || {},
-      accepted_legal: false,
-    };
-
-    const { data: signup, error } = await SB.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: metadata,
-        emailRedirectTo: `${location.origin}${location.pathname}#mi-perfil`,
-      },
-    });
-
-    if (error) {
-      return { ok: false, error: error.message || 'No pudimos crear la cuenta.' };
+    // The Auth account is created before any optional profile media is uploaded.
+    // Do not offer a retry of signUp after a post-registration upload failure.
+    let result;
+    try {
+      result = await window.ORIGEN_API.signUp(data);
+    } catch (error) {
+      return { ok: false, error: error.message || 'No pudimos crear tu cuenta.' };
     }
 
-    if (signup?.session?.user) {
-      await flushPendingProfileMedia(signup.session.user.id);
-      const appUser = await fetchRemoteProfile(signup.session.user);
-      cacheAppUser(appUser);
-      return { ok: true, user: appUser, needsConfirmation: false };
+    let setupWarning = null;
+    if (result.session) {
+      state.user = null;
+      try {
+        state.user = await window.ORIGEN_API.restoreSession();
+        if (!state.user) throw new Error('New account session is not ready.');
+
+        const uploaded = [];
+        try {
+          let avatar = state.user.avatar || '';
+          let cover = state.user.cover || '';
+          if (data.avatarFile instanceof File) {
+            avatar = await window.ORIGEN_API.upload('avatars', data.avatarFile, 'avatar');
+            uploaded.push(avatar);
+          }
+          if (data.coverFile instanceof File) {
+            cover = await window.ORIGEN_API.upload('covers', data.coverFile, 'cover');
+            uploaded.push(cover);
+          }
+          if (avatar || cover) {
+            state.user = await window.ORIGEN_API.updateMyProfile({
+              name: state.user?.name || data.name,
+              location: data.location || state.user?.location,
+              story: data.story || state.user?.story,
+              categories: data.categories || state.user?.categories || [],
+              links: data.links || state.user?.links || {},
+              accountType: data.accountType,
+              providerHeadline: data.providerHeadline || '',
+              services: data.services || [],
+              serviceDescription: data.serviceDescription || '',
+              avatar,
+              cover
+            });
+          }
+        } catch (error) {
+          setupWarning = 'media';
+          console.warn('[ORIGEN] Optional registration media setup incomplete:', error);
+          // Roll back newly uploaded files only; never delete existing profile media.
+          if (uploaded.length) {
+            const cleanup = await Promise.allSettled(
+              uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))
+            );
+            if (cleanup.some(item => item.status !== 'fulfilled' || item.value !== true)) {
+              console.warn('[ORIGEN] Registration media cleanup incomplete.');
+            }
+          }
+        }
+      } catch (error) {
+        setupWarning = 'profile';
+        console.warn('[ORIGEN] Post-signup profile setup incomplete:', error);
+      }
+
+      if (state.user) {
+        await Promise.allSettled([
+          window.ORIGEN_API.listCulturalProfiles(),
+          window.ORIGEN_API.listPublicProfiles(),
+          window.ORIGEN_API.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API.myFollows(),
+          window.ORIGEN_API.myFavorites(),
+          window.ORIGEN_API.listPosts(),
+          window.ORIGEN_API.loadPostInteractions()
+        ]);
+      }
     }
 
-    DB.clearSess();
-    return { ok: true, user: null, needsConfirmation: true };
+    return { ok: true, ...result, setupWarning, profileReady: !result.session || !!state.user };
   }
 
   async function doLogout() {
-    if (SB) {
-      try { await SB.auth.signOut(); } catch (err) { console.warn('Sign out:', err); }
+    try {
+      if (!window.ORIGEN_API) throw new Error('Authentication service unavailable.');
+      await window.ORIGEN_API.signOut();
+    } catch (error) {
+      console.error('[ORIGEN] Sign-out failed:', error);
+      showToast(state.lang === 'es'
+        ? 'No se pudo cerrar sesión. Inténtalo de nuevo.'
+        : 'Could not sign out. Please try again.');
+      return;
     }
-    DB.clearSess();
+    clearAccountDrafts();
+    state.user = null;
     updateShell();
     go('inicio');
   }
 
-  function refreshSession() {
-    const u = me(); if (!u) return;
-    const users = DB.users();
-    if (users[u.id]) DB.setSession(users[u.id]);
+  function refreshSession() {}
+
+  function remoteFollowRefs() {
+    const api = window.ORIGEN_API;
+    if (!api || !state.user) return [];
+    return (api.cache.follows || []).map(id => {
+      const p = api.cache.culturalProfiles.find(x => x.id === id);
+      return p?.owner_id || p?.slug || id;
+    });
+  }
+
+  function remoteFavoriteRefs() {
+    const api = window.ORIGEN_API;
+    if (!api || !state.user) return [];
+    return (api.cache.favorites || []).map(id => {
+      const p = api.cache.culturalProfiles.find(x => x.id === id);
+      return p?.owner_id || p?.slug || id;
+    });
+  }
+
+  async function culturalProfileId(ref) {
+    const api = window.ORIGEN_API;
+    if (!api) return null;
+    let p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref || x.owner_id === ref);
+    if (!p) {
+      await api.listCulturalProfiles();
+      p = (api.cache.culturalProfiles || []).find(x => x.id === ref || x.slug === ref || x.owner_id === ref);
+    }
+    return p?.id || null;
+  }
+
+  function normalisePublicProvider(row) {
+    if (!row) return null;
+    const links = row.links || {};
+    return {
+      id: row.id,
+      name: row.display_name || 'Agente Cultural',
+      type: 'Agente Cultural',
+      accountType: 'creator',
+      category: (row.categories || [])[0] || 'Cultura',
+      categories: row.categories || [],
+      location: row.location || [row.city, row.country].filter(Boolean).join(', '),
+      country: row.country || '',
+      verified: false,
+      profileStatus: 'pending',
+      image: row.avatar_url || '',
+      avatar: row.avatar_url || '',
+      cover: row.cover_url || '',
+      short: links?._provider?.headline || row.bio || 'Perfil cultural en ORIGEN',
+      story: row.story || row.bio || '',
+      tags: row.categories || [],
+      links,
+      providerHeadline: links?._provider?.headline || '',
+      services: links?._provider?.services || [],
+      serviceDescription: links?._provider?.description || '',
+      website: links?.web || '',
+      publicEmail: links?.email || '',
+      publicWhatsapp: links?.whatsapp || '',
+      followers: window.ORIGEN_API?.cache?.culturalProfiles?.find(cp => cp.owner_id === row.id)?.follower_count || 0,
+      posts: [],
+      _kind: 'user'
+    };
+  }
+
+  function directoryProfiles() {
+    const dynamic = (window.ORIGEN_API?.cache?.publicProfiles || []).map(normalisePublicProvider).filter(Boolean);
+    const seen = new Set(dynamic.map(p => p.id));
+    return [...dynamic, ...creators.filter(p => !seen.has(p.id))];
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -322,29 +501,87 @@
   function getProfile(id) {
     const c = creators.find(x => x.id === id);
     if (c) return { ...c, _kind: 'creator' };
-    const u = DB.users()[id];
-    return u ? { ...u, _kind: 'user' } : null;
+    if (state.user && state.user.id === id) return { ...state.user, _kind: 'user' };
+    const publicRow = (window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id);
+    if (publicRow) return normalisePublicProvider(publicRow);
+    return null;
   }
   function avatarEl(profile, sz = 'md') {
     if (!profile) return `<div class="ava ava-${sz} ava-init">OC</div>`;
     const init = (profile.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const src  = profile.avatar || profile.image;
     if (!src) return `<div class="ava ava-${sz} ava-init">${init}</div>`;
-    return `<div class="ava ava-${sz}"><img src="${src}" alt="${esc(profile.name)}" onerror="this.parentElement.classList.add('ava-init');this.parentElement.textContent='${init}';"></div>`;
+    return `<div class="ava ava-${sz}"><img src="${esc(safeMediaUrl(src) || 'assets/logo-mark.svg')}" alt="${esc(profile.name)}" data-avatar-fallback="${encodeURIComponent(init)}"></div>`;
   }
-  function verBadge(p) { return p && p.verified ? '<span class="verified" title="Verificación Cultural">✓</span>' : ''; }
+  // Trust labels are deliberately derived from controlled profile states.
+  // An account/role alone never establishes identity, cultural authority,
+  // community representation or endorsement by ORIGEN.
+  function profileTrustInfo(profile) {
+    const es = state.lang === 'es';
+    const L = (spanish, english) => es ? spanish : english;
+    const isReference = profile?.referenceProfile === true || profile?.profileStatus === 'reference';
+    if (isReference) return {
+      kind: 'reference',
+      short: L('Referencia editorial', 'Editorial reference'),
+      label: L('Perfil de referencia · no oficial', 'Reference profile · not official'),
+      description: L(
+        'Este perfil es una referencia editorial creada por ORIGEN. No está administrado ni verificado por la persona, comunidad u organización mencionada. Su aparición aquí no indica una alianza o representación oficial.',
+        'This is an editorial reference created by ORIGEN. The person, community or organisation named has not managed or verified it. Inclusion does not imply a partnership or official representation.'
+      )
+    };
+    if (profile?.profileStatus === 'verified' && profile?.verified === true) return {
+      kind: 'verified',
+      short: L('Verificación registrada', 'Verification recorded'),
+      label: L('Perfil con verificación registrada', 'Profile with recorded verification'),
+      description: L(
+        'ORIGEN ha registrado una verificación para este perfil. Esto no certifica todo su contenido ni constituye una recomendación comercial.',
+        'ORIGEN has recorded verification for this profile. This does not certify all content or constitute a commercial endorsement.'
+      )
+    };
+    return {
+      kind: 'unverified',
+      short: L('Cuenta sin verificar', 'Unverified account'),
+      label: L('Cuenta autogestionada · sin verificar', 'Self-managed account · unverified'),
+      description: L(
+        'Esta cuenta fue creada por un usuario. ORIGEN no ha verificado su identidad ni su autoridad para representar a una comunidad, negocio u organización. Revisa sus afirmaciones antes de compartir información o contactar.',
+        'A user created this account. ORIGEN has not verified their identity or authority to represent a community, business or organisation. Check claims before sharing information or making contact.'
+      )
+    };
+  }
+  function profileTrustChip(profile) {
+    const trust = profileTrustInfo(profile);
+    return `<span class="profile-trust-chip profile-trust-${trust.kind}">${esc(trust.short)}</span>`;
+  }
+  function profileTrustNotice(profile) {
+    const trust = profileTrustInfo(profile);
+    const isReference = trust.kind === 'reference';
+    const claimLink = isReference && profile?.claimable === true
+      ? `<a href="#reclamar/${encodeURIComponent(profile.id)}">${state.lang === 'es' ? 'Solicitar gestión de este perfil' : 'Request management of this profile'} →</a>`
+      : '';
+    return `<aside class="profile-trust-notice profile-trust-${trust.kind}" aria-label="${esc(trust.label)}">
+      <div>${profileTrustChip(profile)}<strong>${esc(trust.label)}</strong></div>
+      <p>${esc(trust.description)}</p>
+      <div class="profile-trust-links">${claimLink}<a href="#solicitar-revision/${profile?.referenceProfile === true || profile?.profileStatus === 'reference' ? 'perfil' : 'usuario'}/${encodeURIComponent(profile.id)}">${state.lang === 'es' ? 'Solicitar corrección o revisión' : 'Request correction or review'} →</a><a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'} →</a></div>
+    </aside>`;
+  }
+  function verBadge(p) {
+    return profileTrustInfo(p).kind === 'verified'
+      ? `<span class="verified" title="${state.lang === 'es' ? 'Verificación registrada' : 'Verification recorded'}" aria-label="${state.lang === 'es' ? 'Verificación registrada' : 'Verification recorded'}">✓</span>`
+      : '';
+  }
 
   /* ═══════════════════════════════════════════════════════════
      POSTS
   ═══════════════════════════════════════════════════════════ */
   function allPosts() {
-    return [...DB.posts(), ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const remote = window.ORIGEN_API?.cache?.posts || [];
+    return [...remote, ...SEED_POSTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
   function feedPosts() {
     const user    = me();
     const all     = allPosts();
     if (!user) return all.slice(0, 10);
-    const follows = DB.follows()[user.id] || [];
+    const follows = remoteFollowRefs();
     const mine    = all.filter(p => p.authorId === user.id || follows.includes(p.authorId));
     const disc    = all.filter(p => p.authorId !== user.id && !follows.includes(p.authorId));
     return [...mine, ...disc];
@@ -356,9 +593,27 @@
   function socialLinksHtml(profile) {
     if (!profile.links || !Object.keys(profile.links).length) return '';
     const icons = { instagram:'IG', facebook:'FB', tiktok:'TK', youtube:'YT', linkedin:'LI', whatsapp:'WA', email:'✉', web:'↗' };
-    const entries = Object.entries(profile.links).filter(([, v]) => v && v.trim());
+    const allowed = new Set(['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web']);
+    const entries = Object.entries(profile.links)
+      .filter(([k]) => allowed.has(k))
+      .map(([k, v]) => [k, safeExternalUrl(v)])
+      .filter(([, v]) => !!v);
     if (!entries.length) return '';
-    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
+    return `<div class="external-links">${entries.map(([k, v]) => `<a href="${esc(v)}" target="_blank" rel="noopener noreferrer"><span>${icons[k] || k}</span><span>${esc(k)}</span><span>↗</span></a>`).join('')}</div>`;
+  }
+
+  function contentPurposeLabel(value) {
+    return ({
+      education: 'Educación cultural',
+      history: 'Historia y memoria',
+      technique: 'Técnica / proceso',
+      territory: 'Territorio',
+      language: 'Lengua',
+      gastronomy: 'Gastronomía',
+      arts: 'Artes / expresión',
+      heritage: 'Patrimonio',
+      community: 'Comunidad'
+    })[value] || '';
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -369,23 +624,21 @@
     const author = getProfile(post.authorId);
     if (!author) return '';
 
-    const likes      = DB.likes();
-    const postLikes  = likes[post.id] || [];
-    const totalLikes = postLikes.length + (postLikes.length === 0 ? (post.likes || 0) : 0);
-    const liked      = !!(user && postLikes.includes(user.id));
+    const liked      = !!(user && (window.ORIGEN_API?.cache?.likes || []).includes(post.id));
+    const totalLikes = post.likes || 0;
 
-    const allComs = DB.comments();
-    const coms    = allComs[post.id] || [];
+    const coms = (window.ORIGEN_API?.cache?.comments || [])
+      .filter(x => x.post_id === post.id)
+      .map(x => ({ id:x.id, authorId:x.user_id, text:x.body, ts:x.created_at }));
 
-    const savesMap  = DB.saves();
-    const saved     = !!(user && (savesMap[user.id] || []).includes(post.id));
+    const saved = !!(user && (window.ORIGEN_API?.cache?.saves || []).includes(post.id));
 
-    const followsMap = DB.follows();
-    const myFollows  = user ? (followsMap[user.id] || []) : [];
+    const myFollows  = user ? remoteFollowRefs() : [];
     const following  = myFollows.includes(post.authorId);
     const isOwn      = !!(user && user.id === post.authorId);
 
     const showComs = state.openComments.has(post.id);
+    const shareable = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(post.id));
     const cidx     = Math.min(state.carIdx[post.id] || 0, (post.media || []).length - 1 || 0);
 
     /* media */
@@ -393,7 +646,7 @@
     if ((post.type === 'photo' || post.type === 'carousel') && post.media && post.media.length) {
       const isCarousel = post.type === 'carousel' && post.media.length > 1;
       media = `<div class="post-media${isCarousel ? ' is-carousel' : ''}" data-pid="${post.id}">
-        <img src="${post.media[cidx]}" alt="${esc(post.title)}" loading="lazy">
+        <img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">
         ${isCarousel ? `
           <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${post.id}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
           ${cidx > 0 ? `<button class="car-btn car-l" data-car="${post.id}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
@@ -402,7 +655,7 @@
         ` : ''}
       </div>`;
     } else if (post.type === 'video' && post.media && post.media.length) {
-      media = `<div class="post-media"><video controls preload="metadata" src="${post.media[0]}" style="width:100%;display:block;max-height:480px"></video></div>`;
+      media = `<div class="post-media"><video controls muted playsinline preload="metadata" src="${esc(safeMediaUrl(post.media[0]))}" aria-label="${esc(post.title || 'Video cultural')}"></video></div>`;
     }
 
     const authorHref = author._kind === 'creator' ? `#perfil/${author.id}` : `#usuario/${author.id}`;
@@ -424,8 +677,11 @@
       </div>
       ${media}
       <div class="post-body${post.type === 'text' ? ' post-text-body' : ''}">
-        ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
-        <h3 class="post-title">${esc(post.title)}</h3>
+        <div class="post-context-chips">
+          ${post.category ? `<span class="post-cat">${esc(post.category)}</span>` : ''}
+          ${post.contentPurpose ? `<span class="post-purpose">${esc(contentPurposeLabel(post.contentPurpose))}</span>` : ''}
+        </div>
+        <h3 class="post-title">${shareable ? `<a href="#publicacion/${encodeURIComponent(post.id)}" aria-label="${state.lang === 'es' ? 'Abrir historia cultural' : 'Open cultural story'}: ${esc(post.title)}">${esc(post.title)}</a>` : esc(post.title)}</h3>
         <p class="post-desc">${esc(post.description)}</p>
         ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
       </div>
@@ -439,9 +695,10 @@
         <button class="pact save-btn${saved ? ' on' : ''}" data-save="${post.id}" ${!user ? 'data-needs-auth' : ''} aria-label="${saved ? 'Guardado' : 'Guardar'}">
           ${saved ? '◆' : '◇'}
         </button>
-        <button class="pact share-btn" data-share="${post.id}" aria-label="Compartir">↗</button>
+        ${shareable ? `<button class="pact share-btn" data-share="${post.id}" aria-label="${state.lang === 'es' ? 'Compartir esta historia' : 'Share this story'}">↗</button>` : ''}
         <button class="pact report-btn" data-report="${post.id}" aria-label="Reportar" style="margin-left:auto">⚑</button>
       </div>
+      <div class="post-rights-link"><a href="#solicitar-revision/post/${encodeURIComponent(post.id)}">${state.lang === 'es' ? '¿Uso no autorizado? Solicitar revisión' : 'Unauthorised use? Request a review'}</a></div>
       ${showComs ? commentBlock(post.id, coms) : ''}
     </article>`;
   }
@@ -475,8 +732,8 @@
   ═══════════════════════════════════════════════════════════ */
   function storiesRow() {
     const user     = me();
-    const myFollow = user ? (DB.follows()[user.id] || []) : [];
-    const all      = [...creators, ...Object.values(DB.users())].slice(0, 14);
+    const myFollow = user ? remoteFollowRefs() : [];
+    const all      = directoryProfiles().slice(0, 14);
     return `<div class="stories-row"><div class="stories-scroll">
       ${user ? `<a class="story-item" href="#mi-perfil">
         <div class="story-ring own">${avatarEl(user, 'story')}</div>
@@ -498,19 +755,22 @@
      CREATOR CARD (directory)
   ═══════════════════════════════════════════════════════════ */
   function creatorCard(c) {
-    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const favs  = remoteFavoriteRefs();
     const saved = favs.includes(c.id);
+    const href  = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`;
+    const image = c.image || c.avatar || 'assets/logo-mark.svg';
     return `<article class="creator-card">
       <div class="creator-card-image">
-        <a href="#perfil/${c.id}" aria-label="${t('profile')}: ${c.name}"><img src="${c.image}" alt="${c.name}: ${c.category}" loading="lazy"></a>
+        <a href="${href}" aria-label="${esc(t('profile'))}: ${esc(c.name)}"><img src="${esc(safeMediaUrl(image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}: ${esc(c.category)}" loading="lazy"></a>
         <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
       </div>
       <div class="creator-card-body">
-        <div class="creator-meta"><span>${c.type}</span><span>${verBadge(c)} ${c.location}</span></div>
-        <h3><a href="#perfil/${c.id}">${c.name}</a></h3>
-        <p>${c.short}</p>
-        <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers)} seguidores</span><a class="link-arrow" href="#perfil/${c.id}">${t('profile')}</a></div>
+        <div class="creator-meta"><span>${esc(c.type)}</span><span>${verBadge(c)} ${esc(c.location)}</span></div>
+        <h3><a href="${href}">${esc(c.name)}</a></h3>
+        <div class="creator-trust-label">${profileTrustChip(c)}</div>
+        <p>${esc(c.short)}</p>
+        <div class="creator-tags">${(c.tags || []).map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
+        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers || 0)} seguidores</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
       </div>
     </article>`;
   }
@@ -523,43 +783,164 @@
       <div class="footer-top">
         <div class="footer-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"><p>${t('tagline')}<br><br>Una red social cultural para descubrir, seguir y valorar culturas vivas.</p></div>
         <div><h4>Explorar</h4><div class="footer-links"><a href="#explorar">Perfiles culturales</a><a href="#feed">Feed cultural</a><a href="#pasaporte">Pasaporte Cultural</a></div></div>
-        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
+        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#confianza">Centro de confianza</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
         <div><h4>Social</h4><div class="footer-links"><a href="https://www.instagram.com/origen.cultural" target="_blank" rel="noreferrer">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></div></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Demo funcional · Versión productiva: Supabase</span></div>
+      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Beta controlada · Datos sincronizados con Supabase</span></div>
     </div></footer>`;
+  }
+
+  function enhanceAccessibility() {
+    let seq = 0;
+    document.querySelectorAll('.form-field').forEach(field => {
+      const label = field.querySelector(':scope > label');
+      const control = field.querySelector(':scope > input, :scope > textarea, :scope > select');
+      if (!label || !control) return;
+      if (!control.id) control.id = `origen-field-${++seq}`;
+      label.setAttribute('for', control.id);
+    });
+
+    document.querySelectorAll('input[placeholder="Añade un comentario..."]').forEach(input => {
+      if (!input.getAttribute('aria-label')) {
+        input.setAttribute('aria-label', state.lang === 'es' ? 'Añadir comentario' : 'Add comment');
+      }
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════
      SHELL / NAV
   ═══════════════════════════════════════════════════════════ */
+  function updateStaticLanguage() {
+    const es = state.lang === 'es';
+    const setText = (selector, esText, enText) => {
+      const el = document.querySelector(selector);
+      if (el) el.textContent = es ? esText : enText;
+    };
+
+    setText('#skip-link', 'Saltar al contenido', 'Skip to content');
+    setText('#connection-status-text',
+      'Parece que estás sin conexión. El registro, las publicaciones y los cambios de cuenta requieren internet.',
+      'You appear to be offline. Registration, posting and account changes require internet.');
+    setText('#drawer-manifesto',
+      'La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.',
+      'Culture is not just another product. It is identity, memory, knowledge and future.');
+    setText('#search-eyebrow', 'DESCUBRIR', 'DISCOVER');
+    setText('#search-title', 'Busca cultura viva', 'Search living culture');
+    setText('#delete-post-eyebrow', 'PUBLICACIÓN', 'POST');
+    setText('#delete-post-title', 'Eliminar publicación', 'Delete post');
+    setText('#delete-post-copy',
+      'Esta acción eliminará la publicación de ORIGEN y limpiará su media gestionada cuando pertenezca a tu cuenta.',
+      'This will remove the post from ORIGEN and clean its managed media when it belongs to your account.');
+    setText('#delete-post-cancel', 'Cancelar', 'Cancel');
+    setText('#delete-post-confirm', 'Eliminar publicación', 'Delete post');
+    setText('#report-eyebrow', 'SEGURIDAD Y COMUNIDAD', 'SAFETY & COMMUNITY');
+    setText('#report-title', 'Reportar contenido', 'Report content');
+    setText('#report-copy',
+      'Cuéntanos qué ocurre. ORIGEN revisará el reporte sin transferir automáticamente ninguna sanción.',
+      'Tell us what happened. ORIGEN will review the report without automatically applying a penalty.');
+    setText('#report-reason-label', 'Motivo *', 'Reason *');
+    setText('#report-details-label', 'Contexto adicional (opcional)', 'Additional context (optional)');
+    setText('#report-cancel', 'Cancelar', 'Cancel');
+    setText('#report-submit', 'Enviar reporte', 'Submit report');
+    setText('#wellbeing-eyebrow', 'BIENESTAR DIGITAL', 'DIGITAL WELLBEING');
+    setText('#wellbeing-title', 'Una pausa también es parte del viaje.', 'A pause is part of the journey too.');
+    setText('#wellbeing-copy',
+      'Has llegado al objetivo diario de bienestar de ORIGEN. Puedes tomar un descanso, continuar un poco más o desactivar este recordatorio.',
+      'You have reached ORIGEN’s daily wellbeing target. You can take a break, continue a little longer, or disable this reminder.');
+    setText('[data-wellbeing="break"]', 'Tomar un descanso', 'Take a break');
+    setText('[data-wellbeing="snooze"]', 'Seguir 15 minutos', 'Continue 15 minutes');
+    setText('[data-wellbeing="off"]', 'Desactivar recordatorios', 'Turn off reminders');
+    setText('#wellbeing-note',
+      'ORIGEN no usa rachas ni recompensas por permanecer conectado.',
+      'ORIGEN does not use streaks or rewards for staying connected.');
+
+    const reportReason = document.getElementById('report-reason');
+    if (reportReason) {
+      const labels = state.lang === 'es'
+        ? {
+            '': 'Selecciona un motivo',
+            cultural_rights: 'Derechos culturales / conocimiento sensible',
+            harassment: 'Acoso, odio o amenazas',
+            impersonation: 'Suplantación o identidad falsa',
+            spam: 'Spam, fraude o contenido engañoso',
+            copyright: 'Copyright / propiedad intelectual',
+            other: 'Otro'
+          }
+        : {
+            '': 'Select a reason',
+            cultural_rights: 'Cultural rights / sensitive knowledge',
+            harassment: 'Harassment, hate or threats',
+            impersonation: 'Impersonation or false identity',
+            spam: 'Spam, fraud or misleading content',
+            copyright: 'Copyright / intellectual property',
+            other: 'Other'
+          };
+      [...reportReason.options].forEach(option => { option.textContent = labels[option.value] || option.value; });
+    }
+
+    const search = document.getElementById('global-search');
+    if (search) {
+      search.placeholder = es
+        ? 'Busca tradición, territorio, oficio o agente cultural...'
+        : 'Search tradition, territory, craft or cultural agent...';
+      search.setAttribute('aria-label', es ? 'Buscar cultura viva' : 'Search living culture');
+    }
+
+    document.getElementById('brand-home')?.setAttribute(
+      'aria-label',
+      es ? 'Origen Cultural, inicio' : 'Origen Cultural, home'
+    );
+    document.querySelector('.desktop-nav')?.setAttribute('aria-label', es ? 'Navegación principal' : 'Primary navigation');
+    document.querySelector('.mobile-drawer nav')?.setAttribute('aria-label', es ? 'Navegación móvil' : 'Mobile navigation');
+    document.getElementById('mobile-drawer')?.setAttribute('aria-label', es ? 'Menú de navegación' : 'Navigation menu');
+    document.querySelector('.bottom-nav')?.setAttribute('aria-label', es ? 'Navegación inferior' : 'Bottom navigation');
+  }
+
   function updateShell() {
+    updateStaticLanguage();
     const user       = me();
     const dNav       = document.querySelector('.desktop-nav');
     const dDrawer    = document.querySelector('.mobile-drawer nav');
     const dBottom    = document.querySelector('.bottom-nav');
     const profileBtn = document.getElementById('profile-button');
     const langBtn    = document.getElementById('language-toggle');
-    if (langBtn) langBtn.textContent = state.lang === 'es' ? 'EN' : 'ES';
+    const es         = state.lang === 'es';
+
+    document.documentElement.lang = state.lang;
+    if (langBtn) {
+      langBtn.textContent = es ? 'EN' : 'ES';
+      langBtn.setAttribute('aria-label', es ? 'Cambiar idioma a inglés' : 'Switch language to Spanish');
+    }
+    document.getElementById('menu-button')?.setAttribute('aria-label', es ? 'Abrir menú' : 'Open menu');
+    document.getElementById('close-menu')?.setAttribute('aria-label', es ? 'Cerrar menú' : 'Close menu');
+    document.getElementById('search-button')?.setAttribute('aria-label', es ? 'Buscar' : 'Search');
+    profileBtn?.setAttribute('aria-label', user
+      ? (es ? 'Abrir mi perfil' : 'Open my profile')
+      : (es ? 'Iniciar sesión' : 'Sign in'));
 
     if (user) {
       if (dNav) dNav.innerHTML = `
         <a href="#feed"      data-route-link="feed">Feed</a>
-        <a href="#explorar"  data-route-link="explorar">Explorar</a>
-        <a href="#mundo"     data-route-link="mundo">Mundo Cultural</a>
-        <a href="#crear"     data-route-link="crear">Crear</a>
-        <a href="#guardados" data-route-link="guardados">Guardados</a>`;
+        <a href="#explorar"  data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo"     data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        ${user.accountType === 'creator' ? `<a href="#crear" data-route-link="crear">${es ? 'Crear' : 'Create'}</a>` : ''}
+        <a href="#guardados" data-route-link="guardados">${es ? 'Guardados' : 'Saved'}</a>`;
       if (dDrawer) dDrawer.innerHTML = `
-        <a href="#feed">Feed</a><a href="#explorar">Explorar</a>
-        <a href="#mundo">Mundo Cultural</a>
-        <a href="#crear">Crear publicación</a>
-        <a href="#guardados">Guardados</a><a href="#mi-perfil">Mi perfil</a>`;
-      if (dBottom) dBottom.innerHTML = `
-        <a href="#feed"      data-route-link="feed"><span>⌂</span><small>Feed</small></a>
-        <a href="#explorar"  data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
-        <a class="create-action" href="#crear" data-route-link="crear"><span>＋</span><small>Crear</small></a>
-        <a href="#mundo"     data-route-link="mundo"><span>🌍</span><small>Mundo</small></a>
-        <a href="#mi-perfil" data-route-link="mi-perfil"><span>○</span><small>Perfil</small></a>`;
+        <a href="#feed">Feed</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        ${user.accountType === 'creator' ? `<a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>` : ''}
+        <a href="#guardados">${es ? 'Guardados' : 'Saved'}</a><a href="#mi-perfil">${es ? 'Mi perfil' : 'My profile'}</a>`;
+      if (dBottom) dBottom.innerHTML = user.accountType === 'creator'
+        ? `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
+            <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+            <a class="create-action" href="#crear" data-route-link="crear"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
+            <a href="#mundo" data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+            <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`
+        : `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
+            <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+            <a class="create-action" href="#pasaporte" data-route-link="pasaporte"><span aria-hidden="true">◇</span><small>${es ? 'Pasaporte' : 'Passport'}</small></a>
+            <a href="#mundo" data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+            <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`;
       if (profileBtn) {
         const init = (user.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
         if (user.avatar) {
@@ -574,22 +955,22 @@
       }
     } else {
       if (dNav) dNav.innerHTML = `
-        <a href="#inicio"   data-route-link="inicio">Inicio</a>
-        <a href="#explorar" data-route-link="explorar">Explorar</a>
-        <a href="#mundo"    data-route-link="mundo">Mundo Cultural</a>
-        <a href="#pasaporte" data-route-link="pasaporte">Pasaporte Cultural</a>
-        <a href="#impacto"  data-route-link="impacto">Impacto</a>`;
+        <a href="#inicio"   data-route-link="inicio">${es ? 'Inicio' : 'Home'}</a>
+        <a href="#explorar" data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo"    data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        <a href="#pasaporte" data-route-link="pasaporte">${es ? 'Pasaporte Cultural' : 'Cultural Passport'}</a>
+        <a href="#impacto"  data-route-link="impacto">${es ? 'Impacto' : 'Impact'}</a>`;
       if (dDrawer) dDrawer.innerHTML = `
-        <a href="#inicio">Inicio</a><a href="#explorar">Explorar</a>
-        <a href="#mundo">Mundo Cultural</a>
-        <a href="#pasaporte">Pasaporte Cultural</a>
-        <a href="#impacto">Impacto</a><a href="#registro">Crear Perfil Cultural</a>`;
+        <a href="#inicio">${es ? 'Inicio' : 'Home'}</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
+        <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
+        <a href="#pasaporte">${es ? 'Pasaporte Cultural' : 'Cultural Passport'}</a>
+        <a href="#impacto">${es ? 'Impacto' : 'Impact'}</a><a href="#registro">${es ? 'Crear Perfil Cultural' : 'Create Cultural Profile'}</a>`;
       if (dBottom) dBottom.innerHTML = `
-        <a href="#inicio"   data-route-link="inicio"><span>⌂</span><small>Inicio</small></a>
-        <a href="#explorar" data-route-link="explorar"><span>⌕</span><small>Explorar</small></a>
-        <a class="create-action" href="#registro" data-route-link="registro"><span>＋</span><small>Crear</small></a>
-        <a href="#mundo"    data-route-link="mundo"><span>🌍</span><small>Mundo</small></a>
-        <a href="#login"    data-route-link="login"><span>○</span><small>Entrar</small></a>`;
+        <a href="#inicio"   data-route-link="inicio"><span aria-hidden="true">⌂</span><small>${es ? 'Inicio' : 'Home'}</small></a>
+        <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
+        <a class="create-action" href="#registro" data-route-link="registro"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
+        <a href="#mundo"    data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
+        <a href="#login"    data-route-link="login"><span aria-hidden="true">○</span><small>${es ? 'Entrar' : 'Sign in'}</small></a>`;
       if (profileBtn) {
         profileBtn.style.backgroundImage = '';
         profileBtn.textContent = '○';
@@ -597,11 +978,14 @@
       }
     }
 
-    /* active link */
     const r    = currentRoute();
     const base = r.startsWith('perfil/') || r.startsWith('usuario/') ? 'explorar' : r;
-    document.querySelectorAll('[data-route-link]').forEach(a =>
-      a.classList.toggle('active', a.dataset.routeLink === base));
+    document.querySelectorAll('[data-route-link]').forEach(a => {
+      const active = a.dataset.routeLink === base;
+      a.classList.toggle('active', active);
+      if (active) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -610,7 +994,7 @@
 
   /* ── LANDING ─────────────────────────────────────────────── */
   function landingView() {
-    const featured = creators.slice(0, 5);
+    const featured = directoryProfiles().slice(0, 5);
     return `
     <!-- HERO GLOBE -->
     <section class="hero-globe-section">
@@ -628,11 +1012,11 @@
         </div>
         <a href="#login" class="hero-login-link">¿Ya tienes cuenta? Entrar →</a>
         <div class="hero-globe-stats">
-          <div class="hero-gstat"><strong>6</strong><span>Territorios activos</span></div>
+          <div class="hero-gstat"><strong>6</strong><span>Territorios explorables</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>5+</strong><span>Agentes culturales</span></div>
+          <div class="hero-gstat"><strong>4</strong><span>Perfiles de referencia</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>8+</strong><span>Publicaciones</span></div>
+          <div class="hero-gstat"><strong>Beta</strong><span>Controlada</span></div>
         </div>
       </div>
       <div class="hero-globe-right">
@@ -640,15 +1024,14 @@
         <div class="hero-globe-popup" id="hero-globe-popup" hidden></div>
         <div class="hero-globe-ui">
           <div class="hero-globe-ctrl-bar">
-            <button id="hero-globe-pause"    class="hero-ctrl-btn" title="Pausar / Reanudar rotación">⏸</button>
-            <button id="hero-globe-zoom-in"  class="hero-ctrl-btn" title="Acercar">+</button>
-            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="Alejar">−</button>
+            <button id="hero-globe-pause" class="hero-ctrl-btn" title="Pausar / Reanudar rotación" aria-label="Pausar o reanudar rotación">⏸</button>
+            <button id="hero-globe-zoom-in" class="hero-ctrl-btn" title="Acercar" aria-label="Acercar globo">+</button>
+            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="Alejar" aria-label="Alejar globo">−</button>
           </div>
           <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
         </div>
         <p class="hero-globe-hint">Toca un país para explorar su cultura</p>
-        <div class="hero-globe-territories" aria-label="Territorios activos">
-          <span class="hgt-title">Territorios activos</span>
+        <div class="hero-globe-territories">
           ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪','Perú'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽','México'],['japan','🇯🇵','Japón']]
             .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="Ver ${n}">${f} ${n}</button>`).join('')}
         </div>
@@ -673,7 +1056,7 @@
           <div><p class="eyebrow">CURADURÍA CULTURAL</p><h2>${t('featured')}</h2></div>
           <div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div>
         </div>
-        <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${c.image}" alt="${c.name}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${c.category} · ${c.location}</div><h3>${c.name}</h3><p>${c.short}</p></div></a>`).join('')}</div>
+        <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
       </div>
     </section>
 
@@ -681,7 +1064,7 @@
     <section class="section" style="background:var(--grey-2)">
       <div class="section-inner">
         <div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
-        <div class="creator-grid">${creators.slice(0, 3).map(creatorCard).join('')}</div>
+        <div class="creator-grid">${directoryProfiles().slice(0, 3).map(creatorCard).join('')}</div>
       </div>
     </section>
 
@@ -706,12 +1089,82 @@
     ${footer()}`;
   }
 
+  /* ── PUBLIC CULTURAL STORY (NO ACCOUNT REQUIRED) ─────────── */
+  function publicStoryView() {
+    const es = state.lang === 'es';
+    return `<section class="section public-story-section"><div class="section-inner public-story-layout">
+      <div class="public-story-heading">
+        <p class="eyebrow">${es ? 'HISTORIA CULTURAL' : 'CULTURAL STORY'}</p>
+        <h1>${es ? 'Una historia para descubrir y compartir' : 'A story to discover and share'}</h1>
+        <p class="lead">${es ? 'Conoce a su Agente Cultural y explora otras historias reales.' : 'Meet its Cultural Agent and explore more real stories.'}</p>
+      </div>
+      <div id="public-story-content" role="status" aria-live="polite">
+        <p>${es ? 'Buscando historia pública…' : 'Loading public story…'}</p>
+      </div>
+      <p><a class="btn secondary" href="#explorar">${es ? 'Descubrir Agentes Culturales' : 'Discover Cultural Agents'} →</a></p>
+    </div></section>${footer()}`;
+  }
+
+  async function bindPublicStory(route) {
+    const container = document.getElementById('public-story-content');
+    if (!container) return;
+    const es = state.lang === 'es';
+    const showNotFound = () => {
+      container.innerHTML = `<div class="empty-feed" role="status">
+        <h2>${es ? 'Historia no disponible' : 'Story unavailable'}</h2>
+        <p>${es ? 'Esta historia no existe, no es pública o ha sido retirada.' : 'This story does not exist, is not public, or has been removed.'}</p>
+      </div>`;
+    };
+    const id = route.slice('publicacion/'.length);
+    try {
+      const post = await window.ORIGEN_API?.getPublicPost(id);
+      if (!container.isConnected || currentRoute() !== route) return;
+      if (!post) { showNotFound(); return; }
+      // Profiles come from published and creator-only public data.
+      // If a profile was unavailable on first load, refresh that list once.
+      if (!getProfile(post.authorId)) {
+        await window.ORIGEN_API?.listPublicProfiles();
+        if (!container.isConnected || currentRoute() !== route) return;
+      }
+      const card = postCard(post);
+      if (!card) { showNotFound(); return; }
+      container.removeAttribute('role');
+      container.removeAttribute('aria-live');
+      const visitorInvite = !isAuth() ? `<aside class="public-story-join" aria-label="${es ? 'Conectar con esta historia' : 'Connect with this story'}">
+        <p>${es
+          ? '¿Quieres guardar esta historia o seguir a su Agente Cultural? Puedes leerla sin cuenta.'
+          : 'Want to save this story or follow its Cultural Agent? Reading does not require an account.'}</p>
+        <a class="btn" data-story-login href="#login">${es ? 'Iniciar sesión para interactuar' : 'Sign in to interact'}</a>
+      </aside>` : '';
+      container.innerHTML = card + visitorInvite;
+      state.publicStoryPost = post;
+      // Only preserve a validated, currently visible cultural permalink. No
+      // automatic follows, saves or post writes after sign-in.
+      container.addEventListener('click', event => {
+        if (isAuth() || currentRoute() !== route) return;
+        const action = event.target.closest('[data-story-login], [data-needs-auth], .com-login a[href="#login"]');
+        if (action && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+          state.authReturnRoute = 'publicacion/' + id;
+        }
+      }, true);
+      bindPostInteractions();
+      bindFollowButtons();
+      bindFeedVideos();
+    } catch (_) {
+      if (!container.isConnected || currentRoute() !== route) return;
+      container.innerHTML = `<div class="empty-feed" role="alert">
+        <h2>${es ? 'No se pudo cargar la historia' : 'Could not load this story'}</h2>
+        <p>${es ? 'Comprueba tu conexión e inténtalo de nuevo.' : 'Check your connection and try again.'}</p>
+      </div>`;
+    }
+  }
+
   /* ── FEED ────────────────────────────────────────────────── */
   function feedView() {
     if (!isAuth()) return loginView();
     const posts = feedPosts();
     const user  = me();
-    const myFollows = DB.follows()[user.id] || [];
+    const myFollows = remoteFollowRefs();
     return `<div class="feed-layout">
       ${storiesRow()}
       <div class="feed-col">
@@ -723,13 +1176,14 @@
           ${posts.length
             ? posts.map(postCard).join('')
             : `<div class="empty-feed"><p>Sigue agentes culturales para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar agentes culturales</a></div>`}
+          ${posts.length ? `<div id="feed-sentinel" class="feed-sentinel${window.ORIGEN_API?.cache?.postsExhausted ? ' done' : ''}" aria-live="polite"></div>` : ''}
         </div>
       </div>
       <aside class="feed-aside">
         <div class="aside-card">
           <p class="eyebrow">DESCUBRIR</p>
           <h3>Agentes culturales</h3>
-          ${creators.slice(0, 4).map(c => `<div class="aside-row">
+          ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
             <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? 'Siguiendo' : '+ Seguir'}</button>
@@ -778,7 +1232,7 @@
   function renderExploreGrid() {
     const grid = document.getElementById('explore-grid'); if (!grid) return;
     const q = state.query.toLowerCase().trim();
-    const filtered = creators.filter(c => {
+    const filtered = directoryProfiles().filter(c => {
       const catOk = state.activeCategory === 'Todos' || c.category.toLowerCase().includes(state.activeCategory.toLowerCase()) || c.tags.some(tg => tg.toLowerCase().includes(state.activeCategory.toLowerCase()));
       const qOk   = !q || [c.name, c.type, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
       return catOk && qOk;
@@ -791,21 +1245,22 @@
 
   /* ── CREATOR PROFILE ─────────────────────────────────────── */
   function creatorProfileView(id) {
-    const c = creators.find(x => x.id === id) || creators[0];
+    const c = creators.find(x => x.id === id);
+    if (!c) return `<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a class="btn" href="#explorar">Volver a explorar</a></div></section>`;
     const user = me();
-    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const myFollows = user ? remoteFollowRefs() : [];
     const isFollowing = myFollows.includes(c.id);
-    const favs  = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
+    const favs  = remoteFavoriteRefs();
     const isSaved = favs.includes(c.id);
     const cPosts = allPosts().filter(p => p.authorId === c.id);
     return `<section class="profile-hero">
-      <img class="profile-cover" src="${c.cover}" alt="Portada de ${esc(c.name)}">
+      <img class="profile-cover" src="${esc(safeMediaUrl(c.cover))}" alt="Portada de ${esc(c.name)}">
       <div class="profile-hero-content">
-        <img class="profile-avatar" src="${c.image}" alt="${esc(c.name)}">
+        <img class="profile-avatar" src="${esc(safeMediaUrl(c.image))}" alt="${esc(c.name)}">
         <div class="profile-title">
-          <p class="eyebrow">${c.type} · ${c.location}</p>
+          <p class="eyebrow">${esc(c.type)} · ${esc(c.location)}</p>
           <h1>${esc(c.name)} ${verBadge(c)}</h1>
-          <p>${c.category} · ${Intl.NumberFormat('es').format(c.followers)} seguidores</p>
+          <p>${esc(c.category)} · ${Intl.NumberFormat('es').format(c.followers)} seguidores</p>
         </div>
         <div class="profile-actions">
           <button class="btn light" data-fuser="${c.id}">${isFollowing ? t('following') : t('follow')}</button>
@@ -815,48 +1270,59 @@
     </section>
     <section class="profile-layout">
       <div>
+        ${profileTrustNotice(c)}
         <div class="profile-story">
           <p class="eyebrow">SU HISTORIA CULTURAL</p>
           <h2>Una puerta directa a su identidad</h2>
-          <p>${c.story}</p>
-          <div class="creator-tags">${c.tags.map(tg => `<span>${tg}</span>`).join('')}</div>
+          <p>${esc(c.story)}</p>
+          <div class="creator-tags">${c.tags.map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
         </div>
         <div style="margin-top:60px">
           <p class="eyebrow">PUBLICACIONES (${cPosts.length || c.posts.length})</p>
           ${cPosts.length
             ? `<div id="creator-posts" style="margin-top:20px">${cPosts.map(postCard).join('')}</div>`
-            : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${p.image}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
+            : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${esc(safeMediaUrl(p.image))}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
         </div>
       </div>
       <aside class="profile-aside">
         <p class="eyebrow">PERFIL CULTURAL</p>
         <dl>
-          <div><dt>Tipo</dt><dd>${c.type}</dd></div>
-          <div><dt>Ubicación</dt><dd>${c.location}</dd></div>
-          <div><dt>Verificación</dt><dd>${c.verified ? 'Verificado manualmente' : 'En proceso'}</dd></div>
+          <div><dt>Tipo</dt><dd>${esc(c.type)}</dd></div>
+          <div><dt>Ubicación</dt><dd>${esc(c.location)}</dd></div>
+          <div><dt>${state.lang === 'es' ? 'Estado del perfil' : 'Profile status'}</dt><dd>${esc(profileTrustInfo(c).label)}</dd></div>
         </dl>
         ${socialLinksHtml(c)}
-        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del agente cultural.</p>
+        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del creador.</p>
       </aside>
     </section>
     ${footer()}`;
   }
 
+  function claimProfileView(id) {
+    const c = creators.find(x => x.id === id);
+    const es = state.lang === 'es';
+    const L = (esText, enText) => es ? esText : enText;
+    if (!c) return `<section class="section"><div class="section-inner"><h2>${L('Perfil no encontrado','Profile not found')}</h2><a href="#explorar" class="btn">${L('Volver','Back')}</a></div></section>`;
+    const user = me();
+    if (!user) return `<div class="auth-page"><div class="auth-card"><a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a><h2>${L('Reclamar','Claim')} ${esc(c.name)}</h2><p class="auth-sub">${L('Para proteger a las comunidades y evitar suplantaciones, primero debes iniciar sesión.','To protect communities and prevent impersonation, you must sign in first.')}</p><a class="btn" href="#login" style="width:100%;text-align:center">${L('Iniciar sesión','Sign in')}</a><p class="auth-alt"><a href="#registro">${L('Crear cuenta ORIGEN','Create an ORIGEN account')}</a></p></div></div>`;
+    return `<section class="page-hero"><div class="section-inner"><p class="eyebrow">${L('RECLAMACIÓN DE PERFIL','PROFILE CLAIM')}</p><h1>${L('¿Representas a','Do you represent')} ${esc(c.name)}?</h1><p class="lead">${L('La gestión no se transfiere automáticamente. ORIGEN revisará que tengas autoridad para representar a esta persona, comunidad, negocio u organización.','Management is not transferred automatically. ORIGEN will review whether you have authority to represent this person, community, business or organisation.')}</p></div></section><section class="section"><div class="section-inner" style="max-width:820px"><form id="claim-form" class="form-grid" data-profile-ref="${esc(c.id)}"><div class="form-field"><label>${L('Tu nombre completo *','Your full name *')}</label><input name="claimant_name" value="${esc(user.name || '')}" required autocomplete="name"></div><div class="form-field"><label>${L('Cargo o relación *','Role or relationship *')}</label><input name="relationship_role" required placeholder="${L('Fundadora, gerente, representante autorizado…','Founder, manager, authorised representative…')}"></div><div class="form-field"><label>${L('Correo oficial *','Official email *')}</label><input type="email" name="official_email" value="${esc(user.email || '')}" required autocomplete="email"></div><div class="form-field"><label>${L('Web o red social oficial','Official website or social profile')}</label><input name="official_url" inputmode="url" placeholder="https://"></div><div class="form-field full"><label>${L('¿Cómo podemos verificar tu autoridad? *','How can we verify your authority? *')}</label><textarea name="explanation" rows="4" required maxlength="6000"></textarea></div><div class="form-field full"><label><input type="checkbox" name="authority" required> ${L('Declaro que estoy autorizado/a para solicitar la gestión de este perfil.','I declare that I am authorised to request management of this profile.')}</label></div><div id="claim-status" class="form-field full" role="status" aria-live="polite"></div><div class="form-field full"><button class="btn" type="submit" style="width:100%">${L('Enviar solicitud para revisión','Submit claim for review')}</button></div></form></div></section>${footer()}`;
+  }
+
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
     const user    = me();
-    const profile = DB.users()[id];
+    const profile = (user && user.id === id) ? user : normalisePublicProvider((window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id));
     if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
-    const myFollows = user ? (DB.follows()[user.id] || []) : [];
+    const myFollows = user ? remoteFollowRefs() : [];
     const isMe      = !!(user && user.id === id);
     const following = myFollows.includes(id);
-    const followsMap = DB.follows();
-    const follCount  = Object.values(followsMap).filter(list => list.includes(id)).length;
-    const followCount = (followsMap[id] || []).length;
+    const ownedCultural = (window.ORIGEN_API?.cache?.culturalProfiles || []).find(cp => cp.owner_id === id);
+    const follCount = ownedCultural?.follower_count || 0;
+    const followCount = isMe ? remoteFollowRefs().length : 0;
     const uPosts = allPosts().filter(p => p.authorId === id);
     return `<section class="profile-hero">
       ${profile.cover
-        ? `<img class="profile-cover" src="${profile.cover}" alt="Portada">`
+        ? `<img class="profile-cover" src="${esc(safeMediaUrl(profile.cover))}" alt="Portada">`
         : `<div class="profile-cover-blank"></div>`}
       <div class="profile-hero-content">
         ${avatarEl(profile, 'lg')}
@@ -874,7 +1340,9 @@
     </section>
     <section class="profile-layout">
       <div>
+        ${profile.accountType === 'creator' ? profileTrustNotice(profile) : ''}
         ${profile.story ? `<div class="profile-story"><p class="eyebrow">HISTORIA CULTURAL</p><p>${esc(profile.story)}</p></div>` : ''}
+        ${profile.accountType === 'creator' ? `<section class="provider-professional"><div class="provider-prof-head"><div><p class="eyebrow">PERFIL PROFESIONAL CULTURAL</p><h2>${esc(profile.providerHeadline || 'Servicios y conocimiento cultural')}</h2></div>${profile.website ? `<a class="btn secondary" href="${esc(safeExternalUrl(profile.website))}" target="_blank" rel="noopener noreferrer">Visitar sitio web ↗</a>` : ''}</div>${profile.serviceDescription ? `<p class="provider-prof-copy">${esc(profile.serviceDescription)}</p>` : ''}${profile.services && profile.services.length ? `<div class="service-grid">${profile.services.map(service => `<div class="service-chip">${esc(service)}</div>`).join('')}</div>` : `<p class="form-note">Añade tus servicios, talleres, experiencias o conocimientos desde “Editar perfil”.</p>`}<div class="provider-contact-row">${profile.publicEmail ? `<a href="mailto:${esc(profile.publicEmail)}">✉ ${esc(profile.publicEmail)}</a>` : ''}${profile.publicWhatsapp ? `<span>WhatsApp: ${esc(profile.publicWhatsapp)}</span>` : ''}</div></section>` : ''}
         ${profile.categories && profile.categories.length ? `<div class="creator-tags" style="margin:18px 0">${profile.categories.map(cat => `<span>${esc(cat)}</span>`).join('')}</div>` : ''}
         <div style="margin-top:40px">
           <p class="eyebrow">PUBLICACIONES (${uPosts.length})</p>
@@ -895,6 +1363,7 @@
         </dl>
         ${socialLinksHtml(profile)}
         ${isMe ? `<a href="#editar-perfil" class="btn secondary" style="width:100%;margin-top:20px;text-align:center">Editar perfil</a>
+                  <a href="mailto:info.origencultural@gmail.com?subject=ORIGEN%20-%20Solicitud%20de%20privacidad%20o%20eliminaci%C3%B3n%20de%20cuenta" class="text-button privacy-request-link" style="display:block;width:100%;margin-top:14px;text-align:center">Solicitar privacidad / eliminación de cuenta</a>
                   <button id="logout-btn-aside" class="btn" style="width:100%;margin-top:10px;background:transparent;color:#888;border-color:#ddd">Cerrar sesión</button>` : ''}
       </aside>
     </section>
@@ -910,7 +1379,7 @@
   function savedView() {
     const user = me();
     if (!user) { go('login'); return ''; }
-    const saves = DB.saves()[user.id] || [];
+    const saves = window.ORIGEN_API?.cache?.saves || [];
     const saved = allPosts().filter(p => saves.includes(p.id));
     return `<section class="page-hero">
       <div class="section-inner">
@@ -933,9 +1402,37 @@
   function createPostView() {
     const user = me();
     if (!user) { go('login'); return ''; }
+    if (user.accountType !== 'creator') {
+      const es = state.lang === 'es';
+      return `<section class="page-hero"><div class="section-inner">
+        <p class="eyebrow">${es ? 'BETA ORIGEN' : 'ORIGEN BETA'}</p>
+        <h1>${es ? 'El feed cultural es para Agentes Culturales' : 'The cultural feed is for Cultural Agents'}</h1>
+        <p class="lead">${es
+          ? 'Como Explorador Cultural puedes descubrir, seguir, guardar, aprender y conectar con Agentes Culturales. La publicación de contenido para Exploradores no forma parte de esta beta.'
+          : 'As a Cultural Explorer you can discover, follow, save, learn and connect with Cultural Agents. Publishing content as an Explorer is not part of this beta.'}</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px">
+          <a class="btn" href="#explorar">${es ? 'Explorar cultura' : 'Explore culture'}</a>
+          <a class="btn secondary" href="#pasaporte">${es ? 'Mi Pasaporte Cultural' : 'My Cultural Passport'}</a>
+        </div>
+      </div></section>${footer()}`;
+    }
     const d = state.createData;
-    const types = [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
+    const isProvider = true;
+    const types = isProvider
+      ? [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video']]
+      : [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
     const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const PURPOSES = [
+      ['education','Educación cultural'],
+      ['history','Historia y memoria'],
+      ['technique','Técnica / proceso'],
+      ['territory','Territorio'],
+      ['language','Lengua'],
+      ['gastronomy','Gastronomía'],
+      ['arts','Artes / expresión'],
+      ['heritage','Patrimonio'],
+      ['community','Comunidad']
+    ];
     const hasMedia = d.media && d.media.length > 0;
 
     return `<section class="page-hero" style="min-height:220px">
@@ -952,27 +1449,58 @@
         ${d.type !== 'text' ? `
           <div class="upload-zone wide" id="post-media-zone">
             ${hasMedia
-              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb"><img src="${src}" alt=""><button class="remove-media" data-rmidx="${i}" type="button">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb${d.type === 'video' ? ' preview-video' : ''}">${d.type === 'video'
+                ? `<video src="${esc(safeMediaUrl(src))}" controls muted playsinline preload="metadata" aria-label="Vista previa del video"></video>`
+                : `<img src="${esc(safeMediaUrl(src))}" alt="Vista previa de imagen ${i + 1}">`}
+                <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
-            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/*' : 'image/*'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
+            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
         <form class="form-grid" id="create-form">
+          ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">FEED CULTURAL Y EDUCATIVO</p><p>Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.</p></div>` : ''}
           <div class="form-field full"><label>Título *</label><input name="title" required placeholder="Un título que invite a descubrir" value="${esc(d.title || '')}"></div>
           <div class="form-field full"><label>Descripción *</label><textarea name="description" rows="4" required placeholder="Comparte el contexto, la historia o el significado cultural...">${esc(d.description || '')}</textarea></div>
           <div class="form-field"><label>Categoría cultural</label><select name="category">${CATS.map(c => `<option${d.category === c ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
+          <div class="form-field"><label>Propósito cultural *</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
           <div class="form-field"><label>Territorio</label><input name="territory" placeholder="Ciudad, región o país" value="${esc(d.territory || '')}"></div>
           <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
+          <fieldset class="post-cultural-safety form-field full" aria-describedby="post-safety-intro">
+            <legend>${state.lang === 'es' ? 'Responsabilidad cultural antes de publicar' : 'Cultural responsibility before publishing'}</legend>
+            <p id="post-safety-intro">${state.lang === 'es'
+              ? 'Confirma ambos puntos para cada publicación. Tu declaración no equivale a una verificación oficial de ORIGEN.'
+              : 'Confirm both statements for each post. Your declaration is not an official verification by ORIGEN.'}</p>
+            <label class="post-safety-check">
+              <input type="checkbox" name="rightsAcknowledged" data-post-attestation="rightsAcknowledged" required ${d.rightsAcknowledged ? 'checked' : ''}>
+              <span>${state.lang === 'es'
+                ? 'Tengo derecho o autorización para compartir los textos, fotografías, videos y testimonios de esta publicación, incluidas las imágenes de otras personas y menores cuando corresponda.'
+                : 'I own or have permission to share this post’s text, photos, videos and testimonies, including images of other people and minors where applicable.'}</span>
+            </label>
+            <label class="post-safety-check">
+              <input type="checkbox" name="culturalAcknowledged" data-post-attestation="culturalAcknowledged" required ${d.culturalAcknowledged ? 'checked' : ''}>
+              <span>${state.lang === 'es'
+                ? 'He comprobado que tengo autorización para divulgar cualquier conocimiento cultural que requiera consentimiento comunitario y que no revelo información sagrada, restringida o privada sin permiso.'
+                : 'I have confirmed permission to share any cultural knowledge requiring community consent, and I am not disclosing sacred, restricted or private information without permission.'}</span>
+            </label>
+            <p class="post-safety-help">${state.lang === 'es'
+              ? 'Si no puedes confirmar ambos puntos, no publiques todavía. Solicita permiso o retira ese contenido.'
+              : 'If you cannot confirm both statements, do not publish yet. Request permission or remove that content.'}
+              <a href="#confianza">${state.lang === 'es' ? 'Centro de confianza' : 'Trust Center'}</a>.
+            </p>
+            <p id="post-safety-error" class="post-safety-error" role="alert" aria-live="assertive" hidden></p>
+          </fieldset>
           <div class="form-field full">
-            <button class="btn" type="submit" style="width:100%">Publicar →</button>
-            <p class="form-note" style="margin-top:12px">Publicación guardada en esta demo funcional. La versión productiva conectará con Supabase Storage.</p>
+            <button class="btn" type="submit" style="width:100%">${state.lang === 'es' ? 'Publicar →' : 'Publish →'}</button>
+            <p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>
           </div>
         </form>
       </div>
       <div class="create-preview-wrap">
         <p class="eyebrow" style="margin-bottom:16px">VISTA PREVIA</p>
-        ${d.title || hasMedia
-          ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
-          : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
+        <div id="create-live-preview">
+          ${d.title || hasMedia
+            ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+            : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
+        </div>
       </div>
     </div>`;
   }
@@ -992,16 +1520,16 @@
     <div class="edit-wrap">
       <div class="upload-section">
         <div class="upload-zone" id="edit-avatar-zone">
-          ${user.avatar ? `<img src="${user.avatar}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
-          <input type="file" id="edit-avatar-input" accept="image/*" style="display:none">
-          <button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>
+          ${user.avatar ? `<img src="${esc(safeMediaUrl(user.avatar))}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
+          <input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>
         </div>
         <div class="upload-zone wide" id="edit-cover-zone">
           ${user.cover
-            ? `<img src="${user.cover}" class="edit-cover-preview" alt="Portada">`
+            ? `<img src="${esc(safeMediaUrl(user.cover))}" class="edit-cover-preview" alt="Portada">`
             : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
-          <input type="file" id="edit-cover-input" accept="image/*" style="display:none">
-          <button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>
+          <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>
         </div>
       </div>
       <form class="form-grid" id="edit-form">
@@ -1012,7 +1540,8 @@
           <label>Categorías culturales</label>
           <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${userCats.includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
         </div>
-        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES SOCIALES</p>
+        ${user.accountType === 'creator' ? `<p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">PERFIL PROFESIONAL CULTURAL</p><div class="form-field full"><label>Titular profesional</label><input name="providerHeadline" maxlength="180" value="${esc(user.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((user.services || []).join(', '))}" placeholder="Talleres, piezas por encargo, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Explica qué ofreces, para quién y cómo pueden contactarte.">${esc(user.serviceDescription || '')}</textarea></div>` : ''}
+        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES Y CONTACTO</p>
         ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo'],['web','Sitio web']].map(([k, label]) =>
           `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(user.links && user.links[k] ? user.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
         <div class="form-field full">
@@ -1027,68 +1556,102 @@
   function registerView() {
     const step  = state.regStep;
     const d     = state.regData;
-    const steps = ['Tipo de cuenta','Datos básicos','Foto y portada','Tu historia','Redes sociales'];
-    const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const es    = state.lang === 'es';
+    const L     = (esText, enText) => es ? esText : enText;
+    const steps = es
+      ? ['Tipo de cuenta','Datos básicos','Foto y portada','Tu historia','Redes sociales']
+      : ['Account type','Basic details','Photo and cover','Your story','Social links'];
+    const CATS  = [
+      ['Artesanía y tradición','Crafts and tradition'],
+      ['Gastronomía ancestral','Ancestral gastronomy'],
+      ['Música y danza','Music and dance'],
+      ['Territorio y patrimonio','Territory and heritage'],
+      ['Arte y cultura','Art and culture'],
+      ['Educación cultural','Cultural education'],
+      ['Comunidad','Community']
+    ];
 
-    const progress = `<div class="wizard-progress">
+    const progress = `<div class="wizard-progress" aria-label="${L('Progreso de registro','Registration progress')}">
       <div class="wizard-steps">
         ${steps.map((_, i) => `
-          <div class="wstep${i + 1 === step ? ' active' : i + 1 < step ? ' done' : ''}">
+          <div class="wstep${i + 1 === step ? ' active' : i + 1 < step ? ' done' : ''}" ${i + 1 === step ? 'aria-current="step"' : ''}>
             ${i + 1 < step ? '✓' : i + 1}
           </div>
           ${i < steps.length - 1 ? `<div class="wline${i + 1 < step ? ' done' : ''}"></div>` : ''}
         `).join('')}
       </div>
-      <p class="wizard-label">Paso ${step} de ${steps.length} · ${steps[step - 1]}</p>
+      <p class="wizard-label">${L('Paso','Step')} ${step} ${L('de','of')} ${steps.length} · ${steps[step - 1]}</p>
     </div>`;
 
     let body = '';
     if (step === 1) {
       body = `<div class="atype-grid">
-        <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator">
-          <span class="atype-icon">◈</span>
-          <h3>Agente Cultural</h3>
-          <p>Persona que practica, comparte, transmite o contribuye activamente a mantener viva una expresión, conocimiento o práctica cultural.</p>
+        <button class="atype-card${d.accountType === 'creator' ? ' selected' : ''}" data-atype="creator" aria-pressed="${d.accountType === 'creator'}">
+          <span class="atype-icon" aria-hidden="true">◈</span>
+          <h3>${L('Agente Cultural','Cultural Agent')}</h3>
+          <p>${L(
+            'Persona, comunidad, negocio u organización que preserva, enseña, comparte u ofrece servicios vinculados a la cultura.',
+            'A person, community, business or organisation that preserves, teaches, shares or offers culture-related services.'
+          )}</p>
         </button>
-        <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer">
-          <span class="atype-icon">◎</span>
-          <h3>Explorador Cultural</h3>
-          <p>Persona interesada en descubrir, aprender y conectar con culturas vivas del mundo.</p>
+        <button class="atype-card${d.accountType === 'explorer' ? ' selected' : ''}" data-atype="explorer" aria-pressed="${d.accountType === 'explorer'}">
+          <span class="atype-icon" aria-hidden="true">◎</span>
+          <h3>${L('Explorador Cultural','Cultural Explorer')}</h3>
+          <p>${L(
+            'Persona interesada en descubrir, aprender y conectar con culturas vivas del mundo.',
+            'A person interested in discovering, learning about and connecting with living cultures around the world.'
+          )}</p>
         </button>
       </div>`;
     } else if (step === 2) {
       body = `<form class="form-grid" id="reg-basic">
-        <div class="form-field"><label>Nombre completo *</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
-        <div class="form-field"><label>Correo electrónico *</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
-        <div class="form-field"><label>Contraseña *</label><input type="password" name="password" required minlength="6"></div>
-        <div class="form-field"><label>País y ciudad *</label><input name="location" required placeholder="Quito, Ecuador" value="${esc(d.location || '')}"></div>
+        <div class="form-field"><label>${L('Nombre completo *','Full name *')}</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
+        <div class="form-field"><label>${L('Correo electrónico *','Email address *')}</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
+        <div class="form-field"><label>${L('Contraseña *','Password *')}</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
+        <div class="form-field"><label>${L('País y ciudad *','Country and city *')}</label><input name="location" required placeholder="${L('Quito, Ecuador','Brisbane, Australia')}" value="${esc(d.location || '')}"></div>
       </form>`;
     } else if (step === 3) {
       body = `<div class="upload-section">
         <div class="upload-zone" id="reg-avatar-zone">
-          ${d.avatar ? `<img src="${d.avatar}" class="edit-avatar-preview" alt="Foto de perfil">` : `<div class="upload-placeholder"><span>+</span><p>Foto de perfil</p><small>Opcional</small></div>`}
-          <input type="file" id="reg-avatar-input" accept="image/*" style="display:none">
-          <button class="btn" type="button" onclick="document.getElementById('reg-avatar-input').click()">Subir foto de perfil</button>
+          ${d.avatar ? `<img src="${esc(safeMediaUrl(d.avatar))}" class="edit-avatar-preview" alt="${L('Foto de perfil','Profile photo')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de perfil','Profile photo')}</p><small>${L('Opcional','Optional')}</small></div>`}
+          <input type="file" id="reg-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <button class="btn" type="button" data-file-trigger="reg-avatar-input">${L('Subir foto de perfil','Upload profile photo')}</button>
         </div>
         <div class="upload-zone wide" id="reg-cover-zone">
-          ${d.cover ? `<img src="${d.cover}" class="edit-cover-preview" alt="Portada">` : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p><small>Opcional</small></div>`}
-          <input type="file" id="reg-cover-input" accept="image/*" style="display:none">
-          <button class="btn secondary" type="button" onclick="document.getElementById('reg-cover-input').click()">Subir portada</button>
+          ${d.cover ? `<img src="${esc(safeMediaUrl(d.cover))}" class="edit-cover-preview" alt="${L('Portada','Cover image')}">` : `<div class="upload-placeholder"><span aria-hidden="true">+</span><p>${L('Foto de portada','Cover image')}</p><small>${L('Opcional','Optional')}</small></div>`}
+          <input type="file" id="reg-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <button class="btn secondary" type="button" data-file-trigger="reg-cover-input">${L('Subir portada','Upload cover')}</button>
         </div>
+        <p class="form-note" style="width:100%;max-width:760px">${L(
+          'Tus imágenes son opcionales. Si tu correo requiere confirmación antes de iniciar sesión, por seguridad podrás añadirlas desde “Editar perfil” después de confirmar tu cuenta.',
+          'Images are optional. If your email requires confirmation before sign-in, you can safely add them from “Edit profile” after confirming your account.'
+        )}</p>
       </div>`;
     } else if (step === 4) {
       body = `<form class="form-grid" id="reg-story">
-        <div class="form-field full"><label>Tu historia cultural</label><textarea name="story" rows="4" placeholder="¿Quién eres, qué representas y qué deseas compartir con el mundo?">${esc(d.story || '')}</textarea></div>
+        <div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir con el mundo?','Who are you, what do you represent, and what would you like to share with the world?')}">${esc(d.story || '')}</textarea></div>
         <div class="form-field full">
-          <label>Categorías culturales</label>
-          <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${(d.categories || []).includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
+          <label>${L('Categorías culturales','Cultural categories')}</label>
+          <div class="cat-chips">${CATS.map(([value,enLabel]) => `<button type="button" class="chip${(d.categories || []).includes(value) ? ' active' : ''}" data-cat="${value}" aria-pressed="${(d.categories || []).includes(value)}">${es ? value : enLabel}</button>`).join('')}</div>
         </div>
+        ${d.accountType === 'creator' ? `<div class="form-field full"><label>${L('¿Qué ofreces como Agente Cultural?','What do you offer as a Cultural Agent?')}</label><input name="providerHeadline" maxlength="180" value="${esc(d.providerHeadline || '')}" placeholder="${L('Ej. Talleres de bordado tradicional y educación cultural','e.g. Traditional embroidery workshops and cultural education')}"></div><div class="form-field full"><label>${L('Servicios / oferta cultural','Services / cultural offering')}</label><input name="services" value="${esc((d.services || []).join(', '))}" placeholder="${L('Talleres, artesanía, demostraciones, charlas','Workshops, crafts, demonstrations, talks')}"></div><div class="form-field full"><label>${L('Descripción de tus servicios','Service description')}</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="${L('Describe cómo aportas valor cultural y cómo pueden conocerte o contratarte.','Describe the cultural value you provide and how people can learn more or work with you.')}">${esc(d.serviceDescription || '')}</textarea></div>` : ''}
       </form>`;
     } else if (step === 5) {
+      const socialLabels = [['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email',L('Correo electrónico','Email address')],['web',L('Sitio web','Website')]];
       body = `<form class="form-grid" id="reg-social">
-        <p class="form-note full" style="grid-column:1/-1">Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.</p>
-        ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo electrónico'],['web','Sitio web']].map(([k, label]) =>
-          `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+        <p class="form-note full" style="grid-column:1/-1">${L(
+          'Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.',
+          'Add social links so people can contact you directly. Everything here is optional.'
+        )}</p>
+        ${socialLabels.map(([k, label]) => `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="${L('URL o usuario','URL or username')}"></div>`).join('')}
+        ${captchaSlot('signup')}
+        <div class="form-field full legal-consent">
+          <label class="legal-check" for="reg-accepted-legal">
+            <input id="reg-accepted-legal" type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
+            <span>${L('Acepto los','I accept ORIGEN’s')} ${L('Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2','Terms of Use, Privacy, Community Guidelines and Cultural Rights v1.2')}${es ? ' de ORIGEN.' : '.'}</span>
+          </label>
+          <p class="form-note"><a href="#confianza" target="_blank" rel="noopener noreferrer">${L('Leer los documentos en el Centro de confianza (nueva pestaña)','Read the documents in the Trust Center (new tab)')}</a></p>
+        </div>
       </form>`;
     }
 
@@ -1097,58 +1660,135 @@
         <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
         ${progress}
         <div class="wizard-body">${body}</div>
-        <div id="reg-error" class="form-error" style="display:none"></div>
+        <div id="reg-error" class="form-error" role="alert" aria-live="assertive" style="display:none"></div>
         <div class="wizard-nav">
-          ${step > 1 ? `<button class="btn secondary" id="reg-back">← Atrás</button>` : '<div></div>'}
-          <button class="btn" id="reg-next">${step < 5 ? 'Siguiente →' : 'Crear mi perfil'}</button>
+          ${step > 1 ? `<button class="btn secondary" id="reg-back">← ${L('Atrás','Back')}</button>` : '<div></div>'}
+          <button class="btn" id="reg-next">${step < 5 ? L('Siguiente →','Next →') : L('Crear mi perfil','Create my profile')}</button>
         </div>
-        <p class="auth-alt">¿Ya tienes cuenta? <a href="#login">Iniciar sesión</a></p>
+        <p class="auth-alt">${L('¿Ya tienes cuenta?','Already have an account?')} <a href="#login">${L('Iniciar sesión','Sign in')}</a></p>
       </div>
     </div>`;
   }
 
   /* ── LOGIN ───────────────────────────────────────────────── */
   function loginView() {
+    const es = state.lang === 'es';
     return `<div class="auth-page">
       <div class="auth-card">
         <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
-        <h2>Bienvenida de vuelta</h2>
-        <p class="auth-sub">Inicia sesión en tu cuenta de Origen Cultural</p>
+        <h2>${es ? 'Bienvenida de vuelta' : 'Welcome back'}</h2>
+        <p class="auth-sub">${es ? 'Inicia sesión en tu cuenta de Origen Cultural' : 'Sign in to your Origen Cultural account'}</p>
         <form class="form-grid" id="login-form">
-          <div class="form-field full"><label>Correo electrónico</label><input type="email" name="email" required autocomplete="email"></div>
-          <div class="form-field full"><label>Contraseña</label><input type="password" name="password" required autocomplete="current-password"></div>
-          <div id="login-error" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">Correo o contraseña incorrectos.</p></div>
-          <div class="form-field full"><button class="btn" type="submit" style="width:100%">Entrar</button></div>
+          <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
+          <div class="form-field full"><label>${es ? 'Contraseña' : 'Password'}</label><input type="password" name="password" required autocomplete="current-password"></div>
+          <div id="login-error" role="alert" aria-live="assertive" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">${es ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'}</p></div>
+          ${captchaSlot('login')}
+          <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Entrar' : 'Sign in'}</button></div>
         </form>
-        <p class="auth-alt">¿No tienes cuenta? <a href="#registro">Crear perfil cultural</a></p>
-        <p class="auth-alt"><a href="#explorar" style="color:#888">Explorar sin cuenta →</a></p>
+        <p class="auth-alt"><a href="#recuperar">${es ? '¿Olvidaste tu contraseña?' : 'Forgot your password?'}</a></p>
+        <p class="auth-alt">${es ? '¿No tienes cuenta?' : "Don't have an account?"} <a href="#registro">${es ? 'Crear perfil cultural' : 'Create cultural profile'}</a></p>
+        <p class="auth-alt"><a href="#explorar" style="color:#888">${es ? 'Explorar sin cuenta' : 'Explore without an account'} →</a></p>
       </div>
     </div>`;
+  }
+
+  function recoverPasswordView() {
+    const es = state.lang === 'es';
+    return `<div class="auth-page"><div class="auth-card">
+      <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+      <h2>${es ? 'Recuperar contraseña' : 'Reset your password'}</h2>
+      <p class="auth-sub">${es ? 'Te enviaremos un enlace seguro para restablecerla.' : 'We will send you a secure password-reset link.'}</p>
+      <form class="form-grid" id="recover-form">
+        <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
+        <div id="recover-status" class="form-field full" role="status" aria-live="polite"></div>
+        ${captchaSlot('recovery')}
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Enviar enlace' : 'Send reset link'}</button></div>
+      </form>
+      <p class="auth-alt"><a href="#login">← ${es ? 'Volver a iniciar sesión' : 'Back to sign in'}</a></p>
+    </div></div>`;
+  }
+
+  function resetPasswordView() {
+    const es = state.lang === 'es';
+    return `<div class="auth-page"><div class="auth-card">
+      <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
+      <h2>${es ? 'Nueva contraseña' : 'New password'}</h2>
+      <p class="auth-sub">${es ? 'Crea una contraseña nueva para tu cuenta ORIGEN.' : 'Create a new password for your ORIGEN account.'}</p>
+      <form class="form-grid" id="reset-password-form">
+        <div class="form-field full"><label>${es ? 'Nueva contraseña' : 'New password'}</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+        <div id="reset-status" class="form-field full" role="status" aria-live="polite"></div>
+        <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Guardar nueva contraseña' : 'Save new password'}</button></div>
+      </form>
+    </div></div>`;
   }
 
   /* ── PASSPORT ────────────────────────────────────────────── */
   function passportView() {
     const user = me();
-    const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
-    const foll = JSON.parse(localStorage.getItem('origen-following') || '[]');
-    const name = user ? user.name : 'Anabel Borja';
+    const favs = remoteFavoriteRefs();
+    const foll = remoteFollowRefs();
+    const name = user ? user.name : 'Explorador Cultural';
     const init = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    const collectedRefs = new Set([...favs, ...foll]);
+    const collected = directoryProfiles().filter(p => collectedRefs.has(p.id) || collectedRefs.has(p.slug));
+    const countries = [...new Set(collected.map(p => p.country || (p.location || '').split(',').pop()?.trim()).filter(Boolean))];
+    const cultures = [...new Set(collected.flatMap(p => p.categories || [p.category]).filter(Boolean))];
+
+    const score = collected.length + (countries.length * 2) + cultures.length;
+    const levels = [
+      { name:'Semilla', min:0, next:3 },
+      { name:'Caminante Cultural', min:3, next:7 },
+      { name:'Cartógrafo Cultural', min:7, next:12 },
+      { name:'Explorador Global', min:12, next:20 },
+      { name:'Conector Cultural', min:20, next:null }
+    ];
+    const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
+    const progress = level.next ? Math.max(0, Math.min(100, Math.round(((score - level.min) / (level.next - level.min)) * 100))) : 100;
+
+    const badge = (unlocked, mark, title, body) => `
+      <div class="badge${unlocked ? ' unlocked' : ' locked'}">
+        <div class="badge-mark"><span>${unlocked ? mark : '○'}</span></div>
+        <h3>${title}</h3>
+        <p>${body}</p>
+      </div>`;
+
     return `<section class="passport-page"><div class="passport-shell">
-      <div class="section-head"><div><p class="eyebrow">TRAYECTORIA INTERCULTURAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${t('passportSub')}</p></div>
+      <div class="section-head"><div><p class="eyebrow">COLECCIÓN CULTURAL GLOBAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>Tu Pasaporte Cultural crece cuando descubres, guardas y sigues cultura viva. El progreso premia aprendizaje y diversidad, no tiempo de pantalla.</p></div>
+
       <article class="passport-card">
-        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>OC-EC-0001</div></div>
-        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'AGENTE CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Brisbane, Australia · Origen: Ecuador'}</p></div></div>
+        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>COLECCIÓN PERSONAL</div></div>
+        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'AGENTE CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Explorando cultura viva alrededor del mundo'}</p></div></div>
         <div class="passport-progress">
-          <div class="progress-stat"><strong>${favs.length}</strong><span>Perfiles guardados</span></div>
-          <div class="progress-stat"><strong>${foll.length}</strong><span>Agentes seguidos</span></div>
-          <div class="progress-stat"><strong>${user ? DB.posts().filter(p => p.authorId === user.id).length : 0}</strong><span>Publicaciones</span></div>
+          <div class="progress-stat"><strong>${collected.length}</strong><span>Perfiles en tu colección</span></div>
+          <div class="progress-stat"><strong>${countries.length}</strong><span>Países descubiertos</span></div>
+          <div class="progress-stat"><strong>${cultures.length}</strong><span>Categorías culturales</span></div>
         </div>
       </article>
-      <div class="level-section"><p class="eyebrow">NIVEL CULTURAL</p><h2>Semilla · Nivel 1</h2><div class="level-track"><div class="level-fill"></div></div><p>34% para alcanzar el nivel Caminante Cultural.</p>
+
+      <div class="level-section">
+        <p class="eyebrow">NIVEL DE EXPLORACIÓN</p>
+        <h2>${level.name}</h2>
+        <div class="level-track"><div class="level-fill" style="width:${progress}%"></div></div>
+        <p>${level.next ? `${progress}% hacia el siguiente nivel. Cada nueva cultura, territorio o categoría suma a tu recorrido.` : 'Has alcanzado el nivel más alto de esta primera colección.'}</p>
+
+        <div class="collection-strip">
+          <div><strong>${countries.length || 0}</strong><span>Sellos de país</span></div>
+          <div><strong>${cultures.length || 0}</strong><span>Colecciones temáticas</span></div>
+          <div><strong>${favs.length}</strong><span>Memorias guardadas</span></div>
+        </div>
+
+        ${countries.length ? `<div class="passport-stamps"><p class="eyebrow">MIS SELLOS</p><div class="creator-tags">${countries.map(country => `<span>⌖ ${esc(country)}</span>`).join('')}</div></div>` : ''}
+
         <div class="badges">
-          <div class="badge"><div class="badge-mark"><span>⌖</span></div><h3>Primer territorio</h3><p>Descubriste tu primer perfil cultural de Ecuador.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◇</span></div><h3>Memoria guardada</h3><p>Guarda tres perfiles para desbloquear esta insignia.</p></div>
-          <div class="badge"><div class="badge-mark"><span>◎</span></div><h3>Conexión viva</h3><p>Sigue a cinco Agentes Culturales para desbloquearla.</p></div>
+          ${badge(collected.length >= 1, '⌖', 'Primer descubrimiento', collected.length >= 1 ? 'Guardaste o seguiste tu primer perfil cultural.' : 'Descubre y guarda tu primer perfil cultural.')}
+          ${badge(collected.length >= 3, '◇', 'Coleccionista curioso', collected.length >= 3 ? 'Ya reuniste tres perfiles culturales.' : 'Reúne tres perfiles culturales en tu Pasaporte.')}
+          ${badge(countries.length >= 2, '◎', 'Cruce de fronteras', countries.length >= 2 ? 'Tu colección ya conecta al menos dos países.' : 'Descubre cultura de al menos dos países.')}
+        </div>
+
+        <div class="passport-philosophy">
+          <p class="eyebrow">JUGAR SIN PERDER EL EQUILIBRIO</p>
+          <p>ORIGEN puede usar colecciones, niveles, sellos y retos culturales. No premiamos permanecer conectado más tiempo y evitamos castigar al usuario por tomarse días de descanso.</p>
         </div>
       </div>
     </div></section>${footer()}`;
@@ -1162,7 +1802,7 @@
       ['Autonomía','Cada perfil conserva sus canales, decisiones, historia e identidad.'],
       ['Conexión global','La plataforma conecta culturas con públicos, aliados y oportunidades internacionales.'],
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
-      ['Soberanía narrativa','Cada agente cultural decide qué mostrar, qué reservar y cómo ser contactado.']
+      ['Soberanía narrativa','Cada creador decide qué mostrar, qué reservar y cómo ser contactado.']
     ];
     return `<section class="page-hero" style="background:var(--black);color:var(--white)">
       <div class="section-inner"><p class="eyebrow">PROPÓSITO · ÉTICA · ESCALA</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div>
@@ -1172,14 +1812,155 @@
       <div class="values-grid">${values.map((v, i) => `<article class="value-card"><span class="number">0${i + 1}</span><h3>${v[0]}</h3><p>${v[1]}</p></article>`).join('')}</div>
     </div></section>
     <section class="section impact-band"><div class="section-inner">
-      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De un piloto curado a una red global</h2></div><p>Primero perfiles excelentes. Después, funcionalidades sociales, monetización ética y expansión internacional.</p></div>
+      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De historias auténticas a una comunidad global</h2></div><p>Primero crecemos con Agentes que comparten cultura y Exploradores que descubren, siguen y comparten historias libremente. La publicidad pagada solo tendría sentido después de lograr una audiencia real.</p></div>
       <div class="impact-grid">
         <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador con 20-50 Agentes Culturales</span></div>
-        <div class="impact-item"><strong>2</strong><span>Red social: feed, publicar, seguir, guardar</span></div>
-        <div class="impact-item"><strong>3+</strong><span>Monetización ética y expansión global</span></div>
+        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador: hasta 10 Agentes Culturales voluntarios, después de aprobar seguridad y consentimiento</span></div>
+        <div class="impact-item"><strong>2</strong><span>Comunidad orgánica: publicar historias culturales, descubrir Agentes, seguir, guardar y compartir sin pagar</span></div>
+        <div class="impact-item"><strong>3+</strong><span>Futuro: promociones pagadas opcionales; después, posibles comisiones acordadas por ventas derivadas a webs oficiales</span></div>
       </div>
     </div></section>${footer()}`;
+  }
+
+  /* ── TRUST CENTER ───────────────────────────────────────── */
+  function trustCenterView() {
+    const trust = window.ORIGEN_TRUST;
+    if (!trust) return `<section class="section"><div class="section-inner"><h2>Centro de confianza no disponible</h2></div></section>`;
+    return `<section class="page-hero trust-hero"><div class="section-inner">
+      <p class="eyebrow">CONFIANZA · PRIVACIDAD · CULTURA</p>
+      <h1>Centro de confianza</h1>
+      <p class="lead">Lo esencial para entender cómo ORIGEN cuida tu cuenta, tus datos, el contenido cultural y la comunidad.</p>
+      <div class="trust-meta"><span>${esc(trust.version)}</span><span>${esc(trust.updated)}</span></div>
+    </div></section>
+    <section class="section trust-section"><div class="section-inner trust-layout">
+      <aside class="trust-nav">${trust.sections.map(s => `<a href="#trust-${s.id}">${esc(s.title)}</a>`).join('')}</aside>
+      <div class="trust-content">
+        <div class="trust-status"><strong>Estado beta</strong><p>${esc(trust.status)}</p></div>
+        ${trust.sections.map(s => `<article class="trust-card" id="trust-${s.id}"><p class="eyebrow">${esc(s.title)}</p>${s.body.map(p => `<p>${esc(p)}</p>`).join('')}</article>`).join('')}
+        <article class="trust-card trust-contact"><p class="eyebrow">CONTACTO</p><h2>Ayuda, reportes y solicitudes</h2><p><a href="#solicitar-revision">${state.lang === 'es' ? 'Solicitar corrección o retirada sin crear cuenta' : 'Request correction or removal without an account'}</a></p><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
+      </div>
+    </div></section>${footer()}`;
+  }
+
+  /* ── PUBLIC RIGHTS / CONTENT REVIEW REQUEST ──────────────── */
+  function rightsRequestView(route) {
+    const es = state.lang === 'es';
+    const L = (spanish, english) => es ? spanish : english;
+    const routeMatch = /^solicitar-revision\/(post|perfil|usuario)\/([^/?#]+)$/.exec(route);
+    const resourceType = routeMatch?.[1] || '';
+    const resourceId = (routeMatch?.[2] || '').slice(0, 180);
+    const sourceReference = resourceType
+      ? resourceType + ': ' + resourceId
+      : '';
+    return `<section class="page-hero rights-hero">
+      <div class="section-inner">
+        <p class="eyebrow">${L('CUIDADO DE LA CULTURA Y LAS PERSONAS','PROTECTING CULTURE AND PEOPLE')}</p>
+        <h1>${L('Solicitar revisión de contenido','Request a content review')}</h1>
+        <p class="lead">${L(
+          '¿Aparece tu imagen, tu obra o el conocimiento de tu comunidad sin autorización? Puedes solicitar revisión o corrección sin crear una cuenta.',
+          'Is your image, work or community knowledge being shared without permission? You can request a review or correction without creating an account.'
+        )}</p>
+      </div>
+    </section>
+    <section class="section"><div class="section-inner rights-layout">
+      <div class="rights-context">
+        <h2>${L('¿Cómo funciona?','How it works')}</h2>
+        <p>${L(
+          'Describe el contenido y por qué te preocupa. Prepararemos un correo dirigido a ORIGEN, pero no se enviará nada desde la web.',
+          'Describe the content and why it concerns you. We will prepare an email to ORIGEN, but nothing is sent from this website.'
+        )}</p>
+        <p>${L(
+          'Tu aplicación de correo debe abrirse y tendrás que pulsar Enviar. Si no tienes correo configurado, escríbenos directamente a',
+          'Your email app must open and you must press Send. If you do not have email configured, contact us directly at'
+        )} <a href="mailto:info.origencultural@gmail.com">info.origencultural@gmail.com</a>.</p>
+        <p>${L(
+          'Evita incluir contraseñas, documentos de identidad, datos privados de menores o conocimiento cultural restringido en tu mensaje inicial.',
+          'Do not include passwords, identity documents, children’s private information or restricted cultural knowledge in the initial message.'
+        )}</p>
+        <p>${L(
+          'Las solicitudes requieren revisión humana. Enviar un mensaje no garantiza la retirada automática ni la verificación de la autoría.',
+          'Requests require human review. Sending a message does not guarantee automatic removal or verification of ownership.'
+        )}</p>
+        <a href="#confianza">${L('Conocer las normas de ORIGEN','Read ORIGEN’s guidelines')} →</a>
+      </div>
+      <form class="form-grid rights-form" id="rights-review-form">
+        <div class="form-field full"><label for="rights-reason">${L('¿Qué deseas revisar? *','What needs review? *')}</label>
+          <select id="rights-reason" name="reason" required>
+            <option value="">${L('Selecciona una opción','Select an option')}</option>
+            <option value="image_permission">${L('Imagen o testimonio usado sin permiso','Photo or testimony used without permission')}</option>
+            <option value="cultural_knowledge">${L('Conocimiento cultural sensible o sin autorización','Sensitive or unauthorised cultural knowledge')}</option>
+            <option value="copyright">${L('Derechos de autor u obra original','Copyright or original work')}</option>
+            <option value="representation">${L('Representación incorrecta de una persona o comunidad','Incorrect representation of a person or community')}</option>
+            <option value="privacy">${L('Privacidad y datos personales','Privacy or personal data')}</option>
+            <option value="other">${L('Otro motivo de revisión','Other review concern')}</option>
+          </select>
+        </div>
+        <div class="form-field full"><label for="rights-reference">${L('Publicación, perfil o enlace relacionado','Related post, profile or link')}</label>
+          <input id="rights-reference" name="reference" maxlength="500" value="${esc(sourceReference)}" placeholder="${L('Ej. enlace o nombre del perfil','e.g. link or profile name')}">
+        </div>
+        <div class="form-field full"><label for="rights-description">${L('Explícanos brevemente tu solicitud *','Briefly describe your request *')}</label>
+          <textarea id="rights-description" name="description" rows="5" required minlength="15" maxlength="2500" placeholder="${L('Qué contenido es, qué derecho o consentimiento te preocupa y qué corrección solicitas.','What content is involved, your concern about rights or consent, and what correction you request.')}"></textarea>
+        </div>
+        <div class="form-field full"><button type="submit" class="btn">${L('Preparar correo de solicitud','Prepare review email')} →</button></div>
+        <div id="rights-email-ready" class="rights-email-ready form-field full" aria-live="polite" hidden>
+          <p>${L(
+            'Tu solicitud está preparada, pero todavía NO se ha enviado. Abre tu aplicación de correo y pulsa Enviar.',
+            'Your request is prepared but has NOT been sent. Open your email app and press Send.'
+          )}</p>
+          <a id="rights-email-link" class="btn secondary">${L('Abrir correo para enviarlo','Open email to send it')} ↗</a>
+        </div>
+      </form>
+    </div></section>${footer()}`;
+  }
+
+  function bindRightsRequest() {
+    const form = document.getElementById('rights-review-form');
+    const ready = document.getElementById('rights-email-ready');
+    const mail = document.getElementById('rights-email-link');
+    if (!form || !ready || !mail) return;
+    const resetPrepared = () => {
+      ready.hidden = true;
+      mail.removeAttribute('href');
+    };
+    form.addEventListener('input', resetPrepared);
+    form.addEventListener('change', resetPrepared);
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const values = new FormData(form);
+      const reason = String(values.get('reason') || '');
+      const reference = String(values.get('reference') || '').trim().slice(0, 500);
+      const description = String(values.get('description') || '').trim().slice(0, 2500);
+      if (!description || description.length < 15) {
+        document.getElementById('rights-description')?.focus();
+        return;
+      }
+      const reasons = {
+        image_permission: 'Image / testimony permissions',
+        cultural_knowledge: 'Cultural knowledge and community consent',
+        copyright: 'Copyright / original work',
+        representation: 'Incorrect representation',
+        privacy: 'Personal data and privacy',
+        other: 'Other'
+      };
+      if (!Object.hasOwn(reasons, reason)) return;
+      const body = [
+        'ORIGEN Cultural - content review request',
+        '',
+        'Reason: ' + reasons[reason],
+        'Reference: ' + (reference || 'Not provided'),
+        'Request details:',
+        description,
+        '',
+        'Please reply to this email to discuss the request.',
+        'This request was prepared by the website and is sent only when the sender presses Send in their email app.'
+      ].join('\n');
+      mail.href = 'mailto:info.origencultural@gmail.com?subject='
+        + encodeURIComponent('ORIGEN - Content review request')
+        + '&body=' + encodeURIComponent(body);
+      ready.hidden = false;
+      mail.focus();
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1194,6 +1975,9 @@
     route = route !== undefined ? route : currentRoute();
     refreshSession();
 
+    // Keep permalink stories isolated from the general paginated feed cache.
+    state.publicStoryPost = null;
+
     // Destroy globes when leaving their sections
     if (_prevRoute === 'mundo'  && route !== 'mundo'  && window.MundoCultural) window.MundoCultural.destroy();
     if (_prevRoute === 'inicio' && route !== 'inicio' && window.HeroGlobe)     window.HeroGlobe.destroy();
@@ -1202,9 +1986,11 @@
     let html = '';
     if      (route === 'inicio')                  html = isAuth() ? feedView()            : landingView();
     else if (route === 'feed')                    html = feedView();
+    else if (route.startsWith('publicacion/'))     html = publicStoryView();
     else if (route === 'explorar')                html = exploreView();
     else if (route === 'mundo')                   html = mundoView();
     else if (route.startsWith('perfil/'))         html = creatorProfileView(route.split('/')[1]);
+    else if (route.startsWith('reclamar/'))        html = claimProfileView(route.split('/')[1]);
     else if (route.startsWith('usuario/'))        html = userProfileView(route.split('/')[1]);
     else if (route === 'mi-perfil')               html = myProfileView();
     else if (route === 'editar-perfil')           html = editProfileView();
@@ -1212,12 +1998,17 @@
     else if (route === 'crear')                   html = createPostView();
     else if (route === 'registro')                html = registerView();
     else if (route === 'login')                   html = loginView();
+    else if (route === 'recuperar')               html = recoverPasswordView();
+    else if (route === 'restablecer')             html = resetPasswordView();
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
+    else if (route === 'confianza')                html = trustCenterView();
+    else if (route === 'solicitar-revision' || route.startsWith('solicitar-revision/')) html = rightsRequestView(route);
     else                                          html = isAuth() ? feedView() : landingView();
 
     $app.innerHTML = html;
     updateShell();
+    enhanceAccessibility();
     bindAll(route);
     if (scroll) window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -1228,9 +2019,15 @@
   function bindAll(route) {
     bindPostInteractions();
     bindFavorites();
+    if (document.getElementById('feed-posts')) bindFeedExperience();
     if (route === 'explorar')      bindExplore();
+    if (route.startsWith('publicacion/')) bindPublicStory(route);
+    if (route.startsWith('reclamar/')) bindClaimProfile();
     if (route === 'registro')      bindRegister();
+    if (route === 'solicitar-revision' || route.startsWith('solicitar-revision/')) bindRightsRequest();
     if (route === 'login')         bindLogin();
+    if (route === 'recuperar')     bindRecoverPassword();
+    if (route === 'restablecer')   bindResetPassword();
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
     if (route === 'mundo')         bindMundo();
@@ -1267,10 +2064,10 @@
             </div>
             <div class="globe-ui-bottom">
               <div class="globe-controls">
-                <button id="globe-zoom-in"  class="globe-ctrl" title="Acercar">+</button>
-                <button id="globe-pause"    class="globe-ctrl" title="Pausar rotación">⏸</button>
-                <button id="globe-reset"    class="globe-ctrl" title="Vista inicial">⟳</button>
-                <button id="globe-zoom-out" class="globe-ctrl" title="Alejar">−</button>
+                <button id="globe-zoom-in" class="globe-ctrl" title="Acercar" aria-label="Acercar globo">+</button>
+                <button id="globe-pause" class="globe-ctrl" title="Pausar rotación" aria-label="Pausar o reanudar rotación">⏸</button>
+                <button id="globe-reset" class="globe-ctrl" title="Vista inicial" aria-label="Restablecer vista del globo">⟳</button>
+                <button id="globe-zoom-out" class="globe-ctrl" title="Alejar" aria-label="Alejar globo">−</button>
               </div>
               <p class="globe-hint">Gira · Acerca · Toca un país</p>
             </div>
@@ -1350,74 +2147,109 @@
   }
 
   /* Post interactions (like, comment, save, share, report, carousel) */
-  function bindPostInteractions() {
+  function bindPostInteractions(root = document) {
     /* likes */
-    document.querySelectorAll('[data-like]').forEach(btn => {
-      btn.addEventListener('click', () => {
+    root.querySelectorAll('[data-like]').forEach(btn => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para dar me gusta.'); go('login'); return; }
-        const pid  = btn.dataset.like;
-        const user = me();
-        const lks  = DB.likes();
-        if (!lks[pid]) lks[pid] = [];
-        const idx = lks[pid].indexOf(user.id);
-        if (idx === -1) lks[pid].push(user.id); else lks[pid].splice(idx, 1);
-        DB.setLikes(lks);
-        rerenderPost(pid);
+        const pid = btn.dataset.like;
+        try {
+          await window.ORIGEN_API.toggleLike(pid);
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar el me gusta.');
+        }
       });
     });
 
     /* toggle comments */
-    document.querySelectorAll('[data-tcoms]').forEach(btn => {
-      btn.addEventListener('click', () => {
+    root.querySelectorAll('[data-tcoms]').forEach(btn => {
+      btn.addEventListener('click', async () => {
         const pid = btn.dataset.tcoms;
-        state.openComments.has(pid) ? state.openComments.delete(pid) : state.openComments.add(pid);
+        if (state.openComments.has(pid)) {
+          state.openComments.delete(pid);
+        } else {
+          state.openComments.add(pid);
+          try { await window.ORIGEN_API.listComments(pid); } catch (_) {}
+        }
         rerenderPost(pid);
       });
     });
 
     /* saves */
-    document.querySelectorAll('[data-save]').forEach(btn => {
-      btn.addEventListener('click', () => {
+    root.querySelectorAll('[data-save]').forEach(btn => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para guardar publicaciones.'); go('login'); return; }
-        const pid  = btn.dataset.save;
-        const user = me();
-        const svs  = DB.saves();
-        if (!svs[user.id]) svs[user.id] = [];
-        const idx = svs[user.id].indexOf(pid);
-        if (idx === -1) { svs[user.id].push(pid); showToast('Publicación guardada.'); }
-        else            { svs[user.id].splice(idx, 1); showToast('Publicación eliminada de guardados.'); }
-        DB.setSaves(svs);
-        rerenderPost(pid);
+        const pid = btn.dataset.save;
+        try {
+          const added = await window.ORIGEN_API.toggleSavePost(pid);
+          showToast(added ? 'Publicación guardada.' : 'Publicación eliminada de guardados.');
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar tus guardados.');
+        }
       });
     });
 
-    /* share */
-    document.querySelectorAll('[data-share]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const url = window.location.href.split('#')[0] + '#feed';
-        if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showToast('Enlace copiado al portapapeles.'));
-        else showToast('Comparte este enlace: ' + url);
+    /* share: always link to the exact public story, never a generic feed */
+    root.querySelectorAll('[data-share]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.share || '';
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return;
+        const url = window.location.origin + window.location.pathname + '#publicacion/' + encodeURIComponent(id);
+        const es = state.lang === 'es';
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: es ? 'Historia cultural · ORIGEN' : 'Cultural story · ORIGEN', url });
+            return;
+          } catch (error) {
+            if (error?.name === 'AbortError') return; // User cancelled.
+          }
+        }
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+          await navigator.clipboard.writeText(url);
+          showToast(es ? 'Enlace de esta historia copiado.' : 'Story link copied.');
+        } catch (_) {
+          showToast((es ? 'Enlace para compartir: ' : 'Share this link: ') + url);
+        }
       });
     });
 
     /* report */
-    document.querySelectorAll('[data-report]').forEach(btn => {
-      btn.addEventListener('click', () => showToast('Reporte enviado. Gracias por ayudarnos a mantener la comunidad.'));
+    root.querySelectorAll('[data-report]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!isAuth()) {
+          go('solicitar-revision/post/' + encodeURIComponent(btn.dataset.report || ''));
+          return;
+        }
+        if (!$report) return;
+        const form = document.getElementById('report-form');
+        form?.reset();
+        $report.dataset.targetType = 'post';
+        $report.dataset.targetId = btn.dataset.report || '';
+        const status = document.getElementById('report-status');
+        if (status) status.textContent = '';
+        updateStaticLanguage();
+        $report.showModal();
+        requestAnimationFrame(() => document.getElementById('report-reason')?.focus());
+      });
     });
 
     /* more (···) */
-    document.querySelectorAll('[data-pmore]').forEach(btn => {
+    root.querySelectorAll('[data-pmore]').forEach(btn => {
       btn.addEventListener('click', () => {
         const pid  = btn.dataset.pmore;
         const user = me();
-        const post = DB.posts().find(p => p.id === pid);
+        const post = displayedPost(pid);
         if (user && post && post.authorId === user.id) {
-          if (confirm('¿Eliminar esta publicación?')) {
-            const updated = DB.posts().filter(p => p.id !== pid);
-            DB.setPosts(updated);
-            showToast('Publicación eliminada.');
-            render(currentRoute(), false);
-          }
+          if (!$deletePost) return;
+          $deletePost.dataset.postId = pid;
+          const status = document.getElementById('delete-post-status');
+          if (status) status.textContent = '';
+          updateStaticLanguage();
+          $deletePost.showModal();
+          requestAnimationFrame(() => document.getElementById('delete-post-cancel')?.focus());
         } else {
           showToast('Reportar o guardar este perfil para no ver más contenido similar.');
         }
@@ -1425,19 +2257,19 @@
     });
 
     /* carousel navigation */
-    document.querySelectorAll('[data-cdir]').forEach(btn => {
+    root.querySelectorAll('[data-cdir]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const pid  = btn.dataset.car;
         const dir  = parseInt(btn.dataset.cdir, 10);
-        const post = allPosts().find(p => p.id === pid);
+        const post = displayedPost(pid);
         if (!post) return;
         const cur  = state.carIdx[pid] || 0;
         state.carIdx[pid] = Math.max(0, Math.min(post.media.length - 1, cur + dir));
         rerenderPost(pid);
       });
     });
-    document.querySelectorAll('[data-car][data-ci]').forEach(dot => {
+    root.querySelectorAll('[data-car][data-ci]').forEach(dot => {
       dot.addEventListener('click', e => {
         e.stopPropagation();
         state.carIdx[dot.dataset.car] = parseInt(dot.dataset.ci, 10);
@@ -1446,90 +2278,156 @@
     });
 
     /* comment forms */
-    document.querySelectorAll('[data-cf]').forEach(form => {
-      form.addEventListener('submit', e => {
+    root.querySelectorAll('[data-cf]').forEach(form => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
-        const pid  = form.dataset.cf;
+        const pid = form.dataset.cf;
         const text = new FormData(form).get('text').trim();
         if (!text || !isAuth()) return;
-        const user = me();
-        const coms = DB.comments();
-        if (!coms[pid]) coms[pid] = [];
-        coms[pid].push({ id: uid(), authorId: user.id, text, ts: new Date().toISOString() });
-        DB.setComments(coms);
-        rerenderPost(pid);
+        try {
+          await window.ORIGEN_API.addComment(pid, text);
+          rerenderPost(pid);
+        } catch (error) {
+          showToast(error.message || 'No pudimos publicar el comentario.');
+        }
       });
     });
 
     /* needs-auth buttons */
-    document.querySelectorAll('[data-needs-auth]').forEach(btn => {
+    root.querySelectorAll('[data-needs-auth]').forEach(btn => {
       btn.addEventListener('click', e => {
         if (!isAuth()) { e.stopPropagation(); showToast('Inicia sesión para interactuar.'); go('login'); }
       }, true);
     });
   }
 
+  function bindFeedExperience() {
+    bindFeedVideos();
+
+    const sentinel = document.getElementById('feed-sentinel');
+    if (!sentinel || window.ORIGEN_API?.cache?.postsExhausted) return;
+
+    const observer = new IntersectionObserver(async entries => {
+      if (!entries.some(entry => entry.isIntersecting) || state.feedLoading) return;
+      state.feedLoading = true;
+      sentinel.setAttribute('aria-busy', 'true');
+      const y = window.scrollY;
+      try {
+        await window.ORIGEN_API.loadMorePosts();
+        render(currentRoute(), false);
+        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
+      } catch (error) {
+        showToast(error.message || 'No pudimos cargar más publicaciones.');
+      } finally {
+        state.feedLoading = false;
+      }
+    }, { rootMargin: '500px 0px', threshold: 0.01 });
+
+    observer.observe(sentinel);
+  }
+
+  function bindFeedVideos() {
+    const videos = [...document.querySelectorAll('.post-media video')];
+    if (!videos.length) return;
+
+    const pauseOthers = active => {
+      videos.forEach(video => { if (video !== active && !video.paused) video.pause(); });
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+          pauseOthers(video);
+          video.muted = true;
+          const playPromise = video.play();
+          if (playPromise?.catch) playPromise.catch(() => {});
+        } else if (!video.paused) {
+          video.pause();
+        }
+      });
+    }, { threshold: [0, .3, .7, 1] });
+
+    videos.forEach(video => observer.observe(video));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) videos.forEach(video => video.pause());
+    }, { once: true });
+  }
+
   /* Re-render a single post card in place */
+  // Permalinks may refer to posts older than the paginated feed.
+  function displayedPost(pid) {
+    if (currentRoute() === 'publicacion/' + pid && state.publicStoryPost?.id === pid) return state.publicStoryPost;
+    return allPosts().find(post => post.id === pid) || null;
+  }
+
   function rerenderPost(pid) {
     const card = document.querySelector(`[data-pid="${pid}"]`);
-    if (!card) return;
-    const post = allPosts().find(p => p.id === pid);
-    if (!post) return;
+    const post = displayedPost(pid);
+    if (!card || !post) return;
     const tmp = document.createElement('div');
     tmp.innerHTML = postCard(post);
     const newCard = tmp.firstElementChild;
+    if (!newCard) return;
     card.replaceWith(newCard);
-    // Rebind on the new card only
-    const bindOn = (sel, ev, handler) => newCard.querySelectorAll(sel).forEach(el => el.addEventListener(ev, handler));
-    const pid2 = pid;
-    bindOn('[data-like]', 'click', () => document.querySelector(`[data-pid="${pid2}"] [data-like]`) && document.querySelector(`[data-pid="${pid2}"] [data-like]`).dispatchEvent && null);
-    // Re-run full bind to pick up new elements
-    bindPostInteractions();
-    bindFollowButtons();
+    // Rebind ONLY this card: global rebinding duplicates events on other posts.
+    bindPostInteractions(newCard);
+    bindFollowButtons(newCard);
   }
 
   /* Favorites (directory profiles) */
   function bindFavorites() {
     document.querySelectorAll('[data-favorite]').forEach(btn => {
-      btn.addEventListener('click', e => {
+      btn.addEventListener('click', async e => {
         e.preventDefault(); e.stopPropagation();
-        const id   = btn.dataset.favorite;
-        const favs = JSON.parse(localStorage.getItem('origen-favorites') || '[]');
-        const idx  = favs.indexOf(id);
-        if (idx === -1) { favs.push(id); showToast('Perfil guardado en tu Pasaporte Cultural.'); }
-        else            { favs.splice(idx, 1); showToast('Perfil eliminado de guardados.'); }
-        localStorage.setItem('origen-favorites', JSON.stringify(favs));
-        render(currentRoute(), false);
+        if (!isAuth()) { showToast('Inicia sesión para guardar perfiles.'); go('login'); return; }
+        const ref = btn.dataset.favorite;
+        try {
+          const id = await culturalProfileId(ref);
+          if (!id) throw new Error('Perfil cultural no encontrado.');
+          const exists = window.ORIGEN_API.cache.favorites.includes(id);
+          const uid = me().id;
+          const query = exists
+            ? window.ORIGEN_API.client.from('favorites').delete().eq('user_id', uid).eq('cultural_profile_id', id)
+            : window.ORIGEN_API.client.from('favorites').insert({ user_id: uid, cultural_profile_id: id });
+          const { error } = await query;
+          if (error) throw error;
+          await window.ORIGEN_API.myFavorites();
+          showToast(exists ? 'Perfil eliminado de guardados.' : 'Perfil guardado en tu Pasaporte Cultural.');
+          render(currentRoute(), false);
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar tus guardados.');
+        }
       });
     });
   }
 
   /* Follow buttons (user or creator) */
-  function bindFollowButtons() {
-    document.querySelectorAll('[data-fuser]').forEach(btn => {
-      btn.addEventListener('click', () => {
+  function bindFollowButtons(root = document) {
+    root.querySelectorAll('[data-fuser]').forEach(btn => {
+      btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para seguir.'); go('login'); return; }
-        const targetId = btn.dataset.fuser;
-        const user     = me();
-        const follows  = DB.follows();
-        if (!follows[user.id]) follows[user.id] = [];
-        const idx = follows[user.id].indexOf(targetId);
-        if (idx === -1) {
-          follows[user.id].push(targetId);
-          btn.textContent = 'Siguiendo'; btn.classList.add('on');
-          showToast('¡Ahora sigues este perfil cultural!');
-        } else {
-          follows[user.id].splice(idx, 1);
-          btn.textContent = '+ Seguir'; btn.classList.remove('on');
-          showToast('Dejaste de seguir este perfil.');
+        const ref = btn.dataset.fuser;
+        try {
+          const id = await culturalProfileId(ref);
+          if (!id) {
+            showToast('Este seguimiento todavía no está disponible para este tipo de perfil.');
+            return;
+          }
+          const exists = window.ORIGEN_API.cache.follows.includes(id);
+          const uid = me().id;
+          const query = exists
+            ? window.ORIGEN_API.client.from('follows').delete().eq('user_id', uid).eq('cultural_profile_id', id)
+            : window.ORIGEN_API.client.from('follows').insert({ user_id: uid, cultural_profile_id: id });
+          const { error } = await query;
+          if (error) throw error;
+          await window.ORIGEN_API.myFollows();
+          btn.textContent = exists ? '+ Seguir' : 'Siguiendo';
+          btn.classList.toggle('on', !exists);
+          showToast(exists ? 'Dejaste de seguir este perfil.' : '¡Ahora sigues este perfil cultural!');
+        } catch (error) {
+          showToast(error.message || 'No pudimos actualizar el seguimiento.');
         }
-        DB.setFollows(follows);
-        // Also sync with legacy localStorage
-        const legFoll = JSON.parse(localStorage.getItem('origen-following') || '[]');
-        const legIdx  = legFoll.indexOf(targetId);
-        if (idx === -1 && legIdx === -1) legFoll.push(targetId);
-        else if (idx !== -1 && legIdx !== -1) legFoll.splice(legIdx, 1);
-        localStorage.setItem('origen-following', JSON.stringify(legFoll));
       });
     });
   }
@@ -1558,37 +2456,137 @@
     if (clearBtn) clearBtn.addEventListener('click', () => { state.query = ''; state.activeCategory = 'Todos'; render('explorar', false); });
   }
 
+  function bindClaimProfile() {
+    const form = document.getElementById('claim-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const status = document.getElementById('claim-status');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Enviando…' : 'Submitting…'; }
+      try {
+        const profileId = await culturalProfileId(form.dataset.profileRef);
+        if (!profileId) throw new Error(state.lang === 'es' ? 'No encontramos el perfil de referencia en la base de datos.' : 'We could not find the reference profile in the database.');
+        const fd = Object.fromEntries(new FormData(form));
+        await window.ORIGEN_API.submitClaim({ cultural_profile_id: profileId, claimant_name: fd.claimant_name, relationship_role: fd.relationship_role, official_email: fd.official_email, official_url: fd.official_url, explanation: fd.explanation, authority_declaration: fd.authority === 'on' });
+        if (status) status.textContent = state.lang === 'es' ? 'Solicitud recibida. Estado: pendiente de revisión.' : 'Claim received. Status: pending review.';
+        if (submit) submit.textContent = state.lang === 'es' ? 'Solicitud enviada' : 'Claim submitted';
+        showToast(state.lang === 'es' ? 'Solicitud de reclamación enviada.' : 'Profile claim submitted.');
+      } catch (error) {
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos enviar la solicitud.' : 'We could not submit the claim.');
+        if (submit) { submit.disabled = false; submit.textContent = state.lang === 'es' ? 'Enviar solicitud para revisión' : 'Submit claim for review'; }
+      }
+    });
+  }
   /* Login */
   function bindLogin() {
     const form = document.getElementById('login-form');
     if (!form) return;
+    void mountTurnstile('login');
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const { email, password } = Object.fromEntries(new FormData(form));
       const submit = form.querySelector('button[type="submit"]');
-      if (submit) { submit.disabled = true; submit.textContent = 'Entrando…'; }
-      const result = await doLogin(email, password);
-      if (result.ok) {
+      if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Entrando…' : 'Signing in…'; }
+      try {
+        const captchaToken = requireCaptchaToken('login');
+        // Capture before doLogin clears account drafts on account switch.
+        const returnRoute = state.authReturnRoute;
+        await doLogin(email, password, captchaToken);
+        state.authReturnRoute = null;
         updateShell();
-        go('feed');
-      } else {
+        go(returnRoute || 'feed');
+      } catch (error) {
         const err = document.getElementById('login-error');
         if (err) {
-          err.innerHTML = `<p style="color:#c0392b;font-size:13px">${esc(result.error || 'No pudimos iniciar sesión.')}</p>`;
           err.style.display = 'block';
+          const p = err.querySelector('p');
+          if (p) p.textContent = error.message || (state.lang === 'es' ? 'No pudimos iniciar sesión.' : 'We could not sign you in.');
         }
-        if (submit) { submit.disabled = false; submit.textContent = 'Entrar'; }
+      } finally {
+        resetTurnstile('login');
+        if (submit) { submit.disabled = false; submit.textContent = state.lang === 'es' ? 'Entrar' : 'Sign in'; }
       }
     });
   }
 
+
+  function bindRecoverPassword() {
+    const form = document.getElementById('recover-form');
+    if (!form) return;
+    void mountTurnstile('recovery');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = new FormData(form).get('email');
+      const status = document.getElementById('recover-status');
+      try {
+        const captchaToken = requireCaptchaToken('recovery');
+        await window.ORIGEN_API.resetPassword(email, captchaToken);
+        if (status) status.textContent = state.lang === 'es' ? 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.' : 'Check your email. If an account exists, you will receive a recovery link.';
+      } catch (error) {
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos enviar el enlace.' : 'We could not send the recovery link.');
+      } finally {
+        resetTurnstile('recovery');
+      }
+    });
+  }
+
+  function bindResetPassword() {
+    const form = document.getElementById('reset-password-form');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const password = new FormData(form).get('password');
+      const status = document.getElementById('reset-status');
+      try {
+        await window.ORIGEN_API.updatePassword(password);
+        if (status) status.textContent = state.lang === 'es' ? 'Contraseña actualizada. Ya puedes continuar.' : 'Password updated. You can continue now.';
+        setTimeout(() => go('feed'), 900);
+      } catch (error) {
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos actualizar la contraseña.' : 'We could not update the password.');
+      }
+    });
+  }
+
+  // Preserve unfinished registration inputs when people move backwards on
+  // mobile. No localStorage/sessionStorage persistence for passwords or files.
+  function saveRegisterStepDraft(step) {
+    const formId = step === 2 ? 'reg-basic' : step === 4 ? 'reg-story' : step === 5 ? 'reg-social' : null;
+    const form = formId && document.getElementById(formId);
+    if (!form) return;
+    const fields = Object.fromEntries(new FormData(form));
+    if (step === 2) {
+      for (const key of ['name', 'email', 'password', 'location']) {
+        if (key in fields) state.regData[key] = fields[key];
+      }
+    } else if (step === 4) {
+      Object.assign(state.regData, fields);
+      state.regData.services = fields.services
+        ? fields.services.split(',').map(item => item.trim()).filter(Boolean)
+        : [];
+    } else if (step === 5) {
+      const links = {};
+      for (const key of ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web']) {
+        if (fields[key]) links[key] = fields[key];
+      }
+      state.regData.links = links;
+      state.regData.acceptedLegal = fields.acceptedLegal === 'on';
+    }
+  }
+
   /* Register wizard */
   function bindRegister() {
+    // Password is kept only in the current in-memory wizard, not in the HTML
+    // template, URL or persistent browser storage.
+    const previousPassword = document.querySelector('#reg-basic [name="password"]');
+    if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
+    if (state.regStep === 5) void mountTurnstile('signup');
     /* account type selection */
     document.querySelectorAll('[data-atype]').forEach(card => {
       card.addEventListener('click', () => {
-        document.querySelectorAll('[data-atype]').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('[data-atype]').forEach(c => { c.classList.remove('selected'); c.setAttribute('aria-pressed','false'); });
         card.classList.add('selected');
+        card.setAttribute('aria-pressed','true');
         state.regData.accountType = card.dataset.atype;
       });
     });
@@ -1597,6 +2595,7 @@
     document.querySelectorAll('[data-cat]').forEach(chip => {
       chip.addEventListener('click', () => {
         chip.classList.toggle('active');
+        chip.setAttribute('aria-pressed', chip.classList.contains('active') ? 'true' : 'false');
         const cat  = chip.dataset.cat;
         if (!state.regData.categories) state.regData.categories = [];
         const idx  = state.regData.categories.indexOf(cat);
@@ -1610,7 +2609,17 @@
     if (regAvatarInput) {
       regAvatarInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
-        state.regData.avatar = await resizeImg(file, 400);
+        try {
+          window.ORIGEN_API.validateUpload('avatars', file);
+        } catch (error) {
+          const message = document.getElementById('reg-error');
+          if (message) { message.textContent = error.message; message.style.display = 'block'; }
+          e.target.value = '';
+          return;
+        }
+        releasePreview(state.regData.avatar);
+        state.regData.avatarFile = file;
+        state.regData.avatar = URL.createObjectURL(file);
         render('registro', false);
       });
     }
@@ -1618,74 +2627,154 @@
     if (regCoverInput) {
       regCoverInput.addEventListener('change', async e => {
         const file = e.target.files[0]; if (!file) return;
-        state.regData.cover = await resizeImg(file, 1200);
+        try {
+          window.ORIGEN_API.validateUpload('covers', file);
+        } catch (error) {
+          const message = document.getElementById('reg-error');
+          if (message) { message.textContent = error.message; message.style.display = 'block'; }
+          e.target.value = '';
+          return;
+        }
+        releasePreview(state.regData.cover);
+        state.regData.coverFile = file;
+        state.regData.cover = URL.createObjectURL(file);
         render('registro', false);
       });
     }
 
     /* back */
     const backBtn = document.getElementById('reg-back');
-    if (backBtn) backBtn.addEventListener('click', () => { state.regStep--; render('registro', false); });
+    if (backBtn) backBtn.addEventListener('click', () => {
+      saveRegisterStepDraft(state.regStep);
+      state.regStep--;
+      render('registro');
+    });
 
     /* next / submit */
     const nextBtn = document.getElementById('reg-next');
     if (!nextBtn) return;
+    // Enter on a mobile keyboard should advance the wizard, not submit the
+    // native form and reload the page (which would discard private drafts).
+    for (const formId of ['reg-basic', 'reg-story', 'reg-social']) {
+      const form = document.getElementById(formId);
+      if (!form) continue;
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (!nextBtn.disabled) nextBtn.click();
+      });
+      // Multi-input forms without a native submit button do not always
+      // submit on Enter. Support mobile keyboard "Go" explicitly on the
+      // first two steps, while keeping Enter inside textareas as a newline
+      // and requiring an intentional final legal-confirmation button press.
+      if (formId !== 'reg-social') form.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || event.isComposing ||
+            !(event.target instanceof HTMLInputElement)) return;
+        event.preventDefault();
+        if (!nextBtn.disabled) nextBtn.click();
+      });
+    }
     nextBtn.addEventListener('click', async () => {
+      if (nextBtn.disabled) return;
       const step = state.regStep;
       const errEl = document.getElementById('reg-error');
 
       if (step === 1) {
-        if (!state.regData.accountType) { if (errEl) { errEl.textContent = 'Selecciona un tipo de cuenta.'; errEl.style.display = 'block'; } return; }
+        if (!state.regData.accountType) { if (errEl) { errEl.textContent = state.lang === 'es' ? 'Selecciona un tipo de cuenta.' : 'Select an account type.'; errEl.style.display = 'block'; } return; }
         if (errEl) errEl.style.display = 'none';
-        state.regStep++; render('registro', false);
+        state.regStep++; render('registro');
       } else if (step === 2) {
         const form = document.getElementById('reg-basic');
         if (!form || !form.reportValidity()) return;
-        const fd = Object.fromEntries(new FormData(form));
-        Object.assign(state.regData, fd);
-        state.regStep++; render('registro', false);
+        saveRegisterStepDraft(2);
+        state.regStep++; render('registro');
       } else if (step === 3) {
-        state.regStep++; render('registro', false);
+        state.regStep++; render('registro');
       } else if (step === 4) {
         const form = document.getElementById('reg-story');
-        if (form) { const fd = Object.fromEntries(new FormData(form)); Object.assign(state.regData, fd); }
-        state.regStep++; render('registro', false);
+        if (form) saveRegisterStepDraft(4);
+        state.regStep++; render('registro');
       } else if (step === 5) {
         const form = document.getElementById('reg-social');
-        if (form) {
-          const fd = Object.fromEntries(new FormData(form));
-          const links = {};
-          ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-          state.regData.links = links;
+        if (!form || !form.reportValidity()) return;
+        saveRegisterStepDraft(5);
+        if (!state.regData.acceptedLegal) {
+          if (errEl) { errEl.textContent = state.lang === 'es' ? 'Debes aceptar los documentos esenciales de ORIGEN para crear tu cuenta.' : 'You must accept ORIGEN’s essential documents to create your account.'; errEl.style.display = 'block'; }
+          return;
+        }
+        try {
+          state.regData.captchaToken = requireCaptchaToken('signup');
+        } catch (error) {
+          if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+          return;
         }
         nextBtn.disabled = true;
-        nextBtn.textContent = 'Creando perfil…';
+        nextBtn.textContent = state.lang === 'es' ? 'Creando cuenta…' : 'Creating account…';
         const result = await doRegister(state.regData);
         if (result.ok) {
+          resetTurnstile('signup');
+          const requiresConfirmation = result.requiresEmailConfirmation;
+          releasePreview(state.regData.avatar);
+          releasePreview(state.regData.cover);
           state.regStep = 1; state.regData = {};
-          if (result.needsConfirmation) {
-            showToast('Cuenta creada. Revisa tu correo para confirmar tu acceso.', 5000);
+          if (requiresConfirmation) {
+            showToast(state.lang === 'es' ? 'Revisa tu correo para confirmar tu cuenta.' : 'Check your email to confirm your account.');
+            go('login');
+          } else if (!result.profileReady) {
+            showToast(state.lang === 'es'
+              ? 'Cuenta creada. No pudimos terminar de cargar tu perfil; inicia sesión para completarlo.'
+              : 'Account created. Profile setup was interrupted; sign in to complete it.');
             go('login');
           } else {
-            showToast('¡Bienvenida/o a Origen Cultural!');
+            showToast(result.setupWarning === 'media'
+              ? (state.lang === 'es'
+                ? 'Cuenta creada. No se pudieron guardar las imágenes; puedes subirlas después desde Editar perfil.'
+                : 'Account created. Images were not saved; you can upload them later from Edit profile.')
+              : (state.lang === 'es' ? '¡Bienvenida/o a ORIGEN Cultural!' : 'Welcome to ORIGEN Cultural!'));
             updateShell(); go('feed');
           }
         } else {
-          nextBtn.disabled = false;
-          nextBtn.textContent = 'Crear mi perfil';
+          resetTurnstile('signup');
           if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
+          nextBtn.disabled = false;
+          nextBtn.textContent = state.lang === 'es' ? 'Crear mi perfil' : 'Create my profile';
         }
       }
     });
   }
 
+  // Update only the preview, never the active editor. Replacing the form
+  // on each keystroke used to blur text fields and interrupt cultural stories.
+  function updateCreatePostPreview() {
+    const preview = document.getElementById('create-live-preview');
+    const user = me();
+    if (!preview || !user || user.accountType !== 'creator') return;
+    const d = state.createData;
+    const hasMedia = (d.media || []).length > 0;
+    preview.innerHTML = d.title || hasMedia
+      ? postCard({
+          id: '_prev', authorId: user.id, type: d.type,
+          media: d.media || [], title: d.title || 'Título',
+          description: d.description || '', category: d.category || '',
+          contentPurpose: d.contentPurpose || 'education',
+          territory: d.territory || '', tags: d.tags || [],
+          timestamp: new Date().toISOString(), likes: 0
+        })
+      : '<div class="create-preview-empty"><p>La vista previa aparecerá aquí.</p></div>';
+  }
+
   /* Create post */
   function bindCreatePost() {
+    const currentUser = me();
+    if (!currentUser || currentUser.accountType !== 'creator') return;
     /* type buttons */
     document.querySelectorAll('[data-ctype]').forEach(btn => {
       btn.addEventListener('click', () => {
-        state.createData.type  = btn.dataset.ctype;
+        for (const url of state.createData.media || []) releasePreview(url);
+        state.createData.type = btn.dataset.ctype;
+        state.createData.rightsAcknowledged = false;
+        state.createData.culturalAcknowledged = false;
         state.createData.media = [];
+        state.createData.files = [];
         render('crear', false);
       });
     });
@@ -1695,17 +2784,25 @@
     const mediaInput = document.getElementById('post-media-input');
     if (mediaZone && mediaInput) {
       mediaZone.addEventListener('click', e => {
-        if (e.target.closest('[data-rmidx]') || e.target.closest('#add-more-media')) return;
+        if (e.target.closest('video, video *, [data-rmidx], #add-more-media')) return;
         mediaInput.click();
       });
       mediaInput.addEventListener('change', async e => {
         const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        state.createData.rightsAcknowledged = false;
+        state.createData.culturalAcknowledged = false;
         if (state.createData.type === 'video') {
+          for (const url of state.createData.media || []) releasePreview(url);
+          state.createData.files = [files[0]];
           state.createData.media = [URL.createObjectURL(files[0])];
+        } else if (state.createData.type === 'carousel') {
+          state.createData.files = [...(state.createData.files || []), ...files];
+          state.createData.media = [...(state.createData.media || []), ...files.map(file => URL.createObjectURL(file))];
         } else {
-          const resized = await Promise.all(files.map(f => resizeImg(f, 900)));
-          if (state.createData.type === 'carousel') state.createData.media = [...(state.createData.media || []), ...resized];
-          else state.createData.media = resized;
+          for (const url of state.createData.media || []) releasePreview(url);
+          state.createData.files = [files[0]];
+          state.createData.media = [URL.createObjectURL(files[0])];
         }
         render('crear', false);
       });
@@ -1720,7 +2817,11 @@
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const idx = parseInt(btn.dataset.rmidx, 10);
-        state.createData.media.splice(idx, 1);
+        const [preview] = state.createData.media.splice(idx, 1);
+        state.createData.rightsAcknowledged = false;
+        state.createData.culturalAcknowledged = false;
+        releasePreview(preview);
+        if (state.createData.files) state.createData.files.splice(idx, 1);
         render('crear', false);
       });
     });
@@ -1728,45 +2829,96 @@
     /* form inputs → update preview */
     const form = document.getElementById('create-form');
     if (!form) return;
-    ['title','description','category','territory','tags'].forEach(field => {
+    const resetPostAttestations = () => {
+      state.createData.rightsAcknowledged = false;
+      state.createData.culturalAcknowledged = false;
+      form.querySelectorAll('[data-post-attestation]').forEach(input => { input.checked = false; });
+    };
+    form.querySelectorAll('[data-post-attestation]').forEach(input => {
+      input.addEventListener('change', () => {
+        state.createData[input.name] = input.checked === true;
+        const error = document.getElementById('post-safety-error');
+        if (error) { error.textContent = ''; error.hidden = true; }
+      });
+    });
+    ['title','description','category','contentPurpose','territory','tags'].forEach(field => {
       const el = form.querySelector(`[name="${field}"]`);
       if (el) el.addEventListener('input', () => {
+        // Any content change requires a fresh, explicit permissions check.
+        resetPostAttestations();
         state.createData[field] = field === 'tags'
           ? el.value.split(',').map(s => s.trim()).filter(Boolean)
           : el.value;
-        // Throttle preview re-render
+        // Keep focus/caret and in-progress edits intact, even after a pause.
         clearTimeout(bindCreatePost._prev);
-        bindCreatePost._prev = setTimeout(() => render('crear', false), 350);
+        bindCreatePost._prev = setTimeout(updateCreatePostPreview, 120);
       });
     });
 
     /* submit */
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const user = me(); if (!user) return;
       const fd = Object.fromEntries(new FormData(form));
-      if (state.createData.type !== 'text' && (!state.createData.media || !state.createData.media.length)) {
+      if (fd.rightsAcknowledged !== 'on' || fd.culturalAcknowledged !== 'on') {
+        const error = document.getElementById('post-safety-error');
+        if (error) {
+          error.hidden = false;
+          error.textContent = state.lang === 'es'
+            ? 'Antes de publicar, confirma tus permisos de contenido y tu responsabilidad cultural.'
+            : 'Before publishing, confirm your content permissions and cultural responsibilities.';
+        }
+        const missing = form.querySelector('[name="rightsAcknowledged"]:not(:checked), [name="culturalAcknowledged"]:not(:checked)');
+        if (missing) missing.focus();
+        return; // Must run before uploads or any database write.
+      }
+      if (user.accountType === 'creator' && state.createData.type === 'text') {
+        showToast('El feed de Agentes Culturales requiere foto, carrusel o video.'); return;
+      }
+      if (!fd.contentPurpose) {
+        showToast('Selecciona el propósito cultural de la publicación.'); return;
+      }
+      if (state.createData.type !== 'text' && (!state.createData.files || !state.createData.files.length)) {
         showToast('Por favor sube al menos una imagen o video.'); return;
       }
-      const post = {
-        id:          uid(),
-        authorId:    user.id,
-        type:        state.createData.type,
-        media:       state.createData.media || [],
-        title:       fd.title,
-        description: fd.description,
-        category:    fd.category,
-        territory:   fd.territory,
-        tags:        fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
-        timestamp:   new Date().toISOString(),
-        likes:       0,
-      };
-      const posts = DB.posts();
-      posts.unshift(post);
-      DB.setPosts(posts);
-      state.createData = { type: 'photo', media: [], tags: [] };
-      showToast('¡Publicación creada!');
-      go('feed');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
+      const uploaded = [];
+      const filesToUpload = [...(state.createData.files || [])];
+      try {
+        for (let i = 0; i < filesToUpload.length; i++) {
+          if (me()?.id !== user.id) throw new Error('La sesión cambió durante la subida.');
+          uploaded.push(await window.ORIGEN_API.upload('post-media', filesToUpload[i], `post-${i+1}`));
+        }
+        if (me()?.id !== user.id) throw new Error('La sesión cambió; publicación cancelada antes de enviarse.');
+        await window.ORIGEN_API.createPost({
+          type: state.createData.type,
+          media: uploaded,
+          title: fd.title,
+          description: fd.description,
+          category: fd.category,
+          contentPurpose: fd.contentPurpose,
+          territory: fd.territory,
+          rightsAcknowledged: true,
+          culturalAcknowledged: true,
+          tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
+        }, user.id);
+        if (me()?.id !== user.id) return; // Do not mutate another account's draft or UI.
+        for (const url of state.createData.media || []) releasePreview(url);
+        state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
+        showToast('¡Publicación creada!');
+        go('feed');
+      } catch (error) {
+        if (uploaded.length) {
+          Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))).then(results => {
+            if (results.some(result => result.status !== 'fulfilled' || result.value !== true)) {
+              console.warn('ORIGEN post upload cleanup incomplete after failed post creation.');
+            }
+          });
+        }
+        showToast(error.message || 'No pudimos crear la publicación.');
+        if (submit) { submit.disabled = false; submit.textContent = 'Publicar →'; }
+      }
     });
   }
 
@@ -1783,22 +2935,27 @@
       });
     });
 
-    /* avatar upload */
-    const avaInput = document.getElementById('edit-avatar-input');
-    if (avaInput) avaInput.addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return;
-      state.editAvatar = await resizeImg(file, 400);
-      const zone = document.getElementById('edit-avatar-zone');
-      if (zone) zone.querySelector('img, .ava') && (zone.innerHTML = `<img src="${state.editAvatar}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/*" style="display:none"><button class="btn" type="button" onclick="document.getElementById('edit-avatar-input').click()">Cambiar foto</button>`);
+    /* avatar / cover upload: listen on persistent zones so rebuilt file inputs keep working */
+    const avaZone = document.getElementById('edit-avatar-zone');
+    if (avaZone) avaZone.addEventListener('change', e => {
+      if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'edit-avatar-input') return;
+      const file = e.target.files?.[0]; if (!file) return;
+      releasePreview(state.editAvatarPreview);
+      state.editAvatar = file;
+      const preview = URL.createObjectURL(file);
+      state.editAvatarPreview = preview;
+      avaZone.innerHTML = `<img src="${esc(safeMediaUrl(preview))}" class="edit-avatar-preview" alt="Avatar"><input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>`;
     });
 
-    /* cover upload */
-    const covInput = document.getElementById('edit-cover-input');
-    if (covInput) covInput.addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return;
-      state.editCover = await resizeImg(file, 1200);
-      const zone = document.getElementById('edit-cover-zone');
-      if (zone) zone.innerHTML = `<img src="${state.editCover}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/*" style="display:none"><button class="btn secondary" type="button" onclick="document.getElementById('edit-cover-input').click()">Cambiar portada</button>`;
+    const covZone = document.getElementById('edit-cover-zone');
+    if (covZone) covZone.addEventListener('change', e => {
+      if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'edit-cover-input') return;
+      const file = e.target.files?.[0]; if (!file) return;
+      releasePreview(state.editCoverPreview);
+      state.editCover = file;
+      const preview = URL.createObjectURL(file);
+      state.editCoverPreview = preview;
+      covZone.innerHTML = `<img src="${esc(safeMediaUrl(preview))}" class="edit-cover-preview" alt="Portada"><input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none"><button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>`;
     });
 
     /* form submit */
@@ -1806,48 +2963,76 @@
     if (!form) return;
     form.addEventListener('submit', async e => {
       e.preventDefault();
-      const user = me(); if (!user || !SB) return;
+      const user = me(); if (!user) return;
       const fd   = Object.fromEntries(new FormData(form));
       const links = {};
       ['instagram','facebook','tiktok','youtube','linkedin','whatsapp','email','web'].forEach(k => { if (fd[k]) links[k] = fd[k]; });
-
-      const submit = form.querySelector('button[type="submit"]');
-      if (submit) { submit.disabled = true; submit.textContent = 'Guardando…'; }
-
+      const newAvatarFile = state.editAvatar instanceof File ? state.editAvatar : null;
+      const newCoverFile = state.editCover instanceof File ? state.editCover : null;
+      const uploaded = [];
       try {
-        let avatarUrl = user.avatar || '';
-        let coverUrl  = user.cover || '';
-        if (state.editAvatar) avatarUrl = await uploadDataUrl('avatars', state.editAvatar, user.id, 'avatar');
-        if (state.editCover)  coverUrl  = await uploadDataUrl('covers',  state.editCover,  user.id, 'cover');
-
-        const patch = {
-          display_name: fd.name || user.name,
-          location: fd.location || '',
-          story: fd.story || '',
+        let avatar = user.avatar;
+        let cover = user.cover;
+        if (newAvatarFile) {
+          if (me()?.id !== user.id) throw new Error('La sesión cambió durante la edición.');
+          avatar = await window.ORIGEN_API.upload('avatars', newAvatarFile, 'avatar');
+          uploaded.push(avatar);
+        }
+        if (newCoverFile) {
+          if (me()?.id !== user.id) throw new Error('La sesión cambió durante la edición.');
+          cover = await window.ORIGEN_API.upload('covers', newCoverFile, 'cover');
+          uploaded.push(cover);
+        }
+        if (me()?.id !== user.id) throw new Error('La sesión cambió; no se guardaron los cambios del perfil.');
+        const previousAvatar = user.avatar;
+        const previousCover = user.cover;
+        const updated = await window.ORIGEN_API.updateMyProfile({
+          name: fd.name || user.name,
+          location: fd.location,
+          story: fd.story,
           categories: userCats.list,
           links,
-          avatar_url: avatarUrl || null,
-          cover_url: coverUrl || null,
-        };
+          accountType: user.accountType,
+          providerHeadline: fd.providerHeadline || '',
+          services: fd.services ? fd.services.split(',').map(s => s.trim()).filter(Boolean) : [],
+          serviceDescription: fd.serviceDescription || '',
+          avatar,
+          cover
+        }, user.id);
+        if (me()?.id !== user.id) return; // Save may have succeeded for the prior user.
+        state.user = updated;
 
-        const { data, error } = await SB
-          .from('profiles')
-          .update(patch)
-          .eq('id', user.id)
-          .select('*')
-          .single();
-        if (error) throw error;
+        const cleanup = [];
+        if (newAvatarFile && previousAvatar && previousAvatar !== avatar) {
+          cleanup.push(window.ORIGEN_API.removeOwnMedia(previousAvatar));
+        }
+        if (newCoverFile && previousCover && previousCover !== cover) {
+          cleanup.push(window.ORIGEN_API.removeOwnMedia(previousCover));
+        }
+        if (cleanup.length) {
+          Promise.allSettled(cleanup).then(results => {
+            if (results.some(result => result.status !== 'fulfilled' || result.value !== true)) {
+              console.warn('ORIGEN media cleanup incomplete; new profile media remains saved.');
+            }
+          });
+        }
 
-        const { data: authData } = await SB.auth.getUser();
-        const updated = toAppUser(data, authData?.user || null);
-        cacheAppUser(updated);
+        releasePreview(state.editAvatarPreview);
+        releasePreview(state.editCoverPreview);
         state.editAvatar = null; state.editCover = null;
+        state.editAvatarPreview = null; state.editCoverPreview = null;
         showToast('¡Perfil actualizado!');
         go('mi-perfil');
-      } catch (err) {
-        console.error(err);
-        showToast('No pudimos guardar el perfil. Inténtalo de nuevo.');
-        if (submit) { submit.disabled = false; submit.textContent = 'Guardar cambios'; }
+      } catch (error) {
+        // If one upload succeeded but the second upload/save failed, prevent
+        // storage from accumulating unreferenced profile photos/cover images.
+        if (uploaded.length) {
+          const results = await Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url)));
+          if (results.some(item => item.status !== 'fulfilled' || item.value !== true)) {
+            console.warn('[ORIGEN] Unreferenced profile media cleanup incomplete.');
+          }
+        }
+        if (me()?.id === user.id) showToast(error.message || 'No pudimos actualizar tu perfil.');
       }
     });
   }
@@ -1860,12 +3045,58 @@
   const menuBtn  = document.getElementById('menu-button');
   const closeBtn = document.getElementById('close-menu');
 
-  function openDrawer()  { drawer.classList.add('open'); overlay.classList.add('open'); drawer.setAttribute('aria-hidden','false'); menuBtn.setAttribute('aria-expanded','true'); }
-  function closeDrawer() { drawer.classList.remove('open'); overlay.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); menuBtn.setAttribute('aria-expanded','false'); }
+  let drawerPreviousFocus = null;
+  const drawerFocusable = () => [...drawer.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.hasAttribute('inert'));
+
+  function openDrawer() {
+    drawerPreviousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : menuBtn;
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    drawer.removeAttribute('inert');
+    drawer.setAttribute('aria-hidden','false');
+    menuBtn.setAttribute('aria-expanded','true');
+    requestAnimationFrame(() => (closeBtn || drawerFocusable()[0])?.focus());
+  }
+
+  function closeDrawer(restoreFocus = true) {
+    const wasOpen = drawer.classList.contains('open');
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    drawer.setAttribute('aria-hidden','true');
+    drawer.setAttribute('inert','');
+    menuBtn.setAttribute('aria-expanded','false');
+    if (restoreFocus && wasOpen) (drawerPreviousFocus || menuBtn)?.focus();
+  }
 
   menuBtn.addEventListener('click', openDrawer);
-  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-  if (overlay)  overlay.addEventListener('click', closeDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', () => closeDrawer(true));
+  if (overlay) overlay.addEventListener('click', () => closeDrawer(true));
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && drawer.classList.contains('open')) {
+      event.preventDefault();
+      closeDrawer(true);
+    }
+  });
+
+  drawer.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const focusable = drawerFocusable();
+    if (!focusable.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   document.getElementById('language-toggle').addEventListener('click', () => {
     state.lang = state.lang === 'es' ? 'en' : 'es';
@@ -1875,6 +3106,222 @@
     render(currentRoute(), false);
     showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
   });
+
+  function initDigitalWellbeing() {
+    const dialog = document.getElementById('wellbeing-dialog');
+    if (!dialog) return;
+
+    // Migrate the earlier 30-minute experimental default to the new 120-minute daily target.
+    const stored = Number(localStorage.getItem('origen-wellbeing-minutes'));
+    if (!stored || stored === 30) {
+      state.wellbeingMinutes = 120;
+      localStorage.setItem('origen-wellbeing-minutes', '120');
+    }
+
+    const pauseAllVideos = () => document.querySelectorAll('video').forEach(v => v.pause());
+    const todayKey = () => new Date().toISOString().slice(0, 10);
+
+    const readDaily = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('origen-wellbeing-daily') || '{}');
+        if (saved.date !== todayKey()) return { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+        return {
+          date: saved.date,
+          activeMs: Math.max(0, Number(saved.activeMs) || 0),
+          nextPromptMs: Math.max(Number(saved.nextPromptMs) || 0, state.wellbeingMinutes * 60 * 1000)
+        };
+      } catch {
+        return { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+      }
+    };
+
+    const writeDaily = daily => {
+      localStorage.setItem('origen-wellbeing-daily', JSON.stringify(daily));
+    };
+
+    let daily = readDaily();
+    state.wellbeingNextPromptMs = daily.nextPromptMs;
+    state.wellbeingLastTick = Date.now();
+
+    dialog.querySelector('[data-wellbeing="break"]')?.addEventListener('click', () => {
+      pauseAllVideos();
+      dialog.close();
+      daily.nextPromptMs = daily.activeMs + 30 * 60 * 1000;
+      state.wellbeingNextPromptMs = daily.nextPromptMs;
+      writeDaily(daily);
+      showToast('Contenido en pausa. Vuelve cuando quieras.');
+    });
+
+    dialog.querySelector('[data-wellbeing="snooze"]')?.addEventListener('click', () => {
+      dialog.close();
+      daily.nextPromptMs = daily.activeMs + 15 * 60 * 1000;
+      state.wellbeingNextPromptMs = daily.nextPromptMs;
+      writeDaily(daily);
+    });
+
+    dialog.querySelector('[data-wellbeing="off"]')?.addEventListener('click', () => {
+      state.wellbeingMinutes = 0;
+      localStorage.setItem('origen-wellbeing-minutes', '0');
+      dialog.close();
+      showToast('Recordatorios de bienestar desactivados.');
+    });
+
+    setInterval(() => {
+      const now = Date.now();
+
+      if (daily.date !== todayKey()) {
+        daily = { date: todayKey(), activeMs: 0, nextPromptMs: state.wellbeingMinutes * 60 * 1000 };
+      }
+
+      if (document.visibilityState === 'visible' && state.wellbeingMinutes > 0) {
+        daily.activeMs += Math.max(0, Math.min(now - state.wellbeingLastTick, 60000));
+        if (!dialog.open && daily.activeMs >= daily.nextPromptMs) {
+          pauseAllVideos();
+          dialog.showModal();
+        }
+        writeDaily(daily);
+      }
+
+      state.wellbeingLastTick = now;
+    }, 30000);
+  }
+
+  function initDeletePostDialog() {
+    if (!$deletePost) return;
+    const close = () => {
+      if ($deletePost.open) $deletePost.close();
+      $deletePost.dataset.postId = '';
+      const status = document.getElementById('delete-post-status');
+      if (status) status.textContent = '';
+    };
+
+    document.getElementById('delete-post-close')?.addEventListener('click', close);
+    document.getElementById('delete-post-cancel')?.addEventListener('click', close);
+    document.getElementById('delete-post-confirm')?.addEventListener('click', async () => {
+      const postId = $deletePost.dataset.postId || '';
+      const status = document.getElementById('delete-post-status');
+      const confirmBtn = document.getElementById('delete-post-confirm');
+      if (!postId) return;
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = state.lang === 'es' ? 'Eliminando…' : 'Deleting…';
+      }
+      const initiatingUserId = me()?.id || null;
+      try {
+        const deletion = await window.ORIGEN_API.deletePost(postId);
+        // Never show account A's deletion result in account B's interface.
+        if (!initiatingUserId || me()?.id !== initiatingUserId) return;
+        close();
+        if (deletion?.mediaCleanup === 'incomplete') {
+          showToast(state.lang === 'es'
+            ? 'Publicación retirada. No se pudo confirmar la eliminación de todos sus archivos públicos; contacta a info.origencultural@gmail.com.'
+            : 'Post removed. Some public media may still be accessible; contact info.origencultural@gmail.com.', 11000);
+        } else {
+          showToast(state.lang === 'es' ? 'Publicación eliminada.' : 'Post deleted.');
+        }
+        render(currentRoute(), false);
+      } catch (error) {
+        if (status) status.textContent = error?.message || (state.lang === 'es'
+          ? 'No pudimos eliminar la publicación.'
+          : 'We could not delete the post.');
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = state.lang === 'es' ? 'Eliminar publicación' : 'Delete post';
+        }
+      }
+    });
+  }
+
+  function initReportDialog() {
+    if (!$report) return;
+    const form = document.getElementById('report-form');
+    const close = () => {
+      if ($report.open) $report.close();
+      const status = document.getElementById('report-status');
+      if (status) status.textContent = '';
+    };
+
+    document.getElementById('report-close')?.addEventListener('click', close);
+    document.getElementById('report-cancel')?.addEventListener('click', close);
+
+    form?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const reason = document.getElementById('report-reason')?.value || '';
+      const details = document.getElementById('report-details')?.value || '';
+      const status = document.getElementById('report-status');
+      const submit = document.getElementById('report-submit');
+      if (!reason) {
+        if (status) status.textContent = state.lang === 'es' ? 'Selecciona un motivo.' : 'Select a reason.';
+        return;
+      }
+      const submittingUserId = me()?.id;
+      if (!submittingUserId) {
+        if (status) status.textContent = state.lang === 'es'
+          ? 'Inicia sesión nuevamente antes de enviar el reporte.'
+          : 'Sign in again before submitting the report.';
+        return;
+      }
+
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = state.lang === 'es' ? 'Enviando…' : 'Submitting…';
+      }
+      try {
+        await window.ORIGEN_API.report({
+          target_type: $report.dataset.targetType || 'post',
+          target_id: $report.dataset.targetId || '',
+          reason,
+          details: details.trim().slice(0, 6000)
+        }, submittingUserId);
+        if (me()?.id !== submittingUserId) return;
+        close();
+        showToast(state.lang === 'es'
+          ? 'Reporte recibido. Gracias por ayudarnos a cuidar ORIGEN.'
+          : 'Report received. Thank you for helping keep ORIGEN safe.');
+      } catch (error) {
+        if (me()?.id !== submittingUserId) return;
+        if (status) status.textContent = error?.message || (state.lang === 'es'
+          ? 'No pudimos enviar el reporte.'
+          : 'We could not submit the report.');
+      } finally {
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = state.lang === 'es' ? 'Enviar reporte' : 'Submit report';
+        }
+      }
+    });
+  }
+
+  function bindCspSafeDelegates() {
+    document.addEventListener('click', event => {
+      const target = event.target;
+      const fileTrigger = target?.closest?.('[data-file-trigger]');
+      if (fileTrigger) {
+        const input = document.getElementById(fileTrigger.dataset.fileTrigger);
+        if (input instanceof HTMLInputElement && input.type === 'file') input.click();
+      }
+
+      const searchResult = target?.closest?.('[data-close-search]');
+      if (searchResult) {
+        if ($search?.open) $search.close();
+        if (searchResult.hasAttribute('data-clear-comments')) state.openComments.clear();
+      }
+    });
+
+    document.addEventListener('error', event => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || !img.dataset.avatarFallback) return;
+      const parent = img.parentElement;
+      if (!parent) return;
+      parent.classList.add('ava-init');
+      try {
+        parent.textContent = decodeURIComponent(img.dataset.avatarFallback);
+      } catch {
+        parent.textContent = 'OC';
+      }
+    }, true);
+  }
 
   /* Global search */
   const globalSearch = document.getElementById('global-search');
@@ -1888,13 +3335,13 @@
   }
   function populateSearch(query) {
     const q = query.toLowerCase().trim();
-    const results = creators.filter(c => !q || [c.name, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q));
+    const results = directoryProfiles().filter(c => !q || [c.name, c.category, c.location, c.short, ...(c.tags || [])].join(' ').toLowerCase().includes(q));
     const resPosts = allPosts().filter(p => q && [p.title, p.description, ...(p.tags || [])].join(' ').toLowerCase().includes(q)).slice(0, 4);
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => `<a class="search-result" href="#perfil/${c.id}" onclick="document.getElementById('search-dialog').close()"><div class="ava ava-sm"><img src="${c.image}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${c.category} · ${c.location}</p></div><span class="link-arrow">Ver</span></a>`),
-      ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" onclick="document.getElementById('search-dialog').close();state.openComments.clear()"><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${esc(safeMediaUrl(c.image || c.avatar) || 'assets/logo-mark.svg')}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${esc(c.category)} · ${esc(c.location)}</p>${profileTrustChip(c)}</div><span class="link-arrow">Ver</span></a>`; }),
+      ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" data-close-search data-clear-comments><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
 
@@ -1902,48 +3349,120 @@
      HASH CHANGE → RENDER
   ═══════════════════════════════════════════════════════════ */
   window.addEventListener('hashchange', () => {
-    closeDrawer();
+    closeDrawer(false);
     render(currentRoute());
   });
 
   /* ═══════════════════════════════════════════════════════════
      INIT
   ═══════════════════════════════════════════════════════════ */
+  // navigator.onLine only reflects the browser's connectivity indicator;
+  // it does not claim that ORIGEN's server is reachable. No polling/tracking.
+  function updateConnectionStatus() {
+    const notice = document.getElementById('connection-status');
+    if (notice) notice.hidden = navigator.onLine !== false;
+  }
+  window.addEventListener('offline', updateConnectionStatus);
+  window.addEventListener('online', updateConnectionStatus);
+  updateConnectionStatus();
+
+  document.documentElement.lang = state.lang;
+
+  // Ignore delayed callbacks from an earlier Auth event or initial load.
+  // In particular an old profile response must not restore account A after
+  // account B has signed in or another tab has signed out.
+  let authUiGeneration = 0;
+
   async function initApp() {
-    document.documentElement.lang = state.lang;
+    const generation = ++authUiGeneration;
     try {
-      await hydrateSupabaseSession();
-    } catch (err) {
-      console.warn('No se pudo restaurar la sesión segura:', err);
-      DB.clearSess();
-    }
-    render(currentRoute());
+      const restored = await window.ORIGEN_API?.restoreSession() || null;
+      if (generation !== authUiGeneration) return;
+      state.user = restored;
 
-    if (SB) {
-      SB.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          DB.clearSess();
-          return;
-        }
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
-          setTimeout(async () => {
-            try {
-              const appUser = await fetchRemoteProfile(session.user);
-              cacheAppUser(appUser);
-              if (event === 'SIGNED_IN') render(currentRoute(), false);
-            } catch (err) {
-              console.warn('No se pudo sincronizar la sesión:', err);
-            }
-          }, 0);
-        }
-      });
-    }
-
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+      const tasks = [
+        window.ORIGEN_API?.listCulturalProfiles(),
+        window.ORIGEN_API?.listPublicProfiles(),
+        window.ORIGEN_API?.listPosts()
+      ];
+      if (state.user) {
+        tasks.push(
+          window.ORIGEN_API?.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API?.myFollows(),
+          window.ORIGEN_API?.myFavorites(),
+          window.ORIGEN_API?.loadPostInteractions()
+        );
+      }
+      await Promise.allSettled(tasks);
+      if (generation !== authUiGeneration) return;
+    } catch (error) {
+      if (generation !== authUiGeneration) return;
+      console.error('[ORIGEN] Startup error:', error);
+      state.user = null;
+    } finally {
+      if (generation === authUiGeneration) {
+        state.authReady = true;
+        render(currentRoute());
+      }
     }
   }
 
+  window.addEventListener('origen-auth-change', async () => {
+    const generation = ++authUiGeneration;
+    try {
+      const previousUid = state.user?.id || null;
+      const refreshedUser = await window.ORIGEN_API?.restoreSession() || null;
+      if (generation !== authUiGeneration) return;
+
+      const nextUid = refreshedUser?.id || null;
+      if (previousUid && previousUid !== nextUid) clearAccountDrafts();
+      state.user = refreshedUser;
+      if (state.user) {
+        await Promise.allSettled([
+          window.ORIGEN_API?.ensureCreatorCulturalProfile(),
+          window.ORIGEN_API?.listCulturalProfiles(),
+          window.ORIGEN_API?.listPublicProfiles(),
+          window.ORIGEN_API?.myFollows(),
+          window.ORIGEN_API?.myFavorites(),
+          window.ORIGEN_API?.listPosts(),
+          window.ORIGEN_API?.loadPostInteractions()
+        ]);
+      }
+      if (generation !== authUiGeneration) return;
+
+      if (!state.authReady) {
+        // INITIAL_SESSION may arrive while initApp is still loading.
+        state.authReady = true;
+        render(currentRoute(), false);
+        return;
+      }
+
+      // Sign-out in a different tab must remove privileged UI content too,
+      // not only the navigation links. Switching accounts must re-render it.
+      if (previousUid && previousUid !== nextUid) {
+        if (!nextUid) go('inicio');
+        else render(currentRoute(), false);
+        return;
+      }
+      updateShell();
+    } catch (error) {
+      if (generation !== authUiGeneration) return;
+      console.error('[ORIGEN] Auth refresh error:', error);
+    }
+  });
+
+  initDeletePostDialog();
+  initReportDialog();
+  bindCspSafeDelegates();
+  initDigitalWellbeing();
   initApp();
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(error => {
+        console.warn('[ORIGEN] Service worker registration failed:', error);
+      });
+    });
+  }
 
 })();

@@ -1,0 +1,38 @@
+name: ORIGEN Quality Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ launch-beta-supabase, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate release candidate
+        run: npm run check:release
+      - name: Upload deployable static bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: origen-static-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload deterministic release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: origen-release-evidence-${{ github.run_number }}
+          path: .release-evidence/bundle-manifest.json
+          if-no-files-found: error
+          retention-days: 30

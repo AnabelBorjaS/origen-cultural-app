@@ -5,6 +5,37 @@
 window.MundoCultural = (() => {
   'use strict';
 
+  function _esc(value) {
+    const d = document.createElement('div');
+    d.textContent = String(value || '');
+    return d.innerHTML;
+  }
+
+  function _safeMediaUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^blob:/i.test(raw)) return raw;
+      if (/^data:image\/(?:png|jpe?g|webp);base64,/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.href);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function _safeHref(value, fallback = '#explorar') {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return fallback;
+      if (raw.startsWith('#')) return raw;
+      const u = new URL(raw, window.location.href);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   /* ── BASE DE DATOS CULTURAL ─────────────────────────────────── */
   const CULTURAL_DB = {
     ecuador: {
@@ -249,7 +280,7 @@ window.MundoCultural = (() => {
     }
   };
 
-  // Coordenadas de países para puntos de agentes
+  // Coordenadas de países para puntos de creadores
   const COUNTRY_COORDS = {
     ecuador:   { lat: -1.83,  lng: -78.18 },
     australia: { lat: -25.27, lng: 133.77 },
@@ -329,18 +360,12 @@ window.MundoCultural = (() => {
   function loadGeo() {
     if (_geoPromise) return _geoPromise;
     _geoPromise = fetch(
-      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+      'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json'
     ).then(async r => {
-      // world-atlas uses TopoJSON; we need topojson-client
+      if (!r.ok) throw new Error(`World atlas request failed: ${r.status}`);
       const topo = await r.json();
-      // Inline micro-converter (only the arc/geometry we need)
       return topoToGeo(topo);
-    }).catch(() =>
-      // Fallback: fetch GeoJSON directly
-      fetch('https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/DATA/world.geojson')
-        .then(r => r.json())
-        .then(g => g.features)
-    );
+    });
     return _geoPromise;
   }
 
@@ -395,7 +420,7 @@ window.MundoCultural = (() => {
     if (feat === _selected) return 'rgba(200,169,126,0.92)';
     if (feat === _hovered)  return 'rgba(200,169,126,0.58)';
     if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(7,10,13,0.30)';
+    return 'rgba(18,18,18,0.72)';
   }
   function altitude(feat) {
     return feat === _hovered ? 0.016 : 0.006;
@@ -403,16 +428,26 @@ window.MundoCultural = (() => {
 
   /* ── CREATOR DATA ───────────────────────────────────────────── */
   function getCreatorsForKey(countryKey) {
-    const db   = CULTURAL_DB[countryKey];
+    const db = CULTURAL_DB[countryKey];
     if (!db) return [];
-    const all  = (window.ORIGEN_DATA?.creators || []);
-    const users = (() => { try { return JSON.parse(localStorage.getItem('oc-users') || '{}'); } catch { return {}; } })();
+    const all = (window.ORIGEN_DATA?.creators || []);
     const seed = all.filter(c => db.creatorIds.includes(c.id)).map(c => ({ ...c, _kind: 'creator' }));
-    const usr  = Object.values(users).filter(u => {
-      const loc = (u.location || '').toLowerCase();
-      return loc.includes(db.name.toLowerCase()) || loc.includes(countryKey);
-    }).map(u => ({ ...u, _kind: 'user' }));
-    return [...seed, ...usr];
+    const live = (window.ORIGEN_API?.cache?.publicProfiles || [])
+      .filter(u => {
+        const loc = (u.location || [u.city, u.country].filter(Boolean).join(', ')).toLowerCase();
+        return loc.includes(db.name.toLowerCase()) || loc.includes(countryKey);
+      })
+      .map(u => ({
+        id: u.id,
+        name: u.display_name || 'Agente Cultural',
+        type: 'Agente Cultural',
+        category: (u.categories || [])[0] || 'Cultura',
+        location: u.location || [u.city, u.country].filter(Boolean).join(', '),
+        image: u.avatar_url || '',
+        avatar: u.avatar_url || '',
+        _kind: 'user'
+      }));
+    return [...seed, ...live];
   }
 
   function getCreatorPoints() {
@@ -457,7 +492,7 @@ window.MundoCultural = (() => {
       : `<div class="card-section card-section-creators">
           <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
           <div class="card-empty-creators">
-            <p>Sé el primero en registrarte desde ${data.name}.</p>
+            <p>Sé el primero en registrarte desde ${_esc(data.name)}.</p>
             <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
           </div>
         </div>`;
@@ -467,10 +502,10 @@ window.MundoCultural = (() => {
 
         <!-- HEADER -->
         <div class="card-header">
-          <div class="card-flag">${data.flag}</div>
+          <div class="card-flag">${_esc(data.flag)}</div>
           <div class="card-header-info">
-            <p class="eyebrow">${data.continent}</p>
-            <h2 class="card-country-name">${data.name}</h2>
+            <p class="eyebrow">${_esc(data.continent)}</p>
+            <h2 class="card-country-name">${_esc(data.name)}</h2>
           </div>
           <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
         </div>
@@ -478,7 +513,7 @@ window.MundoCultural = (() => {
         <!-- DISCLAIMER: múltiples identidades -->
         <p class="territory-disclaimer">
           <span class="td-icon">◈</span>
-          ${data.name} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
+          ${_esc(data.name)} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
         </p>
 
         <!-- MICRO-STORY CAROUSEL -->
@@ -516,7 +551,7 @@ window.MundoCultural = (() => {
         <!-- LENGUAS -->
         <div class="card-section">
           <p class="card-section-label">LENGUAS DE ESTE TERRITORIO</p>
-          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${l}</span>`).join('')}</div>
+          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${_esc(l)}</span>`).join('')}</div>
         </div>
 
         <!-- SUGGEST / CORRECTION -->
@@ -557,15 +592,15 @@ window.MundoCultural = (() => {
 
     card.innerHTML = `
       <div class="mc-inner">
-        <p class="mc-category">${h.cat}</p>
+        <p class="mc-category">${_esc(h.cat)}</p>
         <h3 class="mc-sabias">¿Sabías que…?</h3>
-        <blockquote class="mc-text">${h.txt}</blockquote>
-        <a href="${h.href || '#explorar'}" class="mc-discover-btn">
+        <blockquote class="mc-text">${_esc(h.txt)}</blockquote>
+        <a href="${_esc(_safeHref(h.href))}" class="mc-discover-btn">
           Descubre su origen <span aria-hidden="true">→</span>
         </a>
       </div>
       <footer class="mc-footer">
-        <p class="mc-source">Fuente: <em>${h.src}</em></p>
+        <p class="mc-source">Fuente: <em>${_esc(h.src)}</em></p>
       </footer>`;
 
     // Update dots
@@ -680,7 +715,7 @@ window.MundoCultural = (() => {
     /* ─ suggest / correction ─ */
     document.getElementById('mc-suggest')?.addEventListener('click', e => {
       e.preventDefault();
-      const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      const session = window.ORIGEN_API?.cache?.session || null;
       if (!session) {
         _toast('Inicia sesión para sugerir datos o solicitar correcciones.');
         setTimeout(() => { window.location.hash = '#login'; }, 1400);
@@ -692,23 +727,27 @@ window.MundoCultural = (() => {
 
   function renderCreatorMini(c) {
     const init = (c.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const src  = c.avatar || c.image;
-    const href = c._kind === 'creator' ? `#perfil/${c.id}` : `#usuario/${c.id}`;
+    const src  = _safeMediaUrl(c.avatar || c.image);
+    const safeId = encodeURIComponent(String(c.id || ''));
+    const href = c._kind === 'creator' ? `#perfil/${safeId}` : `#usuario/${safeId}`;
     const avHtml = src
-      ? `<img src="${src}" alt="${c.name}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
-      : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${init}</div>`;
+      ? `<img src="${_esc(src)}" alt="${_esc(c.name)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
+      : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${_esc(init)}</div>`;
 
-    const followsMap = (() => { try { return JSON.parse(localStorage.getItem('oc-follows') || '{}'); } catch { return {}; } })();
-    const session    = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
-    const isFollowing = session && (followsMap[session.id] || []).includes(c.id);
+    const api = window.ORIGEN_API;
+    const session = api?.cache?.session || null;
+    const culturalProfile = c._kind === 'user'
+      ? api?.cache?.culturalProfiles?.find(p => p.owner_id === c.id)
+      : api?.cache?.culturalProfiles?.find(p => p.id === c.id || p.slug === c.id);
+    const isFollowing = !!session && !!culturalProfile && (api?.cache?.follows || []).includes(culturalProfile.id);
 
     return `<div class="creator-mini">
       <a href="${href}">${avHtml}</a>
       <div class="creator-mini-info">
-        <a href="${href}"><strong>${c.name}</strong></a>
-        <span>${c.type || c.accountType || ''}</span>
+        <a href="${href}"><strong>${_esc(c.name)}</strong></a>
+        <span>${_esc(c.type || c.accountType || '')}</span>
       </div>
-      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${c.id}" data-kind="${c._kind}">${isFollowing ? 'Siguiendo' : '+ Seguir'}</button>
+      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${_esc(c.id)}" data-kind="${_esc(c._kind)}">${isFollowing ? 'Siguiendo' : '+ Seguir'}</button>
     </div>`;
   }
 
@@ -719,7 +758,7 @@ window.MundoCultural = (() => {
     return `<div class="panel-welcome">
       <div class="panel-welcome-icon">◎</div>
       <h3>Selecciona un territorio</h3>
-      <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes registrados en Origen Cultural.</p>
+      <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.</p>
       <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
       <div class="featured-countries">
         ${highlighted.map((n, i) => `
@@ -735,16 +774,39 @@ window.MundoCultural = (() => {
       btn.addEventListener('click', () => selectCountry(btn.dataset.fc));
     });
     _panel.querySelectorAll('[data-mundo-follow]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      btn.addEventListener('click', async () => {
+        const api = window.ORIGEN_API;
+        const session = api?.cache?.session || null;
         if (!session) { window.location.hash = '#login'; return; }
-        const tid = btn.dataset.mundoFollow;
-        const follows = (() => { try { return JSON.parse(localStorage.getItem('oc-follows') || '{}'); } catch { return {}; } })();
-        if (!follows[session.id]) follows[session.id] = [];
-        const idx = follows[session.id].indexOf(tid);
-        if (idx === -1) { follows[session.id].push(tid); btn.textContent = 'Siguiendo'; btn.classList.add('on'); }
-        else            { follows[session.id].splice(idx, 1); btn.textContent = '+ Seguir';  btn.classList.remove('on'); }
-        localStorage.setItem('oc-follows', JSON.stringify(follows));
+
+        const ref = btn.dataset.mundoFollow;
+        const kind = btn.dataset.kind;
+        let culturalProfile = kind === 'user'
+          ? api?.cache?.culturalProfiles?.find(p => p.owner_id === ref)
+          : api?.cache?.culturalProfiles?.find(p => p.id === ref || p.slug === ref);
+
+        try {
+          if (!culturalProfile && kind === 'creator') {
+            culturalProfile = await api.findCulturalProfile(ref);
+          } else if (!culturalProfile && kind === 'user') {
+            const { data, error } = await api.client.from('cultural_profiles')
+              .select('*').eq('owner_id', ref).maybeSingle();
+            if (error) throw error;
+            culturalProfile = data;
+          }
+
+          if (!culturalProfile) {
+            _toast('Este seguimiento todavía no está disponible para este perfil.');
+            return;
+          }
+
+          const wasFollowing = (api.cache.follows || []).includes(culturalProfile.id);
+          await api.toggleFollow(culturalProfile.id);
+          btn.textContent = wasFollowing ? '+ Seguir' : 'Siguiendo';
+          btn.classList.toggle('on', !wasFollowing);
+        } catch (error) {
+          _toast(error?.message || 'No pudimos actualizar el seguimiento.');
+        }
       });
     });
   }
@@ -754,7 +816,7 @@ window.MundoCultural = (() => {
     _panel.innerHTML = `<div class="cultural-card">
       <div class="card-header">
         <div class="card-flag">🌍</div>
-        <div><h2 class="card-country-name">${name}</h2><p class="card-meta">Territorio sin datos culturales registrados aún.</p></div>
+        <div><h2 class="card-country-name">${_esc(name)}</h2><p class="card-meta">Territorio sin datos culturales registrados aún.</p></div>
         <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
       </div>
       <div class="card-section">
@@ -776,27 +838,24 @@ window.MundoCultural = (() => {
     _geoData = geo;
 
     const points = getCreatorPoints();
-    const territoryLabels = Object.values(CULTURAL_DB).map(d => ({
-      lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
-    }));
 
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg')
+      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
       .lineHoverPrecision(0)
-      .atmosphereColor('rgba(200,169,126,0.58)')
-      .atmosphereAltitude(0.20)
+      .atmosphereColor('rgba(200,169,126,0.25)')
+      .atmosphereAltitude(0.15)
       .polygonsData(_geoData)
       .polygonAltitude(altitude)
       .polygonCapColor(capColor)
       .polygonSideColor(() => 'rgba(200,169,126,0.08)')
-      .polygonStrokeColor(() => 'rgba(255,255,255,0.18)')
+      .polygonStrokeColor(() => '#2a2a2a')
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
-        return `<div class="globe-tooltip">${feat === _selected ? '◈ ' : key ? '⭐ ' : ''}${n}</div>`;
+        return `<div class="globe-tooltip">${feat === _selected ? '◈ ' : key ? '⭐ ' : ''}${_esc(n)}</div>`;
       })
       .onPolygonHover(poly => {
         if (_destroyed) return;
@@ -822,20 +881,8 @@ window.MundoCultural = (() => {
       .pointAltitude('size')
       .pointRadius(0.35)
       .pointColor('color')
-      .pointLabel(d => `<div class="globe-tooltip">🏛 ${d.label}</div>`)
+      .pointLabel(d => `<div class="globe-tooltip">🏛 ${_esc(d.label)}</div>`)
       .onPointClick(d => {
-        if (d.countryKey) selectCountry(d.countryKey);
-      })
-      .labelsData(territoryLabels)
-      .labelLat('lat')
-      .labelLng('lng')
-      .labelText('text')
-      .labelColor(() => '#F3E4CF')
-      .labelSize(0.72)
-      .labelDotRadius(0.18)
-      .labelDotOrientation(() => 'bottom')
-      .labelAltitude(0.035)
-      .onLabelClick(d => {
         if (d.countryKey) selectCountry(d.countryKey);
       })
       (el);
@@ -1017,7 +1064,7 @@ window.HeroGlobe = (() => {
     if (feat === _selected) return 'rgba(200,169,126,0.95)';
     if (feat === _hovered)  return 'rgba(200,169,126,0.55)';
     if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(7,10,13,0.30)';
+    return 'rgba(18,18,18,0.78)';
   }
   function hAlt(feat) { return feat === _hovered ? 0.014 : 0.006; }
 
@@ -1025,13 +1072,10 @@ window.HeroGlobe = (() => {
   function stats(key) {
     const db = getDB()[key];
     if (!db) return { creators: 0, posts: 0 };
-    const allC     = window.ORIGEN_DATA?.creators || [];
-    const seedC    = allC.filter(c => db.creatorIds.includes(c.id)).length;
-    const users    = (() => { try { return Object.values(JSON.parse(localStorage.getItem('oc-users') || '{}')); } catch { return []; } })();
-    const userC    = users.filter(u => (u.location || '').toLowerCase().includes(db.name.toLowerCase())).length;
-    const seedP    = (window.ORIGEN_DATA?.posts || []).filter(p => db.creatorIds.includes(p.authorId)).length;
-    const userP    = (() => { try { return JSON.parse(localStorage.getItem('oc-posts') || '[]'); } catch { return []; } })().filter(p => db.creatorIds.includes(p.authorId)).length;
-    return { creators: seedC + userC, posts: seedP + userP };
+    const providers = getCreatorsForKey(key);
+    const providerIds = new Set(providers.map(p => p.id));
+    const posts = (window.ORIGEN_API?.cache?.posts || []).filter(p => providerIds.has(p.authorId)).length;
+    return { creators: providers.length, posts };
   }
 
   /* popup */
@@ -1041,14 +1085,14 @@ window.HeroGlobe = (() => {
     if (!db) { hidePopup(); return; }
     const { creators, posts } = stats(key);
     _popup.innerHTML = `
-      <button class="hpop-close" id="hpop-close">×</button>
-      <div class="hpop-flag">${db.flag}</div>
-      <h3 class="hpop-name">${db.name}</h3>
-      <p class="hpop-cont">${db.continent}</p>
+      <button class="hpop-close" id="hpop-close" aria-label="Cerrar historia">×</button>
+      <div class="hpop-flag">${_esc(db.flag)}</div>
+      <h3 class="hpop-name">${_esc(db.name)}</h3>
+      <p class="hpop-cont">${_esc(db.continent)}</p>
       <div class="hpop-stats">
-        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Agentes</span></div>
+        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Agentes culturales</span></div>
         <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
-        <div class="hpop-stat"><strong>${db.microhistorias?.length || 0}</strong><span>Historias</span></div>
+        <div class="hpop-stat"><strong>${db.traditions.length}</strong><span>Tradiciones</span></div>
       </div>
       <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">Explorar cultura →</a>`;
     _popup.hidden = false;
@@ -1092,27 +1136,24 @@ window.HeroGlobe = (() => {
       if (_destroyed) return;
       _geoData = geo;
       container.innerHTML = '';
-      const territoryLabels = Object.values(getDB()).map(d => ({
-        lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
-      }));
 
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg')
+        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
         .lineHoverPrecision(0)
-        .atmosphereColor('rgba(200,169,126,0.58)')
-        .atmosphereAltitude(0.20)
+        .atmosphereColor('rgba(200,169,126,0.30)')
+        .atmosphereAltitude(0.14)
         .polygonsData(_geoData)
         .polygonAltitude(hAlt)
         .polygonCapColor(hCap)
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
-        .polygonStrokeColor(() => 'rgba(255,255,255,0.16)')
+        .polygonStrokeColor(() => '#1f1f1f')
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
-          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${n}</div>`;
+          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${_esc(n)}</div>`;
         })
         .onPolygonHover(poly => {
           if (_destroyed) return;
@@ -1136,25 +1177,6 @@ window.HeroGlobe = (() => {
           _rotating = false;
           _updatePauseBtn();
         })
-        .labelsData(territoryLabels)
-        .labelLat('lat')
-        .labelLng('lng')
-        .labelText('text')
-        .labelColor(() => '#F3E4CF')
-        .labelSize(0.66)
-        .labelDotRadius(0.16)
-        .labelDotOrientation(() => 'bottom')
-        .labelAltitude(0.035)
-        .onLabelClick(d => {
-          const db = getDB();
-          if (!d.countryKey || !db[d.countryKey]) return;
-          _selected = null;
-          showPopup(d.countryKey);
-          _globe.pointOfView({ lat: db[d.countryKey].lat, lng: db[d.countryKey].lng, altitude: 2.0 }, 700);
-          _globe.controls().autoRotate = false;
-          _rotating = false;
-          _updatePauseBtn();
-        })
         (container);
 
       _globe.controls().autoRotate      = !prefersReduced;
@@ -1164,6 +1186,7 @@ window.HeroGlobe = (() => {
       _globe.controls().minDistance      = 130;
       _globe.controls().maxDistance      = 460;
       _rotating = !prefersReduced;
+      _updatePauseBtn();
 
       /* centered to show Americas + Europe nicely */
       _globe.pointOfView({ lat: 5, lng: -20, altitude: 2.1 }, 0);
