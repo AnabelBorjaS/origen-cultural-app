@@ -209,4 +209,5 @@ Public beta remains NO-GO until:
 
 - [x] Carruseles de publicaciones en enlaces individuales no requieren que el post aparezca en el feed.
 - [x] Rebinding limitado a la tarjeta que cambió, evitando duplicar listeners sobre otras publicaciones.
-- [ ] Confirmar CI 3/3 del cambio; pruebas de interacción con Auth/RLS real siguen pendientes.
+- [x] 3/3 CI para `c9ba9b127a7c4fbc9dd890fdebf470f07d8ace05` PASS: Quality Gate, CodeQL y Browser QA.
+- [ ] Pruebas de interacción con Auth/RLS real siguen pendientes.

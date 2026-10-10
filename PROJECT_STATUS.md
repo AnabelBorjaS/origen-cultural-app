@@ -594,5 +594,5 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 
 - Corregido el carrusel (y menú de autor) de una publicación abierta desde un permalink sin estar cargada en el feed paginado; usa la historia individual visible para encontrar sus imágenes y autor.
 - Corregido el re-enlace tras acciones como Me gusta, Comentarios o Guardar: ahora los eventos se conectan solo a la tarjeta sustituida, en vez de registrarse nuevamente en todas las publicaciones visibles (riesgo de operaciones duplicadas).
-- Ampliadas pruebas smoke y Chromium móvil: carrusel standalone avanza y regresa y mantiene el resto de botones tras el render. Estado CI pendiente de revisión al escribir este bloque.
+- Ampliadas pruebas smoke y Chromium móvil: carrusel standalone avanza y regresa y mantiene el resto de botones tras el render. **Quality Gate, CodeQL y Browser QA = 3/3 PASS** para commit `c9ba9b127a7c4fbc9dd890fdebf470f07d8ace05`. Chromium verificó navegación 1/2 → 2/2 → 1/2 desde un permalink aislado.
 - Sin cambios a DB, Auth, Storage, pagos o Production. La beta pública continúa bloqueada por los P0.
