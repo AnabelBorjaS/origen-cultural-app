@@ -17,6 +17,7 @@ const checks = [
   ['Trust Center is loaded', index.includes('<script src="trust.js"></script>')],
   ['Trust route exists', app.includes("route === 'confianza'") && app.includes('trustCenterView')],
   ['Signup shows explicit consent', app.includes('name="acceptedLegal" required')],
+  ['Registration legal documents open in a separate tab, preserving the wizard', app.includes('href="#confianza" target="_blank" rel="noopener noreferrer"') && app.includes('id="reg-accepted-legal"') && app.includes('new tab') && app.includes('nueva pestaña')],
   ['Browser Auth client requires explicit boolean legal consent', supabase.includes("payload?.acceptedLegal !== true")],
   ['Auth client is CAPTCHA-ready for signup', supabase.includes('payload.captchaToken') && supabase.includes('options.captchaToken = payload.captchaToken')],
   ['Auth client is CAPTCHA-ready for password login', supabase.includes('signIn(email, password, captchaToken = null)') && supabase.includes('credentials.options = { captchaToken }')],

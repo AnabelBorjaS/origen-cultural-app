@@ -546,3 +546,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ `tests/staging-build-isolation.mjs` valida las nuevas restricciones y `tests/client-ownership.mjs` ahora usa el host ficticio al probar operaciones de retirada de medios. Commits `f9fcf2712b14a8e1dec2ac8f72ce97f4b11df7f6` y `ad862242628db3900efe9a088ac6c24259ffb954`.
 - ✅ Quality Gate, CodeQL y Browser QA de `ad862242` concluyeron **success (3/3)**. La última revisión funcional del cambio de aislamiento del código y los tests de retirada de medios quedó aprobada por CI. La verificación en entorno real con dos cuentas sigue pendiente.
 - ⛔ El cambio no crea una app desplegada de Staging, no configura el Before User Created Auth Hook, no prueba correos ni cuentas A/B y no autoriza merge de la PR #3. Production y `origencultural.com` permanecen sin modificaciones.
+
+## Registro: lectura legal sin pérdida del formulario — 10 octubre 2026
+
+- Mejora beta: el enlace al Centro de confianza en el quinto paso del registro ahora abre una **nueva pestaña** (`rel="noopener noreferrer"`) para permitir revisar documentos v1.2 sin navegar fuera del formulario incompleto. La casilla de aceptación sigue separada, asociada a una etiqueta accesible y siendo obligatoria; se evita anidar el enlace interactivo dentro de la etiqueta de la casilla.
+- Nueva verificación en `tests/smoke.mjs` para asegurar la apertura independiente y el requisito de aceptación. Validación CI por confirmar tras el commit.
+- Sin activación de Auth Hooks en Supabase ni cambios en Production. P0 #6 sigue abierto para pruebas completas con cuentas ficticias.

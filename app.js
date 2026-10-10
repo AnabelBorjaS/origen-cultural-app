@@ -1625,11 +1625,11 @@
         ${socialLabels.map(([k, label]) => `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="${L('URL o usuario','URL or username')}"></div>`).join('')}
         ${captchaSlot('signup')}
         <div class="form-field full legal-consent">
-          <label class="legal-check">
-            <input type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
-            <span>${L('Acepto los','I accept ORIGEN’s')} <a href="#confianza">${L('Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2','Terms of Use, Privacy, Community Guidelines and Cultural Rights v1.2')}</a>${es ? ' de ORIGEN.' : '.'}</span>
+          <label class="legal-check" for="reg-accepted-legal">
+            <input id="reg-accepted-legal" type="checkbox" name="acceptedLegal" required ${d.acceptedLegal ? 'checked' : ''}>
+            <span>${L('Acepto los','I accept ORIGEN’s')} ${L('Términos de Uso, Privacidad, Normas de Comunidad y Derechos Culturales v1.2','Terms of Use, Privacy, Community Guidelines and Cultural Rights v1.2')}${es ? ' de ORIGEN.' : '.'}</span>
           </label>
-          <p class="form-note">${L('Puedes revisar el Centro de confianza antes de crear tu cuenta.','You can review the Trust Center before creating your account.')}</p>
+          <p class="form-note"><a href="#confianza" target="_blank" rel="noopener noreferrer">${L('Leer los documentos en el Centro de confianza (nueva pestaña)','Read the documents in the Trust Center (new tab)')}</a></p>
         </div>
       </form>`;
     }
