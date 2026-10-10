@@ -538,3 +538,11 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ En `scripts/verify-staging.mjs` se añadió la misma identidad exacta para verificar el bundle desplegado, no solo el código fuente.
 - ✅ Se ampliaron las pruebas `tests/staging-build-isolation.mjs` para rechazar un proyecto Supabase diferente aunque parezca válido, así como URL de Production, secretos y claves mal configuradas. Quality Gate para el cambio concluyó en **success**; Browser QA y CodeQL siguen sujetos al último estado de CI.
 - ⛔ Esta mejora no habilita `Before User Created` dentro de Supabase Auth, no despliega Pages, no abre el piloto y no modifica `origencultural.com` ni Production.
+
+## Código beta desconectado de Production — 10 octubre 2026
+
+- ✅ Cambio funcional de seguridad: `supabase-client.js` ahora contiene exclusivamente el endpoint ficticio `https://unconfigured-staging.invalid` y una clave falsa. **Abrir el código fuente beta ya no utiliza directamente la conexión a Production**.
+- ✅ `scripts/build-static.mjs` exige estas sentinelas y solo permite que el build autenticado use `https://egujmptgnrpajgfpjjxu.supabase.co`; también rechaza la clave pública histórica de Production mediante una huella SHA-256, sin conservarla literalmente en la rama beta.
+- ✅ `tests/staging-build-isolation.mjs` valida las nuevas restricciones y `tests/client-ownership.mjs` ahora usa el host ficticio al probar operaciones de retirada de medios. Commits `f9fcf2712b14a8e1dec2ac8f72ce97f4b11df7f6` y `ad862242628db3900efe9a088ac6c24259ffb954`.
+- ✅ Quality Gate y CodeQL de `ad862242` completaron con éxito. Browser QA estaba **en ejecución** en la última comprobación, así que no se marca completo sin resultado.
+- ⛔ El cambio no crea una app desplegada de Staging, no configura el Before User Created Auth Hook, no prueba correos ni cuentas A/B y no autoriza merge de la PR #3. Production y `origencultural.com` permanecen sin modificaciones.
