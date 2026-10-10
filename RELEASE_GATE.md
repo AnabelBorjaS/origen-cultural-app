@@ -179,3 +179,11 @@ Public beta remains NO-GO until:
 - [x] El builder comprueba las sentinelas, conecta únicamente el Staging autorizado y rechaza la clave pública histórica de Production por digest, sin copiar la clave al repositorio.
 - [ ] Confirmar las tres CI para el commit, además de la auditoría del **artefacto desplegado** en Pages (aún no existente).
 - [ ] Diseñar un release build de Production por separado, revisado y aprobado al cerrar P0; no fusionar una beta con backend deshabilitado esperando un release automático.
+
+## PWA / Auth runtime fail-closed (10 Oct 2026)
+
+- [x] Versionar el SW v8 y eliminar `supabase-client.js` del pre-cache; excluir tanto el cliente como `runtime-config.js` de cualquier cache y fallback offline.
+- [x] Mantener los demás recursos de presentación estáticos cacheables, y limitar limpieza de caché obsoleta al prefijo de ORIGEN.
+- [ ] Validar CI (Quality Gate, CodeQL y Browser QA) para el cambio de cache.
+- [ ] En un despliegue aprobado, probar actualización v7→v8 de dispositivos que regresan online, junto a borrado de cache histórico y la imposibilidad de recuperar configuración antigua.
+- [ ] Auth real con consentimiento/Cloudflare Access, A/B JWT y revisión de permisos siguen P0.

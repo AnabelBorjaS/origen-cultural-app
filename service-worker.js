@@ -1,6 +1,6 @@
-const CACHE = 'origen-cultural-v7';
+const CACHE = 'origen-cultural-v8';
 const ASSETS = [
-  './','./index.html','./styles.css','./app.js','./supabase-client.js','./data.js','./trust.js','./mundo.js',
+  './','./index.html','./styles.css','./app.js','./data.js','./trust.js','./mundo.js',
   './manifest.webmanifest','./assets/logo-mark.svg','./assets/logo-lockup.svg',
   './assets/images/embroidery.jpg','./assets/images/mural.jpg','./assets/images/territory.jpg',
   './assets/images/caves.jpg','./assets/images/chawar.jpg','./assets/images/gastronomy.jpg',
@@ -9,6 +9,12 @@ const ASSETS = [
 
 function isStaticAsset(url) {
   return /\.(?:html|js|css|webmanifest|svg|png|jpe?g|webp|gif|ico|woff2?)$/i.test(url.pathname);
+}
+
+// Never cache authentication transport code or runtime configuration.
+// Offline is safer than serving an obsolete backend URL/key to a returning user.
+function isSensitiveRuntime(url) {
+  return /\/(?:supabase-client|runtime-config)\.js$/i.test(url.pathname);
 }
 
 function canCache(response) {
@@ -25,7 +31,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith('origen-cultural-v') && key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -38,6 +44,13 @@ self.addEventListener('fetch', event => {
 
   // Never intercept Supabase/CDN/third-party traffic or authenticated requests.
   if (url.origin !== self.location.origin || req.headers.has('authorization')) return;
+
+  // Cache API is intentionally bypassed, even when the network is offline.
+  // This rule comes BEFORE the generic .js network-first fallback.
+  if (isSensitiveRuntime(url)) {
+    event.respondWith(fetch(req, { cache: 'no-store' }));
+    return;
+  }
 
   const isNavigation = req.mode === 'navigate';
   const isCode = /\.(?:html|js|css)$/i.test(url.pathname);

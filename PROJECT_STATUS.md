@@ -558,3 +558,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ El cambio funcional `a16132b5904ea3de9b8354359a91509b73bf5820` permite abrir documentos legales v1.2 en una pestaña nueva sin salir del registro de cinco pasos; separa enlace y casilla para accesibilidad. El commit `fdf4eea9068b54b646652fece4f9e8da1fdc0e2c` añadió una prueba real de Chromium móvil de apertura en pestaña separada, conservación de ruta `#registro`, redes sociales y casilla de aceptación.
 - ✅ **3/3 CI en `fdf4eea9068b54b646652fece4f9e8da1fdc0e2c`: Quality Gate, CodeQL y Browser QA (`success`).** No se utilizaron cuentas ni credenciales reales.
 - ⛔ P0 #6 sin cerrar: función SQL de consentimiento presente en Staging, pero no se ha validado activación real en Supabase Auth ni registros/rechazos por API. No se cambió producción, ni se hizo merge público.
+
+## Seguridad PWA: evitar conexiones obsoletas por caché — 10 octubre 2026
+
+- Se encontró que la PWA aún precargaba y almacenaba en Cache Storage `supabase-client.js`, incluyendo versiones históricas de la conexión del backend. Antes de un deploy seguro, es importante que dispositivos recurrentes **no puedan recuperar versiones antiguas del cliente Auth desde el service worker**.
+- Cambio en `service-worker.js`: caché de versión `origen-cultural-v8`, precache sin el cliente Supabase; toda solicitud de `supabase-client.js` o `runtime-config.js` usa exclusivamente red con `cache: 'no-store'`, sin fallback offline. La activación elimina solo versiones obsoletas de la caché propia ORIGEN (sin borrar la de otras apps bajo el mismo origen).
+- Nuevos checks en `tests/smoke.mjs` y `tests/browser-smoke.mjs` para vigilar el almacenamiento y verificar que archivos de configuración no ingresan en Cache Storage tras peticiones de navegador. **Resultado CI pendiente de la nueva revisión.**
+- Alcance limitado: este cambio protege futuros despliegues que reciban el nuevo SW; un dispositivo con SW antiguo deberá volver a conectarse para actualizarlo. No equivale a borrar remotamente los cachés de navegadores desconectados. Sin alteraciones a Production, y pilotos aún NO-GO.

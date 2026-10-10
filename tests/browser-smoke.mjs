@@ -99,10 +99,31 @@ async function desktopChecks() {
   check(swAudit.supported, 'Browser should support service workers');
   check(swAudit.appRegistered, 'ORIGEN should register its service worker from app.js. Diagnostics: ' + JSON.stringify(swAudit));
   check(swAudit.registration?.active === 'activated', 'Service worker should activate. Diagnostics: ' + JSON.stringify(swAudit));
-  check(swAudit.names.includes('origen-cultural-v7'), 'Service worker should create origen-cultural-v7 cache. Diagnostics: ' + JSON.stringify(swAudit));
+  check(swAudit.names.includes('origen-cultural-v8'), 'Service worker should create origen-cultural-v8 cache. Diagnostics: ' + JSON.stringify(swAudit));
   check(swAudit.entries.length > 0, 'Service worker cache should contain public static assets');
   check(swAudit.entries.every(entry => new URL(entry.url).origin === swAudit.origin), 'Service worker cache must contain same-origin URLs only');
   check(swAudit.entries.every(entry => !/supabase\.co|cdn\.jsdelivr\.net|\/auth\//i.test(entry.url)), 'Service worker cache must not contain Supabase/CDN/Auth responses');
+  check(swAudit.entries.every(entry => !/\/(?:supabase-client|runtime-config)\.js(?:[?#]|$)/i.test(entry.url)),
+    'Service worker must never cache old Supabase backend code or runtime configuration');
+  // Force a normal network request while the service worker is installed.
+  // Neither security file may enter Cache Storage as a side effect.
+  await page.evaluate(async () => {
+    await Promise.all(['supabase-client.js', 'runtime-config.js'].map(file =>
+      fetch(file, { cache: 'reload' }).then(r => {
+        if (!r.ok) throw new Error('Could not fetch security runtime for SW cache QA: '+file);
+      })
+    ));
+  });
+  const securityCacheEntries = await page.evaluate(async () => {
+    const urls = [];
+    for (const name of await caches.keys()) {
+      const store = await caches.open(name);
+      for (const req of await store.keys()) urls.push(req.url);
+    }
+    return urls.filter(url => /\/(?:supabase-client|runtime-config)\.js(?:[?#]|$)/i.test(url));
+  });
+  check(securityCacheEntries.length === 0,
+    'Security runtime must remain uncached after explicit network fetch: ' + securityCacheEntries.join(', '));
   await page.evaluate(() => { location.hash = '#login'; });
   await page.waitForSelector('#login-form');
   const loginLabels = await page.locator('#login-form input').evaluateAll(inputs =>
