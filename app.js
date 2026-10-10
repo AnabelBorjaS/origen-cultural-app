@@ -2147,9 +2147,9 @@
   }
 
   /* Post interactions (like, comment, save, share, report, carousel) */
-  function bindPostInteractions() {
+  function bindPostInteractions(root = document) {
     /* likes */
-    document.querySelectorAll('[data-like]').forEach(btn => {
+    root.querySelectorAll('[data-like]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para dar me gusta.'); go('login'); return; }
         const pid = btn.dataset.like;
@@ -2163,7 +2163,7 @@
     });
 
     /* toggle comments */
-    document.querySelectorAll('[data-tcoms]').forEach(btn => {
+    root.querySelectorAll('[data-tcoms]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const pid = btn.dataset.tcoms;
         if (state.openComments.has(pid)) {
@@ -2177,7 +2177,7 @@
     });
 
     /* saves */
-    document.querySelectorAll('[data-save]').forEach(btn => {
+    root.querySelectorAll('[data-save]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para guardar publicaciones.'); go('login'); return; }
         const pid = btn.dataset.save;
@@ -2192,7 +2192,7 @@
     });
 
     /* share: always link to the exact public story, never a generic feed */
-    document.querySelectorAll('[data-share]').forEach(btn => {
+    root.querySelectorAll('[data-share]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.share || '';
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return;
@@ -2217,7 +2217,7 @@
     });
 
     /* report */
-    document.querySelectorAll('[data-report]').forEach(btn => {
+    root.querySelectorAll('[data-report]').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!isAuth()) {
           go('solicitar-revision/post/' + encodeURIComponent(btn.dataset.report || ''));
@@ -2237,11 +2237,11 @@
     });
 
     /* more (···) */
-    document.querySelectorAll('[data-pmore]').forEach(btn => {
+    root.querySelectorAll('[data-pmore]').forEach(btn => {
       btn.addEventListener('click', () => {
         const pid  = btn.dataset.pmore;
         const user = me();
-        const post = allPosts().find(p => p.id === pid);
+        const post = displayedPost(pid);
         if (user && post && post.authorId === user.id) {
           if (!$deletePost) return;
           $deletePost.dataset.postId = pid;
@@ -2257,19 +2257,19 @@
     });
 
     /* carousel navigation */
-    document.querySelectorAll('[data-cdir]').forEach(btn => {
+    root.querySelectorAll('[data-cdir]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const pid  = btn.dataset.car;
         const dir  = parseInt(btn.dataset.cdir, 10);
-        const post = allPosts().find(p => p.id === pid);
+        const post = displayedPost(pid);
         if (!post) return;
         const cur  = state.carIdx[pid] || 0;
         state.carIdx[pid] = Math.max(0, Math.min(post.media.length - 1, cur + dir));
         rerenderPost(pid);
       });
     });
-    document.querySelectorAll('[data-car][data-ci]').forEach(dot => {
+    root.querySelectorAll('[data-car][data-ci]').forEach(dot => {
       dot.addEventListener('click', e => {
         e.stopPropagation();
         state.carIdx[dot.dataset.car] = parseInt(dot.dataset.ci, 10);
@@ -2278,7 +2278,7 @@
     });
 
     /* comment forms */
-    document.querySelectorAll('[data-cf]').forEach(form => {
+    root.querySelectorAll('[data-cf]').forEach(form => {
       form.addEventListener('submit', async e => {
         e.preventDefault();
         const pid = form.dataset.cf;
@@ -2294,7 +2294,7 @@
     });
 
     /* needs-auth buttons */
-    document.querySelectorAll('[data-needs-auth]').forEach(btn => {
+    root.querySelectorAll('[data-needs-auth]').forEach(btn => {
       btn.addEventListener('click', e => {
         if (!isAuth()) { e.stopPropagation(); showToast('Inicia sesión para interactuar.'); go('login'); }
       }, true);
@@ -2355,24 +2355,24 @@
   }
 
   /* Re-render a single post card in place */
+  // Permalinks may refer to posts older than the paginated feed.
+  function displayedPost(pid) {
+    if (currentRoute() === 'publicacion/' + pid && state.publicStoryPost?.id === pid) return state.publicStoryPost;
+    return allPosts().find(post => post.id === pid) || null;
+  }
+
   function rerenderPost(pid) {
     const card = document.querySelector(`[data-pid="${pid}"]`);
-    if (!card) return;
-    const post = allPosts().find(p => p.id === pid) ||
-      (currentRoute() === 'publicacion/' + pid && state.publicStoryPost?.id === pid
-        ? state.publicStoryPost : null);
-    if (!post) return;
+    const post = displayedPost(pid);
+    if (!card || !post) return;
     const tmp = document.createElement('div');
     tmp.innerHTML = postCard(post);
     const newCard = tmp.firstElementChild;
+    if (!newCard) return;
     card.replaceWith(newCard);
-    // Rebind on the new card only
-    const bindOn = (sel, ev, handler) => newCard.querySelectorAll(sel).forEach(el => el.addEventListener(ev, handler));
-    const pid2 = pid;
-    bindOn('[data-like]', 'click', () => document.querySelector(`[data-pid="${pid2}"] [data-like]`) && document.querySelector(`[data-pid="${pid2}"] [data-like]`).dispatchEvent && null);
-    // Re-run full bind to pick up new elements
-    bindPostInteractions();
-    bindFollowButtons();
+    // Rebind ONLY this card: global rebinding duplicates events on other posts.
+    bindPostInteractions(newCard);
+    bindFollowButtons(newCard);
   }
 
   /* Favorites (directory profiles) */
@@ -2403,8 +2403,8 @@
   }
 
   /* Follow buttons (user or creator) */
-  function bindFollowButtons() {
-    document.querySelectorAll('[data-fuser]').forEach(btn => {
+  function bindFollowButtons(root = document) {
+    root.querySelectorAll('[data-fuser]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!isAuth()) { showToast('Inicia sesión para seguir.'); go('login'); return; }
         const ref = btn.dataset.fuser;

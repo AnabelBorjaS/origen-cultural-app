@@ -589,3 +589,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Commits `9133cb3b6148b19210782e6a20afc8618f0a7539` y `d163d3b5561ea5817e2c6b9e114c8b47b790e7d0`. **3/3 workflows CI en success** para el segundo: Quality Gate, CodeQL y Browser QA.
 - ✅ En Chromium 390px, la persona anónima puede leer una historia concreta, abrir la invitación opcional a iniciar sesión, autenticar con **API simulada**, regresar al mismo permalink y encontrar controles de seguimiento y guardado (sin escrituras automáticas). No se usan cuentas ni datos reales.
 - ⛔ No es prueba de Supabase Auth real, de permisos RLS al seguir/guardar, ni de una URL pública desplegada. Staging protegido, hook de consentimiento, retirada/medios, moderación y piloto siguen pendientes. P1 #10 permanece abierto.
+
+## Historia compartida: carrusel aislado y acciones de tarjeta — 10 Oct 2026
+
+- Corregido el carrusel (y menú de autor) de una publicación abierta desde un permalink sin estar cargada en el feed paginado; usa la historia individual visible para encontrar sus imágenes y autor.
+- Corregido el re-enlace tras acciones como Me gusta, Comentarios o Guardar: ahora los eventos se conectan solo a la tarjeta sustituida, en vez de registrarse nuevamente en todas las publicaciones visibles (riesgo de operaciones duplicadas).
+- Ampliadas pruebas smoke y Chromium móvil: carrusel standalone avanza y regresa y mantiene el resto de botones tras el render. Estado CI pendiente de revisión al escribir este bloque.
+- Sin cambios a DB, Auth, Storage, pagos o Production. La beta pública continúa bloqueada por los P0.

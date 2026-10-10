@@ -549,9 +549,10 @@ async function publicCulturalStoryChecks() {
           window.__storyQA.reads.push(id);
           if (!window.__storyQA.exists || id !== postId) return null;
           return {
-            id: postId, authorId: creatorId, type: 'video', title: 'Arte del tejido',
+            id: postId, authorId: creatorId, type: 'carousel', title: 'Arte del tejido',
             description: 'Una historia de tejido, narrada con permiso.',
-            timestamp: new Date().toISOString(), territory: 'Ecuador', media: [],
+            timestamp: new Date().toISOString(), territory: 'Ecuador',
+            media: ['assets/images/embroidery.jpg', 'assets/images/dance.jpg'],
             contentPurpose: 'education', tags: [], likes: 0, category: 'Artesanía'
           };
         };
@@ -572,6 +573,16 @@ async function publicCulturalStoryChecks() {
       'Shared story links to its creator profile');
     check(await page.locator('#public-story-content .post-title a').getAttribute('href') === '#publicacion/' + postId,
       'Story title links to its own permanent route');
+
+    // The shared post does NOT appear in the paginated feed.
+    check((await page.locator('#public-story-content .car-count').innerText()).trim() === '1 / 2',
+      'Standalone carousel should start at the first image');
+    await page.locator('#public-story-content [data-cdir="1"]').click();
+    check((await page.locator('#public-story-content .car-count').innerText()).trim() === '2 / 2',
+      'Standalone carousel can advance without loading the feed');
+    await page.locator('#public-story-content [data-cdir="-1"]').click();
+    check((await page.locator('#public-story-content .car-count').innerText()).trim() === '1 / 2',
+      'Standalone carousel retains working buttons after rerender');
 
     await page.locator('#public-story-content [data-share]').click();
     await page.waitForFunction(() => !!window.__storyQA.copied, null, { timeout: 6000 });

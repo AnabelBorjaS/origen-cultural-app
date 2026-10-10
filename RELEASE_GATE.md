@@ -204,3 +204,9 @@ Public beta remains NO-GO until:
 
 - [x] Commits `9133cb3` + `d163d3b`: **Quality Gate, CodeQL, Browser QA = 3/3 success**. La prueba de navegador recorre invitación anónima de una historia, login simulado y retorno a la publicación exacta, con guardado/seguimiento opcionales.
 - [ ] Repetir con dos cuentas Staging reales y datos estrictamente sintéticos después de habilitar consentimiento Auth y hosting protegido; validar sus políticas RLS. No abrir el piloto público aún.
+
+## UX de permalink y controles independientes — 10 Oct 2026
+
+- [x] Carruseles de publicaciones en enlaces individuales no requieren que el post aparezca en el feed.
+- [x] Rebinding limitado a la tarjeta que cambió, evitando duplicar listeners sobre otras publicaciones.
+- [ ] Confirmar CI 3/3 del cambio; pruebas de interacción con Auth/RLS real siguen pendientes.

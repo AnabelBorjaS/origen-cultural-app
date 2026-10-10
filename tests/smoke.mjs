@@ -39,6 +39,8 @@ const checks = [
   ['Globe runtime dependency is pinned', mundo.includes('globe.gl@2.30.0/dist/globe.gl.min.js')],
   ['No mutable master/raw GitHub runtime dependency remains', !mundo.includes('@master') && !mundo.includes('raw.githubusercontent.com') && !index.includes('raw.githubusercontent.com') && !headers.includes('raw.githubusercontent.com')],
   ['Infinite feed sentinel exists', app.includes('id="feed-sentinel"')],
+  ['Refreshing a post binds only the replaced card', app.includes('bindPostInteractions(newCard);') && app.includes('bindFollowButtons(newCard);') && app.includes('function bindPostInteractions(root = document)') && app.includes('function bindFollowButtons(root = document)')],
+  ['Permalink carousels use the standalone public post', app.includes('function displayedPost(pid)') && app.includes('const post = displayedPost(pid);')],
   ['Wellbeing target exists', app.includes("origen-wellbeing-minutes") && app.includes('120')],
   ['Brand black is exact', styles.includes('--black: #0d0d0d;')],
   ['Brand display stack prioritises Cormorant Garamond', styles.includes('--serif: "Cormorant Garamond"')],
