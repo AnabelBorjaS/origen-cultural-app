@@ -570,3 +570,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 
 - ✅ El commit técnico `2573611802f0b193b2d7bfa009a377a4a6c693a9` completó las tres verificaciones **3/3 PASS**: Quality Gate, CodeQL y Browser QA. La prueba Chromium revisó además que `supabase-client.js` y `runtime-config.js` no aparecen en Cache Storage ni después de un fetch directo.
 - 🔒 Sigue pendiente desplegar bajo Cloudflare Access y ensayar migración real de navegadores con caché v7 al nuevo service worker v8. La comprobación CI es sobre un bundle local, **no sobre un dominio Staging o Production**. Registro/Auth hook, cuentas A/B, retirada de medios y piloto siguen NO-GO.
+
+## Offline UX para participantes del piloto — 10 octubre 2026
+
+- Se agregó a la rama beta un aviso bilingüe, accesible y reversible de conectividad (`#connection-status`, `role=status`, `aria-live=polite`), que indica cuándo el navegador parece no tener internet y advierte que el registro, las publicaciones y los cambios de cuenta requieren conexión.
+- Respeta el idioma elegido (ES/EN); se muestra solo cuando `navigator.onLine === false`, sin almacenar datos privados ni hacer consultas periódicas. Es un indicador del navegador, NO una prueba de disponibilidad del backend.
+- Incluye pruebas smoke y Chromium de desconexión/reconexión en escritorio y móvil, y traducción inglesa. El cambio aún debe superar CI; no hay publicación pública ni cambios de Auth/DB.

@@ -26,6 +26,15 @@ async function desktopChecks() {
   check(await page.title() === 'Origen Cultural', 'Document title should be Origen Cultural');
   check(await page.locator('html').getAttribute('lang') === 'es', 'Default document language should be es');
   check(await page.locator('#main-content').innerText().then(t => t.trim().length > 40), 'Home should render meaningful content');
+  const desktopOffline = page.locator('#connection-status');
+  check(await desktopOffline.isHidden(), 'Connection notice must be hidden when the browser reports online');
+  await page.context().setOffline(true);
+  await page.waitForFunction(() => !document.querySelector('#connection-status')?.hidden);
+  check((await desktopOffline.innerText()).includes('sin conexión'),
+    'Desktop offline notice should explain unavailable account and publishing features in Spanish');
+  await page.context().setOffline(false);
+  await page.waitForFunction(() => document.querySelector('#connection-status')?.hidden);
+  check(await desktopOffline.isHidden(), 'Desktop offline notice should disappear after reconnection');
 
   await page.locator('#search-button').click();
   check(await page.locator('#search-dialog').evaluate(el => el.open === true), 'Search dialog should open');
@@ -41,6 +50,12 @@ async function desktopChecks() {
   await page.waitForFunction(() => document.documentElement.lang === 'en');
   check(await page.locator('html').getAttribute('lang') === 'en', 'Language toggle should update html lang to en');
   check((await page.locator('#language-toggle').innerText()).trim() === 'ES', 'Language toggle should offer ES after switching to English');
+  await page.context().setOffline(true);
+  await page.waitForFunction(() => !document.querySelector('#connection-status')?.hidden);
+  check((await page.locator('#connection-status').innerText()).includes('You appear to be offline.'),
+    'Offline notice must follow the active English language');
+  await page.context().setOffline(false);
+  await page.waitForFunction(() => document.querySelector('#connection-status')?.hidden);
 
   check(await page.evaluate(() => localStorage.getItem('origen-lang')) === 'en', 'English preference should persist in localStorage');
   check(await page.locator('#report-dialog').getAttribute('aria-labelledby') === 'report-title', 'Report dialog should expose an accessible title relationship');
@@ -159,6 +174,15 @@ async function mobileChecks() {
   await page.waitForFunction(() => document.querySelector('#menu-button')?.getAttribute('aria-expanded') === 'false');
   check(await page.locator('#mobile-drawer').getAttribute('aria-hidden') === 'true', 'Closed drawer should be hidden from assistive tech');
   check(await page.locator('#menu-button').evaluate(el => document.activeElement === el), 'Focus should return to menu opener');
+
+  await page.context().setOffline(true);
+  await page.waitForFunction(() => !document.querySelector('#connection-status')?.hidden);
+  check(await page.locator('#connection-status').isVisible(),
+    'Mobile offline warning should remain visible without obscuring navigation');
+  check(await page.locator('#connection-status').evaluate(el => el.scrollWidth <= el.clientWidth + 1),
+    'Mobile connectivity message must not overflow horizontally');
+  await page.context().setOffline(false);
+  await page.waitForFunction(() => document.querySelector('#connection-status')?.hidden);
 
   await page.evaluate(() => { location.hash = '#registro'; });
   await page.waitForSelector('.auth-card');

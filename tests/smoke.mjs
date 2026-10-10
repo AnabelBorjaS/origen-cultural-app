@@ -15,6 +15,8 @@ const serviceWorker = read('service-worker.js');
 const checks = [
   ['Supabase SDK version is pinned', index.includes('@supabase/supabase-js@2.117.2')],
   ['Trust Center is loaded', index.includes('<script src="trust.js"></script>')],
+  ['Offline warning is a bilingual accessible live status', index.includes('id="connection-status"') && index.includes('aria-live="polite"') && app.includes('function updateConnectionStatus()') && app.includes("window.addEventListener('offline', updateConnectionStatus)") && app.includes("window.addEventListener('online', updateConnectionStatus)")],
+  ['Offline notice does not claim backend/server health', app.includes('navigator.onLine !== false') && app.includes('You appear to be offline.')],
   ['Trust route exists', app.includes("route === 'confianza'") && app.includes('trustCenterView')],
   ['Signup shows explicit consent', app.includes('name="acceptedLegal" required')],
   ['Registration legal documents open in a separate tab, preserving the wizard', app.includes('href="#confianza" target="_blank" rel="noopener noreferrer"') && app.includes('id="reg-accepted-legal"') && app.includes('new tab') && app.includes('nueva pestaña')],

@@ -815,6 +815,9 @@
     };
 
     setText('#skip-link', 'Saltar al contenido', 'Skip to content');
+    setText('#connection-status-text',
+      'Parece que estás sin conexión. El registro, las publicaciones y los cambios de cuenta requieren internet.',
+      'You appear to be offline. Registration, posting and account changes require internet.');
     setText('#drawer-manifesto',
       'La cultura no es un producto más. Es identidad, memoria, conocimiento y futuro.',
       'Culture is not just another product. It is identity, memory, knowledge and future.');
@@ -3332,6 +3335,16 @@
   /* ═══════════════════════════════════════════════════════════
      INIT
   ═══════════════════════════════════════════════════════════ */
+  // navigator.onLine only reflects the browser's connectivity indicator;
+  // it does not claim that ORIGEN's server is reachable. No polling/tracking.
+  function updateConnectionStatus() {
+    const notice = document.getElementById('connection-status');
+    if (notice) notice.hidden = navigator.onLine !== false;
+  }
+  window.addEventListener('offline', updateConnectionStatus);
+  window.addEventListener('online', updateConnectionStatus);
+  updateConnectionStatus();
+
   document.documentElement.lang = state.lang;
 
   // Ignore delayed callbacks from an earlier Auth event or initial load.
