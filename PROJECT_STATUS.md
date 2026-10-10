@@ -575,4 +575,4 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 
 - Se agregó a la rama beta un aviso bilingüe, accesible y reversible de conectividad (`#connection-status`, `role=status`, `aria-live=polite`), que indica cuándo el navegador parece no tener internet y advierte que el registro, las publicaciones y los cambios de cuenta requieren conexión.
 - Respeta el idioma elegido (ES/EN); se muestra solo cuando `navigator.onLine === false`, sin almacenar datos privados ni hacer consultas periódicas. Es un indicador del navegador, NO una prueba de disponibilidad del backend.
-- Incluye pruebas smoke y Chromium de desconexión/reconexión en escritorio y móvil, y traducción inglesa. El cambio aún debe superar CI; no hay publicación pública ni cambios de Auth/DB.
+- Incluye pruebas smoke y Chromium de desconexión/reconexión en escritorio y móvil, y traducción inglesa. **CI 3/3 aprobadas (Quality Gate, CodeQL, Browser QA)** para el commit de código `4d0904ce28aa9cd30e09cd35641dde528c4c64b3`. No hay publicación pública ni cambios de Auth/DB.

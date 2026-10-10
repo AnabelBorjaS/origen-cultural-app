@@ -187,3 +187,9 @@ Public beta remains NO-GO until:
 - [x] CI del cambio de caché (commit `2573611802f0b193b2d7bfa009a377a4a6c693a9`): Quality Gate, CodeQL y Browser QA **3/3 success**.
 - [ ] En un despliegue aprobado, probar actualización v7→v8 de dispositivos que regresan online, junto a borrado de cache histórico y la imposibilidad de recuperar configuración antigua.
 - [ ] Auth real con consentimiento/Cloudflare Access, A/B JWT y revisión de permisos siguen P0.
+
+## Offline UX ES/EN — 10 Oct 2026
+
+- [x] Aviso de conexión del navegador accesible (`role=status`) en interfaz desktop/móvil, sin almacenar datos de navegación ni sugerir que se conoce el estado del backend.
+- [x] QA de navegador offline/online y traducciones: **3/3 CI success** para `4d0904ce28aa9cd30e09cd35641dde528c4c64b3` (Quality Gate, CodeQL, Browser QA).
+- [ ] Validar el mismo comportamiento al desplegar Staging protegido, y verificar los errores de Auth/API por separado. La conectividad detectada por el navegador no prueba estado del servidor.
