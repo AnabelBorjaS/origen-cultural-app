@@ -199,3 +199,8 @@ Public beta remains NO-GO until:
 - [x] Invitación opcional a autenticarse dentro de una historia pública, sin bloquear lectura anónima, con regreso seguro a la historia exacta y sin interacciones automáticas.
 - [x] QA de navegador con login simulado y comprobación de botón de seguimiento/guardado tras retornar; no implica una petición real a Supabase.
 - [ ] Validar login y persistencia con usuarios A/B sintéticos de Staging, compartir desde teléfonos reales, metadatos de previsualización aprobados y derechos de imágenes.
+
+## Resultado de regresión de historia compartida — 10 octubre 2026
+
+- [x] Commits `9133cb3` + `d163d3b`: **Quality Gate, CodeQL, Browser QA = 3/3 success**. La prueba de navegador recorre invitación anónima de una historia, login simulado y retorno a la publicación exacta, con guardado/seguimiento opcionales.
+- [ ] Repetir con dos cuentas Staging reales y datos estrictamente sintéticos después de habilitar consentimiento Auth y hosting protegido; validar sus políticas RLS. No abrir el piloto público aún.

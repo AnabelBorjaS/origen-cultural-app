@@ -583,3 +583,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Al iniciar sesión desde esta invitación, la aplicación vuelve a `#publicacion/<UUID>`, no al feed. También mantiene el contexto si la visita toca `Guardar` o `Me gusta` desde la historia anónima; las operaciones de interacción **no** se ejecutan por el solo hecho de autenticarse.
 - ✅ Nueva prueba Chromium 390px con API de Auth simulada: visualización anónima, invitación de ingreso, login, recuperación de permalink original y botones de seguir/guardar disponibles bajo usuario, sin registros de escritura automáticos. Se valida mediante CI antes de habilitar piloto real.
 - ⛔ Sin conexión Auth real, cuentas de Staging, sugerencias algorítmicas ni publicación del dominio. Issue #10 permanece abierto por pruebas reales y metadatos dinámicos de redes.
+
+## Validación de regreso a historia compartida — 10 octubre 2026
+
+- ✅ Commits `9133cb3b6148b19210782e6a20afc8618f0a7539` y `d163d3b5561ea5817e2c6b9e114c8b47b790e7d0`. **3/3 workflows CI en success** para el segundo: Quality Gate, CodeQL y Browser QA.
+- ✅ En Chromium 390px, la persona anónima puede leer una historia concreta, abrir la invitación opcional a iniciar sesión, autenticar con **API simulada**, regresar al mismo permalink y encontrar controles de seguimiento y guardado (sin escrituras automáticas). No se usan cuentas ni datos reales.
+- ⛔ No es prueba de Supabase Auth real, de permisos RLS al seguir/guardar, ni de una URL pública desplegada. Staging protegido, hook de consentimiento, retirada/medios, moderación y piloto siguen pendientes. P1 #10 permanece abierto.
