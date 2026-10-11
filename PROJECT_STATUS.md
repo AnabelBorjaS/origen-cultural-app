@@ -602,3 +602,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Se añadió `tests/visual-preview.mjs` y un paso a Browser QA que captura siete pantallas reales de la beta ejecutada localmente (no un mockup) en escritorio y móvil: portada con HeroGlobe, MundoCultural, Explorar, Registro y Centro de Confianza. Son capturas de una app desconectada de Supabase y sin usuarios reales. La salida describe en `preview-manifest.json` si el globo WebGL 3D se cargó o si se dibujó el fallback simplificado.
 - Las capturas se publican como artefacto de **GitHub Actions** con retención 14 días, no como sitio web público. Ver `VISUAL_PREVIEW_REVIEW.md` para descargarlas. Los artefactos del repositorio pueden ser visibles a usuarios de GitHub: no se consideran almacenamiento privado y no incluyen datos reales.
 - Mantenidos el negro/dorado/blanco y los componentes HeroGlobe/MundoCultural. No se autoriza deploy ni se fusiona PR #3; P0 #5 y #6 continúan bloqueando una beta conectada y protegida.
+
+## Capturas reales visuales generadas y verificadas — 11 octubre 2026
+
+- ✅ Browser QA **success** en commit `3779634fcb91fec9e4cb4822078ff85e1bab85b1`, junto con Quality Gate y CodeQL: **3/3 success**.
+- ✅ Artefacto descargable **`origen-vista-visual-beta-276`**, ID `11696064798`, 1.52 MB; [revisión y descarga en GitHub Actions](https://github.com/AnabelBorjaS/origen-cultural-app/actions/runs/38124735997/artifacts/11696064798). Expira **25 octubre 2026** según GitHub. Incluye siete capturas PNG y manifiesto de modo de globo, sin datos de usuarios reales ni conexión a Supabase.
+- ✅ Logs de capturas confirman **`3D canvas`** en portada (desktop y móvil) y Mundo Cultural (desktop y móvil); no solo fallback simplificado. No sustituye inspección visual de cada PNG ni QA del globo en dispositivo físico.
+- 🟡 Queda por recoger revisión de diseño de la fundadora sobre espaciado, tipografía, globo en móvil y jerarquía. La beta sigue sin URL de Staging interactiva protegida, sin Auth E2E ni apertura del piloto.

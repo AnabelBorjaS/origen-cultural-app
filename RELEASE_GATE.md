@@ -216,5 +216,5 @@ Public beta remains NO-GO until:
 
 - [x] Script Chromium de captura de portada / globo y cuatro rutas adicionales, solo servidor localhost con backend desconectado.
 - [x] Integración con Browser QA para artefacto `origen-vista-visual-beta-...` de 14 días, sin desplegar Pages ni Production.
-- [ ] Comprobar CI de este cambio y el manifiesto visual que identifica 3D WebGL versus versión simplificada.
+- [x] CI del commit `3779634fcb91fec9e4cb4822078ff85e1bab85b1` 3/3 PASS; siete capturas subidas al artefacto [origen-vista-visual-beta-276](https://github.com/AnabelBorjaS/origen-cultural-app/actions/runs/38124735997/artifacts/11696064798). Logs indican 3D canvas en ambas portadas y ambas pantallas Mundo Cultural. Expira el 25/10/2026; no es una URL publicada.
 - [ ] Obtener visto bueno de la fundadora sobre identidad visual antes de avanzar en staging privado e interactivo. P0 de Auth, Storage, moderación y protección de acceso sin cambios.
