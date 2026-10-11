@@ -211,3 +211,10 @@ Public beta remains NO-GO until:
 - [x] Rebinding limitado a la tarjeta que cambió, evitando duplicar listeners sobre otras publicaciones.
 - [x] 3/3 CI para `c9ba9b127a7c4fbc9dd890fdebf470f07d8ace05` PASS: Quality Gate, CodeQL y Browser QA.
 - [ ] Pruebas de interacción con Auth/RLS real siguen pendientes.
+
+## Vista previa visual sin riesgo de datos — 11 Oct 2026
+
+- [x] Script Chromium de captura de portada / globo y cuatro rutas adicionales, solo servidor localhost con backend desconectado.
+- [x] Integración con Browser QA para artefacto `origen-vista-visual-beta-...` de 14 días, sin desplegar Pages ni Production.
+- [ ] Comprobar CI de este cambio y el manifiesto visual que identifica 3D WebGL versus versión simplificada.
+- [ ] Obtener visto bueno de la fundadora sobre identidad visual antes de avanzar en staging privado e interactivo. P0 de Auth, Storage, moderación y protección de acceso sin cambios.

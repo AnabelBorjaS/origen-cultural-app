@@ -17,6 +17,7 @@ on:
       - '_headers'
       - 'scripts/build-static.mjs'
       - 'tests/browser-smoke.mjs'
+      - 'tests/visual-preview.mjs'
       - '.github/workflows/browser-qa.yml'
   workflow_dispatch:
 
@@ -61,6 +62,19 @@ jobs:
         env:
           ORIGEN_BASE_URL: http://127.0.0.1:4173/dist/
         run: node tests/browser-smoke.mjs
+      - name: Capture actual beta visual preview without connecting to Supabase
+        if: success()
+        env:
+          ORIGEN_BASE_URL: http://127.0.0.1:4173/dist/
+        run: node tests/visual-preview.mjs
+      - name: Upload founder visual review captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: origen-vista-visual-beta-${{ github.run_number }}
+          path: visual-preview/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload server log on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -596,3 +596,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Corregido el re-enlace tras acciones como Me gusta, Comentarios o Guardar: ahora los eventos se conectan solo a la tarjeta sustituida, en vez de registrarse nuevamente en todas las publicaciones visibles (riesgo de operaciones duplicadas).
 - Ampliadas pruebas smoke y Chromium móvil: carrusel standalone avanza y regresa y mantiene el resto de botones tras el render. **Quality Gate, CodeQL y Browser QA = 3/3 PASS** para commit `c9ba9b127a7c4fbc9dd890fdebf470f07d8ace05`. Chromium verificó navegación 1/2 → 2/2 → 1/2 desde un permalink aislado.
 - Sin cambios a DB, Auth, Storage, pagos o Production. La beta pública continúa bloqueada por los P0.
+
+## Revisión visual auténtica de la beta con globo — 11 octubre 2026
+
+- Se añadió `tests/visual-preview.mjs` y un paso a Browser QA que captura siete pantallas reales de la beta ejecutada localmente (no un mockup) en escritorio y móvil: portada con HeroGlobe, MundoCultural, Explorar, Registro y Centro de Confianza. Son capturas de una app desconectada de Supabase y sin usuarios reales. La salida describe en `preview-manifest.json` si el globo WebGL 3D se cargó o si se dibujó el fallback simplificado.
+- Las capturas se publican como artefacto de **GitHub Actions** con retención 14 días, no como sitio web público. Ver `VISUAL_PREVIEW_REVIEW.md` para descargarlas. Los artefactos del repositorio pueden ser visibles a usuarios de GitHub: no se consideran almacenamiento privado y no incluyen datos reales.
+- Mantenidos el negro/dorado/blanco y los componentes HeroGlobe/MundoCultural. No se autoriza deploy ni se fusiona PR #3; P0 #5 y #6 continúan bloqueando una beta conectada y protegida.
