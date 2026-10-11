@@ -609,3 +609,9 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - ✅ Artefacto descargable **`origen-vista-visual-beta-276`**, ID `11696064798`, 1.52 MB; [revisión y descarga en GitHub Actions](https://github.com/AnabelBorjaS/origen-cultural-app/actions/runs/38124735997/artifacts/11696064798). Expira **25 octubre 2026** según GitHub. Incluye siete capturas PNG y manifiesto de modo de globo, sin datos de usuarios reales ni conexión a Supabase.
 - ✅ Logs de capturas confirman **`3D canvas`** en portada (desktop y móvil) y Mundo Cultural (desktop y móvil); no solo fallback simplificado. No sustituye inspección visual de cada PNG ni QA del globo en dispositivo físico.
 - 🟡 Queda por recoger revisión de diseño de la fundadora sobre espaciado, tipografía, globo en móvil y jerarquía. La beta sigue sin URL de Staging interactiva protegida, sin Auth E2E ni apertura del piloto.
+
+## Cloudflare Pages: paquete de beta visual desconectada — 11 octubre 2026
+
+- Se preparó `npm run build:visual-preview`: usa la beta visual sin datos reales, falla si se configura cualquier backend Supabase/Turnstile e instala un CSP de salida que impide solicitar recursos Supabase. Pruebas locales automatizadas `tests/visual-preview-isolation.mjs` verifican tanto la negativa segura como el output de demo.
+- Plan de enlace navegable con Cloudflare Pages + Access: `CLOUDFLARE_VISUAL_PREVIEW_SETUP.md`. **No se desplegó** y no se creó proyecto Pages; las URLs Cloudflare son públicas por defecto y primero deben configurarse/verificarse los permisos de Access.
+- La cuenta de la fundadora, sus cuotas gratuitas, la protección de enlaces y el registro del DNS oficial siguen intactos; estamos preparando una preview privada, no publicando una beta comercial.

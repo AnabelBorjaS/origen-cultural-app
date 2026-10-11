@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 
 const root = process.cwd();
 const out = path.join(root, 'dist');
+const visualPreviewOnly = process.env.ORIGEN_VISUAL_PREVIEW_ONLY === '1';
 
 const runtimeEntries = [
   'index.html',
@@ -62,6 +63,9 @@ const legacyProductionPublicKeySha256 = '0842eb46eeee05ba28d3c3be1d5d529ed84ceaf
 const approvedStagingOrigin = 'https://egujmptgnrpajgfpjjxu.supabase.co';
 const stagingURL = String(process.env.ORIGEN_STAGING_SUPABASE_URL || '').trim();
 const stagingKey = String(process.env.ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY || '').trim();
+if (visualPreviewOnly && (stagingURL || stagingKey || String(process.env.ORIGEN_TURNSTILE_SITE_KEY || '').trim())) {
+  rejectStagingBuild('Visual-only Cloudflare preview must never configure Supabase or Turnstile.');
+}
 if (Boolean(stagingURL) !== Boolean(stagingKey)) {
   rejectStagingBuild('Staging Supabase URL and publishable key must both be set or both be absent.');
 }
@@ -117,10 +121,38 @@ if (!stagingBackendConnected) {
 }
 
 const turnstileSiteKey = String(process.env.ORIGEN_TURNSTILE_SITE_KEY || '').trim();
+if (visualPreviewOnly && (stagingBackendConnected || apiURL !== disabledClientURL || apiKey !== disabledClientKey)) {
+  rejectStagingBuild('Visual-only Cloudflare preview attempted to connect a live backend.');
+}
 fs.writeFileSync(
   path.join(out, 'runtime-config.js'),
   `window.ORIGEN_CONFIG = Object.freeze(${JSON.stringify({ turnstileSiteKey, stagingBackendConnected })});\n`
 );
+
+// In the separate Cloudflare visual demo, the browser must also fail closed.
+// The ordinary staging/release headers are unchanged in other build modes.
+if (visualPreviewOnly) {
+  const headersPath = path.join(out, '_headers');
+  fs.writeFileSync(headersPath, `/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.jsdelivr.net; media-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+`);
+  const client = fs.readFileSync(clientPath, 'utf8');
+  const config = fs.readFileSync(path.join(out, 'runtime-config.js'), 'utf8');
+  if (!client.includes(disabledClientURL) ||
+      !client.includes(disabledClientKey) ||
+      !config.includes('"stagingBackendConnected":false') ||
+      config.includes('"turnstileSiteKey":"') === false) {
+    rejectStagingBuild('Visual-only bundle has unexpected authentication config.');
+  }
+  console.log('VISUAL-ONLY: Browser CSP blocks Supabase, live Auth, uploads, frames and indexing.');
+}
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {

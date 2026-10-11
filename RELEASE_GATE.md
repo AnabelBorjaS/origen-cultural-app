@@ -218,3 +218,11 @@ Public beta remains NO-GO until:
 - [x] Integración con Browser QA para artefacto `origen-vista-visual-beta-...` de 14 días, sin desplegar Pages ni Production.
 - [x] CI del commit `3779634fcb91fec9e4cb4822078ff85e1bab85b1` 3/3 PASS; siete capturas subidas al artefacto [origen-vista-visual-beta-276](https://github.com/AnabelBorjaS/origen-cultural-app/actions/runs/38124735997/artifacts/11696064798). Logs indican 3D canvas en ambas portadas y ambas pantallas Mundo Cultural. Expira el 25/10/2026; no es una URL publicada.
 - [ ] Obtener visto bueno de la fundadora sobre identidad visual antes de avanzar en staging privado e interactivo. P0 de Auth, Storage, moderación y protección de acceso sin cambios.
+
+## Cloudflare visual-only web preview — 11 Oct 2026
+
+- [x] Comando de build desconectado, con fail-close si existen claves de Supabase/Turnstile y con CSP del bundle de preview que bloquea Supabase.
+- [x] Suite de pruebas para el build visual: casos mal configurados y modo seguro sin base de datos.
+- [ ] Validación de GitHub CI en esta rama tras el commit.
+- [ ] Alta Cloudflare Pages/Access en modalidad Free autorizada; **no publicar ni comunicar la URL antes de verificar que main hostname, alias y preview están protegidos**.
+- [ ] QA del globo real desde tablet, sin usuarios ni credenciales de Supabase.
