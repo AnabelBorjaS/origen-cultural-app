@@ -226,3 +226,10 @@ Public beta remains NO-GO until:
 - [ ] Validación de GitHub CI en esta rama tras el commit.
 - [ ] Alta Cloudflare Pages/Access en modalidad Free autorizada; **no publicar ni comunicar la URL antes de verificar que main hostname, alias y preview están protegidos**.
 - [ ] QA del globo real desde tablet, sin usuarios ni credenciales de Supabase.
+
+## Replit no-Agent visual review — 12 Oct 2026
+
+- [x] `.replit` workflow `Run` builds fail-closed visual preview only and serves `dist` with no live Supabase backend.
+- [x] `tests/visual-preview-isolation.mjs` fixed to accept JSON-quoted config output; CI confirmation still required after commit.
+- [ ] Verify exact Replit account credit/spend limit before importing/Agent updates; never promise $0 unless confirmed.
+- [ ] Confirm private development URL access before sharing any live preview; default `.replit.dev` addresses are public. Do not overwrite old Replit App without a backup.

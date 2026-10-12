@@ -615,3 +615,10 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Se preparó `npm run build:visual-preview`: usa la beta visual sin datos reales, falla si se configura cualquier backend Supabase/Turnstile e instala un CSP de salida que impide solicitar recursos Supabase. Pruebas locales automatizadas `tests/visual-preview-isolation.mjs` verifican tanto la negativa segura como el output de demo.
 - Plan de enlace navegable con Cloudflare Pages + Access: `CLOUDFLARE_VISUAL_PREVIEW_SETUP.md`. **No se desplegó** y no se creó proyecto Pages; las URLs Cloudflare son públicas por defecto y primero deben configurarse/verificarse los permisos de Access.
 - La cuenta de la fundadora, sus cuotas gratuitas, la protección de enlaces y el registro del DNS oficial siguen intactos; estamos preparando una preview privada, no publicando una beta comercial.
+
+## Integración Replit no pagada / vista visual — 12 octubre 2026
+
+- Detectado fallo real de Quality Gate en `a0688ee0` por comillas dobles inyectadas por el compilador en la prueba nueva. Se corrigió el test para aceptar comillas generadas JSON y mantener todas las comprobaciones de que la previsualización queda desconectada.
+- Actualizado el workflow de la rama beta `.replit` para que el botón Run construya `build:visual-preview` antes de servir `dist` en puerto 5000; no podrá ejecutar el código fuente directo con un backend accidentalmente conectado.
+- Guía `REPLIT_VISUAL_PREVIEW_SETUP.md` explica los pasos para cargar la rama de desarrollo, habilitar una URL de desarrollo privada, evitar sobrescribir el proyecto antiguo y comprobar costos antes de usar el agente de Replit.
+- El proyecto Replit existente no ha sido modificado ni sincronizado: el coste de una actualización por Agent no está determinado. Sin costo ni publicación o cambios en producción en este avance.

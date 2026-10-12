@@ -42,8 +42,9 @@ const client = fs.readFileSync(path.join(dist, 'supabase-client.js'), 'utf8');
 const runtime = fs.readFileSync(path.join(dist, 'runtime-config.js'), 'utf8');
 const index = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
 const headers = fs.readFileSync(path.join(dist, '_headers'), 'utf8');
-assert.ok(client.includes("const PROJECT_URL = 'https://unconfigured-staging.invalid';"));
-assert.ok(client.includes("const PUBLISHABLE_KEY = 'sb_publishable_disabled_staging_preview';"));
+// The builder intentionally renders JSON strings with double quotes.
+assert.match(client, /const PROJECT_URL = ["']https:\/\/unconfigured-staging\.invalid["'];/);
+assert.match(client, /const PUBLISHABLE_KEY = ["']sb_publishable_disabled_staging_preview["'];/);
 assert.ok(!client.includes('xwkjvoyicrrwjybjolld.supabase.co'), 'Must not reference Production backend');
 assert.ok(runtime.includes('"stagingBackendConnected":false'));
 assert.ok(runtime.includes('"turnstileSiteKey":""'));
