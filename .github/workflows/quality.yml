@@ -36,3 +36,13 @@ jobs:
           path: .release-evidence/bundle-manifest.json
           if-no-files-found: error
           retention-days: 30
+
+      - name: Build isolated visual preview (no Supabase Auth)
+        run: npm run build:visual-preview
+      - name: Upload preview bundle for private hosting
+        uses: actions/upload-artifact@v4
+        with:
+          name: origen-visual-only-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
