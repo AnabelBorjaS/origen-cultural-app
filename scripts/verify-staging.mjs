@@ -73,6 +73,18 @@ for (const forbidden of ['_headers','PROJECT_STATUS.md','SECURITY_BASELINE.md','
   record(`Internal file not publicly served: ${forbidden}`, response.status === 404, String(response.status));
 }
 
+// Pages defaults to SPA fallback if no top-level 404.html exists, which can
+// make a nonexistent "secret" path misleadingly return HTTP 200/index.html.
+// The staging-only builder installs an inert bilingual custom 404 instead.
+// Verify that behavior over deployed HTTPS, not just from build output.
+const missing = await get('/origen-staging-audit-missing-path-404');
+const missingBody = missing.status === 404 ? await missing.text() : '';
+record('Unknown Pages URL returns real HTTP 404 (no SPA fallback)',
+  missing.status === 404 && missingBody.includes('404 · Página no encontrada'),
+  String(missing.status));
+record('Missing-path page never bootstraps Staging client runtime',
+  !missingBody.includes('runtime-config.js') && !missingBody.includes('supabase-client.js'));
+
 // Verify that the DEPLOYED asset, not merely the CI workspace, cannot
 // connect a test account to ORIGEN's Production Supabase project.
 const backendAsset = await get('/supabase-client.js');
