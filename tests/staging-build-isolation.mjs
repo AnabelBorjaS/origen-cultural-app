@@ -40,6 +40,15 @@ function assertSafeArtifact(expectedHost, backendConnected) {
     'Private Staging must disable PWA offline caching');
   assert.ok(fs.readFileSync(path.join(dist, '_headers'), 'utf8').includes('Cache-Control: no-store'),
     'Private Staging must disable HTTP/browser caches');
+  // Cloudflare Pages SPA fallback must not turn unknown or forbidden paths
+  // into index.html/HTTP 200. Our app uses hash URLs, so a custom 404 is safe.
+  const notFound=fs.readFileSync(path.join(dist,'404.html'),'utf8');
+  assert.match(notFound,/404 · Página no encontrada/);
+  assert.match(notFound,/<meta name="robots" content="noindex, nofollow, noarchive">/);
+  assert.ok(!notFound.includes('runtime-config.js') && !notFound.includes('supabase-client.js'),
+    'Missing-path response must be inert and contain no app runtime');
+  assert.ok(!fs.existsSync(path.join(root,'404.html')),
+    'Only the compiled staging artifact should contain 404.html');
   const html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
   assert.equal(html.includes('id="staging-preview-banner"'), !backendConnected,
     'Visual-only preview must be visibly labelled; connected staging must not be mislabeled');
