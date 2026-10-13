@@ -46,3 +46,15 @@ El auditor `npm run audit:staging` ahora separa explícitamente los dos tipos de
 **Para ambos modos:** el auditor requiere un Cloudflare Access Service Token exclusivo de pruebas, suministrado mediante variables/secretos cifrados, y comprueba sin credenciales que la portada, `index.html`, `app.js`, `supabase-client.js` y `runtime-config.js` devuelvan rechazo o redirección legítima a Cloudflare Access. No valida un despliegue público sin restricciones como si fuese una beta privada. Auditar **por separado** dominio base y alias/preview de despliegue, pues un resultado PASS en una URL no certifica las demás.
 
 El workflow `ORIGEN Staging Audit` ahora ofrece una selección `audit_mode`, pero su ejecución manual sigue dependiendo de la disponibilidad de `workflow_dispatch` en la rama por defecto; no fusionar el PR ni desplegar Production solo para activar el botón. Mantener `NO-GO` hasta que exista URL HTTPS protegida y puedan comprobarse los recorridos funcionales.
+
+## Protección contra copias sin conexión en staging — 13 octubre 2026
+
+El bundle privado de ORIGEN incorpora dos defensas adicionales, **sin necesidad de ningún servicio de pago**:
+
+- **PWA desactivada exclusivamente en el artefacto privado:** `npm run build:visual-preview` y `npm run build:static` generan `window.ORIGEN_CONFIG.disableServiceWorker = true`. Al cargar, `app.js` no registra ningún Service Worker nuevo y trata de desregistrar los ya asociados al origen, eliminando únicamente caches con el prefijo `origen-cultural-v`. El código fuente público/local conserva el registro PWA cuando la bandera no está establecida.
+- **Sin caché HTTP/navegador:** el artefacto `dist/_headers` añade `Cache-Control: no-store` a rutas `/*`; el auditor HTTPS exige esa política tanto para HTML como para archivos principales. Rechaza también un bundle desplegado cuyo `runtime-config.js` no desactive la PWA.
+- **Pruebas automáticas:** `tests/staging-pwa-isolation.mjs`, `tests/staging-build-isolation.mjs`, `tests/visual-preview-isolation.mjs` y `tests/staging-audit-policy.mjs` comprueban la lógica con mocks y builds locales.
+
+**Importante:** esta defensa no garantiza retirar contenidos que una persona haya copiado, capturado, descargado o que ya estén guardados en su dispositivo. Tampoco convierte por sí misma una URL en privada: **Cloudflare Access sigue siendo obligatorio** sobre dominio base y previews; verificar siempre el rechazo desde una sesión anónima nueva. Sin despliegue real, `no-store` y Access en cabeceras siguen sin estar comprobados en HTTP externo.
+
+El alojamiento sigue sin activarse. No cambiar `main`, `origencultural.com`, datos reales o suscripciones; mantener Cloudflare Pages **Free / $0**.
