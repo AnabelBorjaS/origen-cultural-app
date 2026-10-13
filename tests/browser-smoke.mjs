@@ -1061,7 +1061,13 @@ async function moderationInboxBrowserChecks() {
         await page.evaluate(() => {
           const api = window.ORIGEN_API;
           const oldRestore = api.restoreSession;
-          api.cache.profile.role = 'explorer';
+          // Auth restore can clear the cached profile between setup and this
+          // event; the test must explicitly seed the simulated downgraded role
+          // instead of dereferencing a nullable browser cache.
+          api.cache.profile = {
+            id:'77777777-7777-4777-8777-777777777777',
+            role:'explorer', display_name:'Synthetic Reviewer'
+          };
           api.restoreSession = async () => ({ ...(await oldRestore()), role:'explorer' });
           window.dispatchEvent(new Event('origen-auth-change'));
         });
