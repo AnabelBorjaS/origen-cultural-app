@@ -8,13 +8,13 @@ Este porcentaje **no** representa el grado total de terminación de ORIGEN ni la
 |---|---|---|---|
 | 1 | Identidad visual y navegación bilingüe | ✅ Preparado en beta | HTML/CSS, ES/EN en `app.js` y pruebas de interfaz |
 | 2 | Recorridos base de exploración, perfiles, publicaciones y Pasaporte Cultural | ✅ Preparado en beta | Rutas y componentes en PR #3; aún sin cuentas reales |
-| 3 | Quality Gate y análisis estático de seguridad automatizados | ✅ Verificado | GitHub Quality Gate #460 y CodeQL #264 aprobados; cambios recientes sometidos a CI |
+| 3 | Quality Gate y análisis estático de seguridad automatizados | ✅ Verificado | GitHub Quality Gate #468 aprobado; CodeQL #269 aprobado anteriormente; CI posterior se verifica por separado |
 | 4 | Construcción de artefactos beta aislados de Production | ✅ Verificado por pruebas | `scripts/build-static.mjs`, `tests/staging-build-isolation.mjs`, `tests/visual-preview-isolation.mjs`, `Cache-Control: no-store` |
 | 5 | Auditoría de configuración de permisos RLS en Staging | ✅ Catálogo verificado | `supabase/proposals/ORIGEN_STAGING_MODERATION_CONFIG_AUDIT_READ_ONLY.sql`: 15/16 configuraciones correctas; hito restante de moderación operativa NO incluido aquí |
-| 6 | Bandeja de reportes solo lectura, con comprobaciones de navegador sintético | ✅ Verificado en beta local | `tests/moderation-inbox.mjs`, `tests/browser-smoke.mjs`, Browser QA #323 aprobado |
+| 6 | Bandeja de reportes solo lectura, con comprobaciones de navegador sintético | ✅ Verificado en beta local | `tests/moderation-inbox.mjs`, `tests/browser-smoke.mjs`, Browser QA #323 aprobado; nuevas ejecuciones se verifican por separado |
 | 7 | Vista HTTPS privada con Cloudflare Access en origen y todas las previews | ⬜ Pendiente | Configurar Pages Free, proteger subdominios/URLs y comprobar rechazo con sesión anónima |
 | 8 | Registro, legal consent y permisos verificados con dos cuentas Auth ficticias | ⬜ Pendiente | Staging independiente, URLs autorizadas, CAPTCHA, pruebas E2E y limpieza |
-| 9 | Moderación operativa con decisiones, apelaciones y bitácora privada real | ⬜ Pendiente | Servicio protegido por autorización servidor, registro inmutable a nivel de aplicación y pruebas. La propuesta SQL `ORIGEN_MODERATION_CASE_EVENTS_LEDGER_REVIEW_ONLY.sql` se verificó con ROLLBACK, NO se instaló |
+| 9 | Moderación operativa con decisiones, apelaciones y bitácora privada real | ⬜ Pendiente | Validador y capa de autorización simulada preparados (`server/protected-moderation-review.mjs`, Quality Gate #468), pero faltan adaptadores de verificación JWT, transacción real con control admin y registro privado, apelaciones y E2E. Propuesta SQL probada con ROLLBACK, NO instalada |
 | 10 | Retirada real de medios, privacidad y aprobación del piloto | ⬜ Pendiente | Storage/CDN, retención, derechos culturales, incidentes, legal y pruebas con cuentas de ensayo |
 
 ### Reglas del porcentaje
