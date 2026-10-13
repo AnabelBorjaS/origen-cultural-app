@@ -12,8 +12,9 @@
 - Cualquier persona, incluso sin cuenta, puede abrir la página pública `#solicitar-revision`, llegar desde una publicación o perfil, seleccionar el motivo, describir el problema y **preparar** un correo a `info.origencultural@gmail.com`.
 - El enlace de correo no se habilita hasta completar el formulario. La persona debe abrir su aplicación de correo y **pulsar Enviar**; el sitio no envía el mensaje ni crea automáticamente un ticket.
 - Las referencias de publicaciones y perfiles se incluyen en el borrador si la persona llegó mediante un enlace contextual; no se solicitan contraseñas, documentación de identidad ni material cultural sensible.
+- En la rama beta, la ruta privada `#moderacion` ofrece una **bandeja de solo lectura** a la cuenta con rol `admin`: hasta 50 reportes recientes, motivo/estado/objetivo y contexto bajo un desplegable. La consulta exige sesión administradora y autorización de lectura Supabase RLS; omite explícitamente el identificador del denunciante de la respuesta y trata el texto denunciado como contenido no ejecutable. **No hay botones de resolver/retirar.** La ruta todavía no está desplegada ni validada con JWT reales.
 
-**No implementado:** recepción de correos en una bandeja moderada por agentes, sistema de tickets, cola de resolución, apelaciones integradas, acceso de administradores a reportes, medidas automáticas de retirada, notificaciones garantizadas o auditoría de decisiones en producción.
+**No implementado:** recepción de correos en una bandeja moderada por agentes, sistema de tickets, **acciones administrativas para resolver reportes**, apelaciones integradas, medidas automáticas de retirada, notificaciones garantizadas, historial inmutable de decisiones o auditoría de moderación en producción. La bandeja de solo lectura de código NO equivale a un proceso de moderación operativo.
 
 ## 2. Ingreso y confirmación
 
@@ -66,6 +67,8 @@ El código beta ahora espera la limpieza de medios gestionados en la eliminació
 | ES/EN y móvil | Formulario y advertencia de no envío comprensibles |
 | Usuario con cuenta reporta desde modal | Insert autorizado por RLS, motivos canónicos y visibilidad limitada al denunciante |
 | Reporte por otra cuenta | No se pueden leer ni modificar denuncias privadas ajenas |
+| Bandeja de moderación (admin) | Solo lectura, últimos 50, sin identificadores de denunciantes, sin HTML ejecutable; obligatorio probar con JWT reales de dos usuarios |
+| Cambio de sesión en bandeja | Una respuesta tardía no revela los reportes privados de otra cuenta |
 | Autor intenta suplantar moderación | Backend deniega acciones administrativas |
 | Solicitud de retirada legítima | Operador autorizado puede resolver y documentar la decisión |
 | Apelación | Ruta revisada que no expone datos privados |
@@ -79,3 +82,12 @@ El código beta ahora espera la limpieza de medios gestionados en la eliminació
 - Validación externa/real de capacidades de moderación y de obligaciones legales por jurisdicción.
 
 **No anunciar el correo precompuesto como «sistema de tickets», «denuncia enviada» o retirada automatizada.**
+
+
+## 8. Bandeja administradora en beta — 13 octubre de 2026
+
+En PR #3, `supabase-client.js` ofrece `listModerationReports(expectedUserId)` con acceso solo para el rol de perfil `admin`, consulta a `moderation_reports` limitada a 50 registros y sin `reporter_user_id`. `app.js` incluye la ruta bilingüe `#moderacion`, el enlace visible únicamente para ese rol, y construcción DOM con `textContent` para datos externos; elimina respuestas tardías tras cambiar de cuenta o abandonar la ruta.
+
+`tests/moderation-inbox.mjs` prueba los métodos reales con simulaciones sin red. **Quality Gate #455: aprobado** en el commit `504e508c9c8f518fde871450d0493604652d744f`, con casos de privilegios, ocultación del identificador del denunciante, contenido HTML malicioso y cambios de sesión. No hay modificación de privilegios de Supabase ni funcionalidad de sanción o retirada; las comprobaciones reales de acceso requieren Staging privado y dos cuentas sintéticas.
+
+**No mostrar contenido de denuncias privadas en capturas, GitHub Issues, logs ni métricas.** Antes de cualquier operación administrativa, se requiere servicio servidor autorizado, registro privado de decisiones, apelaciones y pruebas de retirada de Storage.
