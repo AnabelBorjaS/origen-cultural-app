@@ -727,8 +727,25 @@
       'video/mp4':'mp4', 'video/webm':'webm', 'video/quicktime':'mov'
     };
     const ext = extByMime[file.type];
-    const safe = nameHint.replace(/[^a-z0-9-_]/gi,'-').toLowerCase();
-    const path = `${uid}/${Date.now()}-${safe}.${ext}`;
+    const safe = String(nameHint).replace(/[^a-z0-9-_]/gi,'-').toLowerCase().slice(0,64) || 'media';
+    // Each object gets an unguessable per-upload suffix. A timestamp + human
+    // name alone can collide across two tabs or same-millisecond requests.
+    // Secure browser randomness is mandatory; NEVER silently downgrade to
+    // predictable Storage paths or overwrite an existing cultural object.
+    const browserCrypto = window.crypto;
+    let nonce;
+    if (typeof browserCrypto?.randomUUID === 'function') {
+      nonce = browserCrypto.randomUUID().replace(/-/g,'');
+    } else if (typeof browserCrypto?.getRandomValues === 'function') {
+      const bytes = browserCrypto.getRandomValues(new Uint8Array(16));
+      nonce = Array.from(bytes, value => value.toString(16).padStart(2,'0')).join('');
+    } else {
+      throw new Error('La subida segura requiere HTTPS y un navegador actualizado.');
+    }
+    if (!/^[a-f0-9]{32}$/i.test(nonce)) {
+      throw new Error('No fue posible generar un nombre seguro para el archivo.');
+    }
+    const path = `${uid}/${Date.now()}-${nonce}-${safe}.${ext}`;
     const { error } = await client.storage.from(bucket).upload(path, file, {
       upsert: false,
       contentType: file.type,
