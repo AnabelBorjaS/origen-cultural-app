@@ -213,3 +213,9 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - `scripts/build-static.mjs` exige exactamente estas sentinelas en el archivo versionado, permite conectar sólo `https://egujmptgnrpajgfpjjxu.supabase.co` con su propia clave pública durante el build Staging e impide reutilizar la clave publicable histórica de Production mediante su hash SHA-256 (sin guardar la clave).
 - La compilación visual sin variables sigue sin backend; los cambios reales en Production necesitarán un **pipeline de release independiente, explícitamente aprobado y auditado**, nunca copiar manualmente credenciales a la rama beta.
 - Actualizar/verificar los tests de aislamiento y las tres CI tras esta modificación. Esto **no** despliega ni activa una web Staging ni habilita Auth Hooks.
+
+## Control de auditoría independiente (13 Oct 2026)
+
+Se endureció `scripts/verify-staging.mjs` para exigir servicio Cloudflare Access y comprobar como visitante no autenticado la **portada y cuatro archivos estáticos**. Un HTTP 200 público o un redireccionamiento genérico no se consideran barrera de acceso. El modo de auditoría por defecto `auth-staging` conserva las condiciones estrictas para pruebas con cuentas; `visual-only` permite evaluar la vista sin backend solo si se declara explícitamente y si el artefacto no contiene configuración de Auth, Turnstile o acceso a Supabase. El modo visual no representa autorización de beta, ni verifica bases de datos.
+
+Al desplegar Pages, auditar **dos veces** como mínimo: `origen-cultural-staging.pages.dev` y cada hostname preview/alias relevante. Guardar el token de auditoría exclusivamente en GitHub Actions Secrets o en un gestor de secretos local; nunca en el código o archivos públicos. Las pruebas unitarias están en `tests/staging-audit-policy.mjs`.
