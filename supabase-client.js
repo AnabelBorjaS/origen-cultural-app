@@ -425,6 +425,13 @@
       try {
         await listPosts();
       } catch (_) {
+        // Best-effort local feed fallback: keep the confirmed post visible
+        // even when the follow-up read fails. Never change another account's
+        // view if the session switched during the request.
+        if (cache.session?.user?.id === uid && data?.id) {
+          const createdPost = mapPostRow(data);
+          cache.posts = [createdPost, ...cache.posts.filter(post => post.id !== data.id)];
+        }
         console.warn('ORIGEN feed refresh unavailable after confirmed post creation.');
       }
     }
