@@ -54,7 +54,7 @@ const duplicate=await api.upload('post-media',pic,'post-1');
 assert.notEqual(first,duplicate,'Same user/name/millisecond uploads must get different URLs');
 assert.ok(uploads[0].path.startsWith(A+'/1770000000000-'));
 assert.ok(uploads[1].path.startsWith(A+'/1770000000000-'));
-assert.match(uploads[0].path,new RegExp('^'+A+'/[0-9]+-[a-f0-9]{32}-post-1\\.webp
+assert.match(uploads[0].path, /^[a-f0-9-]+\/[0-9]+-[a-f0-9]{32}-post-1\.webp$/, 'Unique path must include 128 bits of nonce');
 assert.equal(uploads.at(-1).options.cacheControl,'60', 'Cultural photos need shorter browser cache TTL');
 assert.equal(uploads.at(-1).options.upsert,false, 'Never overwrite a cultural object');
 assert.equal(uploads.at(-1).options.contentType,'image/webp');
