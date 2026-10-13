@@ -126,8 +126,13 @@ if (visualPreviewOnly && (stagingBackendConnected || apiURL !== disabledClientUR
 }
 fs.writeFileSync(
   path.join(out, 'runtime-config.js'),
-  `window.ORIGEN_CONFIG = Object.freeze(${JSON.stringify({ turnstileSiteKey, stagingBackendConnected })});\n`
+  `window.ORIGEN_CONFIG = Object.freeze(${JSON.stringify({ turnstileSiteKey, stagingBackendConnected, disableServiceWorker: true })});\n`
 );
+
+// Cloudflare Access governs access at the edge. Never let a staging HTML,
+// JavaScript or other same-origin asset survive in browser/HTTP offline caches.
+// PWA offline support remains available in the unchecked-in public configuration.
+const headersForStaging = path.join(out, '_headers');
 
 // In the separate Cloudflare visual demo, the browser must also fail closed.
 // The ordinary staging/release headers are unchanged in other build modes.
@@ -153,6 +158,15 @@ if (visualPreviewOnly) {
   }
   console.log('VISUAL-ONLY: Browser CSP blocks Supabase, live Auth, uploads, frames and indexing.');
 }
+
+// Both Auth Staging and visual-only preview must avoid offline persistence.
+// Enforce no-store in the compiled artifact only, never in Production source.
+const stagingHeaders = fs.readFileSync(headersForStaging, 'utf8');
+if (!stagingHeaders.startsWith('/*\n')) {
+  rejectStagingBuild('Staging Cloudflare _headers format changed: cannot set no-store safely.');
+}
+fs.writeFileSync(headersForStaging,
+  stagingHeaders.replace('/*\n', '/*\n  Cache-Control: no-store\n'));
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
