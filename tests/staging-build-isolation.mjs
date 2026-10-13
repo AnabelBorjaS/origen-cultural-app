@@ -36,6 +36,10 @@ function assertSafeArtifact(expectedHost, backendConnected) {
   assert.ok(output.includes(expectedHost), 'Expected safe project URL in artifact');
   assert.ok(config.includes('"stagingBackendConnected":' + backendConnected),
     'Visual-only versus isolated staging mode must be explicit');
+  assert.ok(config.includes('"disableServiceWorker":true'),
+    'Private Staging must disable PWA offline caching');
+  assert.ok(fs.readFileSync(path.join(dist, '_headers'), 'utf8').includes('Cache-Control: no-store'),
+    'Private Staging must disable HTTP/browser caches');
   const html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
   assert.equal(html.includes('id="staging-preview-banner"'), !backendConnected,
     'Visual-only preview must be visibly labelled; connected staging must not be mislabeled');
