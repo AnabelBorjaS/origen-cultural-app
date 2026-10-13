@@ -94,3 +94,18 @@ El método `removeOwnMedia` ahora requiere que la respuesta de Storage incluya e
 - Código: `supabase-client.js`, `app.js` y `tests/client-ownership.mjs`
 
 **Nota:** ningún paso de este documento fue ejecutado contra datos reales ni implica que ya exista un servicio de retirada administrativa en Production.
+
+## 8. Fallo ambiguo de red durante publicación — corrección de cliente (13 Oct 2026)
+
+**Hallazgo P0 relacionado con medios:** un `createPost()` cuyo INSERT fue **intentado** puede lanzar un error por corte de conexión después de que Supabase haya confirmado internamente la transacción. En esa situación, el cliente NO puede demostrar que la publicación no existe. Borrar automáticamente los medios recién subidos puede dejar la historia publicada, pero sin fotografías ni videos.
+
+**Corrección en PR #3 (sin desplegar):**
+
+1. `app.js` diferencia el momento **anterior** al intento de insertar de un resultado **incierto después** de iniciar la operación. Antes de intentar insertar, una subida fallida hace limpieza de archivos conocidos con `await Promise.allSettled`, y solo después comunica el error. Si alguna eliminación falla, se registra una advertencia.
+2. Después de intentar insertar, **no se borra automáticamente el material** ante un error; aparece un aviso bilingüe que explica que ORIGEN no pudo confirmar si el post se guardó, que las fotos o videos se conservaron, y que el autor debe revisar el feed.
+3. Se desactiva el botón de reenvío de ese formulario para evitar un intento duplicado inmediato. La persona puede navegar y revisar el feed, pero el sistema **todavía no cuenta con detección de duplicados en servidor ni una cola de archivos huérfanos**.
+4. `tests/post-submit-error-recovery.mjs` ejecuta el **handler real extraído de `app.js`** con APIs y archivos sintéticos; cubre fallos ambiguos en español/inglés, limpieza previa a INSERT con espera efectiva, envío exitoso y bloqueo de publicaciones sin las declaraciones de derechos.
+
+**Evidencia:** Quality Gate #432 SUCCESS, con cuatro mensajes de prueba PASS en el log. CodeQL #236 y Browser QA #295 deben verificarse por separado en GitHub Actions antes de dar la batería completa por cerrada.
+
+**Limitación explícita:** un fallo durante la **propia subida a Storage** también puede dejar objetos cuya respuesta no llegó al navegador; todavía no existe reconciliación server-side. Preservar medios frente a una operación ambigua protege contra una pérdida accidental, pero puede dejar objetos huérfanos y no sustituye un inventario privado, limpieza supervisada o procedimiento administrativo. El P0 #12 continúa abierto hasta probarlo con Storage real, cuentas ficticias y moderación protegida.
