@@ -59,13 +59,12 @@ WITH facts AS (
       WHERE n.nspname='private' AND p.proname='protect_profile_privileged_fields'
         AND p.prosecdef
         AND pg_get_functiondef(p.oid) ILIKE '%new.role is distinct from old.role%') AS role_change_blocked,
-    (has_table_privilege('authenticated','public.moderation_reports','update')
-       AND EXISTS (SELECT 1 FROM pg_policies
-         WHERE schemaname='public' AND tablename='moderation_reports' AND cmd='UPDATE')) AS direct_admin_resolution_ready
+    -- A SQL catalog cannot certify an accountable human process.
+    -- Never treat broad browser UPDATE privileges as sufficient for moderation!
+    false AS human_resolution_e2e_verified
 )
 SELECT v.check_name,
-  CASE WHEN v.check_name='authorised_resolution_workflow'
-    THEN CASE WHEN v.ok THEN 'NEEDS_HUMAN_E2E' ELSE 'ACTION_REQUIRED' END
+  CASE WHEN v.check_name='authorised_resolution_workflow' THEN 'ACTION_REQUIRED'
     ELSE CASE WHEN v.ok THEN 'CONFIG_PASS' ELSE 'CONFIG_FAIL' END
   END AS status,
   v.reason
@@ -86,7 +85,7 @@ LATERAL (VALUES
  ('private_admin_helper',f.private_admin_check,'Protected admin role lookup'),
  ('profile_role_guard_active',f.roles_trigger_enabled,'Role-change protection trigger active'),
  ('profile_role_change_guard',f.role_change_blocked,'Non-admin cannot change role to admin'),
- ('authorised_resolution_workflow',f.direct_admin_resolution_ready,
+ ('authorised_resolution_workflow',f.human_resolution_e2e_verified,
   'No authorised report-resolution action/decision log E2E yet; do NOT open pilot')
 ) AS v(check_name,ok,reason)
 ORDER BY v.check_name;
