@@ -14,7 +14,7 @@ const checks = [
   ['Signup shows explicit consent', app.includes('name="acceptedLegal" required')],
   ['Backend client refuses signup without consent', supabase.includes("if (!payload?.acceptedLegal)")],
   ['CSP allows approved globe CDN images', index.includes("img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net")],
-  ['Globe uses HTTPS Earth texture', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg")],
+  ['Globe uses HTTPS Earth texture', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg")],
   ['Globe uses HTTPS space texture', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png")],
   ['Infinite feed sentinel exists', app.includes('id="feed-sentinel"')],
   ['Wellbeing target exists', app.includes("origen-wellbeing-minutes") && app.includes('120')],
