@@ -1,4 +1,5 @@
 import { accessHeaders, stagingURL } from './staging-access.mjs';
+import { selectAuditMode, anonymousDenied, inspectBundle } from './staging-audit-policy.mjs';
 
 const raw = process.argv[2] || process.env.ORIGEN_STAGING_URL;
 if (!raw) {
@@ -8,7 +9,12 @@ if (!raw) {
 
 const base = stagingURL(raw);
 
+// The audit is for PRIVATE staging, never for a publicly readable pages.dev site.
+const mode = selectAuditMode();
 const cloudflareAccessHeaders = accessHeaders();
+if (!cloudflareAccessHeaders['CF-Access-Client-Id']) {
+  throw new Error('Protected staging audit requires Cloudflare Access service credentials. Do not treat an unprotected site as private.');
+}
 const checks = [];
 const record = (name, ok, detail='') => checks.push({ name, ok, detail });
 
@@ -23,6 +29,15 @@ async function get(pathname='/', options={}) {
     headers: { ...cloudflareAccessHeaders, ...(options.headers || {}) },
     redirect: 'manual'
   });
+}
+
+// Read without any credentials to prove Cloudflare Access guards BOTH the
+// page and assets. A login redirect must point to Cloudflare Access itself.
+for (const pathname of ['/', '/index.html', '/app.js', '/supabase-client.js', '/runtime-config.js']) {
+  const probe = await fetch(new URL(pathname, base), { redirect: 'manual', signal: AbortSignal.timeout(12000) });
+  record('Cloudflare Access denies anonymous ' + pathname,
+    anonymousDenied(probe.status, probe.headers.get('location') || '', base.origin),
+    String(probe.status));
 }
 
 const home = await get('/');
@@ -42,16 +57,14 @@ const csp = home.headers.get('content-security-policy') || '';
 record('CSP present', Boolean(csp), csp);
 record('CSP prevents framing', csp.includes("frame-ancestors 'none'"), csp);
 record('CSP blocks objects', csp.includes("object-src 'none'"), csp);
-record('Turnstile CSP script origin', csp.includes('script-src') && csp.includes('https://challenges.cloudflare.com'), csp);
-record('Turnstile CSP frame origin', csp.includes('frame-src https://challenges.cloudflare.com'), csp);
 record('ORIGEN app shell present', html.includes('runtime-config.js') && html.includes('app.js') && html.includes('supabase-client.js') && html.includes('trust.js'));
 
-for (const file of ['runtime-config.js','app.js','supabase-client.js','styles.css','manifest.webmanifest','service-worker.js','_headers']) {
+for (const file of ['runtime-config.js','app.js','supabase-client.js','styles.css','manifest.webmanifest','service-worker.js']) {
   const response = await get('/' + file);
   record(`Public runtime available: ${file}`, response.ok, String(response.status));
 }
 
-for (const forbidden of ['PROJECT_STATUS.md','SECURITY_BASELINE.md','schema.sql','package.json','STAGING_PLAN.md','.github/workflows/quality.yml']) {
+for (const forbidden of ['_headers','PROJECT_STATUS.md','SECURITY_BASELINE.md','schema.sql','package.json','STAGING_PLAN.md','.github/workflows/quality.yml']) {
   const response = await get('/' + forbidden);
   record(`Internal file not publicly served: ${forbidden}`, response.status === 404, String(response.status));
 }
@@ -62,26 +75,11 @@ const backendAsset = await get('/supabase-client.js');
 const configAsset = await get('/runtime-config.js');
 const backendJS = backendAsset.ok ? await backendAsset.text() : '';
 const configJS = configAsset.ok ? await configAsset.text() : '';
-const backendURL = backendJS.match(/^  const PROJECT_URL = "([^"]+)";$/m)?.[1] || '';
-const backendKey = backendJS.match(/^  const PUBLISHABLE_KEY = "([^"]+)";$/m)?.[1] || '';
-const backendReady = configJS.match(/"stagingBackendConnected":(true|false)/)?.[1] || '';
-const productionProjectHost = 'xwkjvoyicrrwjybjolld.supabase.co';
-const approvedStagingBackendURL = 'https://egujmptgnrpajgfpjjxu.supabase.co';
-const configuredIsolated = backendReady === 'true' &&
-  backendURL === approvedStagingBackendURL &&
-  backendURL !== 'https://' + productionProjectHost &&
-  /^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(backendKey);
-const configuredOffline = backendReady === 'false' &&
-  backendURL === 'https://unconfigured-staging.invalid' &&
-  backendKey === 'sb_publishable_disabled_staging_preview';
-record('Deployed staging never embeds Production Supabase host',
-  backendAsset.ok && !backendJS.includes(productionProjectHost));
-record('Deployed staging declares isolated backend or visual-only mode',
-  configAsset.ok && (configuredIsolated || configuredOffline));
-record('Staging is correctly isolated before Auth testing',
-  configAsset.ok && configuredIsolated,
-  configuredOffline ? 'Visual-only preview: intentionally blocks real Auth tests' :
-    configuredIsolated ? 'Separate Supabase project configured' : 'Configuration invalid or unavailable');
+record('Deployed backend and runtime assets return 200', backendAsset.status === 200 && configAsset.status === 200);
+for (const check of inspectBundle({
+  mode, html, backendJS, configJS, csp,
+  robots: home.headers.get('x-robots-tag') || ''
+})) record(check.name, check.ok);
 
 const sw = await get('/service-worker.js');
 record('Service worker JavaScript content type', sw.ok && /javascript|text\/plain/.test(sw.headers.get('content-type') || ''), sw.headers.get('content-type') || '');
@@ -95,4 +93,4 @@ if (failed.length) {
   console.error(`\n${failed.length} deployed staging check(s) failed.`);
   process.exit(1);
 }
-console.log(`\nORIGEN deployed staging audit passed: ${checks.length} checks.`);
+console.log(`\nORIGEN deployed staging audit passed [${mode}]: ${checks.length} checks.`);
