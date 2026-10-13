@@ -57,5 +57,12 @@ assert.ok(!headers.includes('challenges.cloudflare.com'), 'No live account CAPTC
 assert.ok(headers.includes('X-Robots-Tag: noindex'));
 assert.ok(headers.includes('Cache-Control: no-store'),
   'Cloudflare visual preview must not cache protected HTML/assets');
+const notFound=fs.readFileSync(path.join(dist,'404.html'),'utf8');
+assert.ok(notFound.includes('404 · Página no encontrada') && notFound.includes('Page not found'),
+  'Pages visual-only preview must have bilingual custom 404');
+assert.ok(!notFound.includes('runtime-config.js') && !notFound.includes('supabase-client.js'),
+  '404 response must not bootstrap private staging runtime');
+assert.ok(!fs.existsSync(path.join(root,'404.html')),
+  'Custom 404 must be generated in dist only');
 assert.ok(!headers.includes("frame-src https://challenges.cloudflare.com"));
 console.log('✓ Browser visual demo permits globe CDN while blocking Auth, uploads and production endpoints');
