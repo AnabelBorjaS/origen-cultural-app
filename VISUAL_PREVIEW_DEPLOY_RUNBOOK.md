@@ -85,3 +85,14 @@ Un HTTP **401 o 403 genérico no demuestra** que Cloudflare Access proteja el si
 **Límite deliberado:** si una política Access devuelve directamente 401/403 (sin redirigir), la auditoría falla aunque exista protección real; no se debe relajar el control automáticamente. Revisar la configuración de Cloudflare Access y sus logs, comprobar anónimo/incógnito y actualizar el procedimiento solo mediante revisión de seguridad documentada. La comprobación del dashboard de las dos políticas (dominio raíz y wildcard de previews) continúa siendo obligatoria: incluso una redirección puede simularse desde otro componente.
 
 Pruebas: `tests/staging-audit-policy.mjs` incluye ahora negativos para 401/403, rutas incorrectas, hosts ajenos y redirecciones no HTTPS. **No representa una prueba en la URL desplegada** hasta disponer de un sitio Pages y un token de servicio de auditoría válidos.
+
+## Cloudflare Pages: evitar fallback SPA en rutas inexistentes — 13 octubre de 2026
+
+Cloudflare Pages [documenta](https://developers.cloudflare.com/pages/configuration/serving-pages/) que, si falta `404.html` en la raíz, puede tratar la publicación como una SPA y servir `index.html` para rutas desconocidas. Eso produciría resultados HTTP 200 para documentos internos que **en realidad no existen**, provocando fallos o resultados confusos en la auditoría remota. ORIGEN usa rutas con fragmentos `#feed`, `#confianza`, etc., así que **no necesita** la reescritura de rutas de servidor para navegar.
+
+- El compilador `scripts/build-static.mjs` ahora crea **solo en `dist/404.html`** una respuesta neutra bilingüe ES/EN, sin scripts, datos, credenciales ni enlaces a documentos internos.
+- Se mantiene `Cache-Control: no-store` de Staging en `dist/_headers`, así como el requisito separado de Cloudflare Access. Una página 404 por sí sola **no** protege ningún contenido.
+- `tests/staging-build-isolation.mjs` verifica que el 404 se genera tanto para Staging visual como conectado, y que no modifica el árbol fuente público. `tests/visual-preview-isolation.mjs` prueba el paquete visual.
+- `scripts/verify-staging.mjs` ahora exige que una URL inexistente conocida obtenga **HTTP 404** y la página de error esperada. La auditoría de archivos internos continúa exigiendo HTTP 404 para cada ruta prohibida.
+
+Las verificaciones de build fueron aprobadas en Quality Gate **#488**. **Pendiente** la comprobación del HTTP real cuando exista despliegue privado con Cloudflare Access. La preparación para el piloto se mantiene en **6/10 hitos, 60%**; esta corrección no acredita el hito de hosting protegido.
