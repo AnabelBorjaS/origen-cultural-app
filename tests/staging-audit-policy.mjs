@@ -30,7 +30,7 @@ assert.notDeepEqual(failed({...auth,mode:AUDIT_MODES.VISUAL}), [], 'Connected Au
 assert.ok(failed({...visual,html:'<body></body>'}).some(x => /warning/.test(x)));
 assert.ok(failed({...visual,csp:visual.csp + ' https://*.supabase.co'}).some(x => /CSP/.test(x)));
 assert.ok(failed({...visual,robots:''}).some(x => /noindex/.test(x)));
-assert.ok(failed({...visual,configJS:visual.configJS.replace('siteKey":"","','siteKey":"injected",')}).length>0);
+assert.ok(failed({...visual,configJS:visual.configJS.replace('"turnstileSiteKey":""', '"turnstileSiteKey":"injected"')}).length>0);
 assert.ok(failed({...auth,configJS:auth.configJS.replace('0x4AAAA_unit_test_only','')}).length>0);
 assert.ok(failed({...auth,backendJS:backend('https://xwkjvoyicrrwjybjolld.supabase.co','sb_publishable_bad_key_123')}).length>0);
 assert.equal(selectAuditMode({}), AUDIT_MODES.AUTH, 'Default mode must remain strict Auth staging');
