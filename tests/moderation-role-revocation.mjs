@@ -56,7 +56,9 @@ function setup(current,next,slowRefresh=false) {
 {
   const t=setup({id:UID,role:'admin'},{id:UID,role:'explorer'},true);
   const running=t.run();
-  await Promise.resolve();
+  // The real callback awaits restoreSession(); let those microtasks settle,
+  // but DO NOT release the deliberately blocked cache requests.
+  for(let i=0;i<10 && t.readDOM()!=='RESTRICTED';i++) await Promise.resolve();
   // Clear sensitive data BEFORE the delayed network/cache tasks settle.
   assert.equal(t.readDOM(),'RESTRICTED','Same-user admin revocation must immediately erase report DOM');
   assert.ok(t.calls.includes('rerender:false'));
