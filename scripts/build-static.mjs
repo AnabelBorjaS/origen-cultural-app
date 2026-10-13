@@ -168,6 +168,31 @@ if (!stagingHeaders.startsWith('/*\n')) {
 fs.writeFileSync(headersForStaging,
   stagingHeaders.replace('/*\n', '/*\n  Cache-Control: no-store\n'));
 
+// Cloudflare Pages otherwise treats this deployment as an SPA and may serve
+// index.html (HTTP 200) for *unknown* paths, including internal filenames.
+// ORIGEN uses hash-based routes (#feed, #confianza), not history fallbacks.
+// A top-level custom 404.html forces missing files to return a real HTTP 404,
+// allowing the live staging audit to distinguish absence from SPA rewriting.
+// This file exists only in the compiled staging artifact, never Production.
+fs.writeFileSync(path.join(out, '404.html'), `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>ORIGEN · Página no encontrada / Not found</title>
+</head>
+<body>
+  <main>
+    <h1>404 · Página no encontrada / Page not found</h1>
+    <p>Esta ruta no existe en la vista de pruebas de ORIGEN.</p>
+    <p>This path does not exist in the ORIGEN staging preview.</p>
+    <a href="/">Volver al inicio / Return home</a>
+  </main>
+</body>
+</html>
+`);
+
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const full = path.join(dir, entry.name);
