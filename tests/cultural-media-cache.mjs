@@ -52,6 +52,7 @@ api.cache.session={user:{id:A}};
 const first=await api.upload('post-media',pic,'post-1');
 const duplicate=await api.upload('post-media',pic,'post-1');
 assert.notEqual(first,duplicate,'Same user/name/millisecond uploads must get different URLs');
+assert.equal(uuidCounter,2,'Even same-millisecond duplicate uploads consume separate nonces');
 assert.ok(uploads[0].path.startsWith(A+'/1770000000000-'));
 assert.ok(uploads[1].path.startsWith(A+'/1770000000000-'));
 assert.match(uploads[0].path, /^[a-f0-9-]+\/[0-9]+-[a-f0-9]{32}-post-1\.webp$/, 'Unique path must include 128 bits of nonce');
@@ -86,40 +87,8 @@ assert.equal(urls.length,already,'Storage failure must not manufacture a public 
 console.log('PASS Cultural photos and videos use a 60-second browser cache TTL.');
 console.log('PASS Profile media retains a one-hour TTL and uploads never overwrite objects.');
 console.log('PASS Invalid uploads and Storage errors fail closed without real network requests.');
-));
-assert.equal(uuidCounter,2,'Each upload needs an independent unpredictable nonce');
-assert.ok(first.includes('/post-media/'+A+'/'), 'Path must remain under the authenticated uploader');
-assert.equal(uploads.at(-1).options.cacheControl,'60', 'Cultural photos need shorter browser cache TTL');
-assert.equal(uploads.at(-1).options.upsert,false, 'Never overwrite a cultural object');
-assert.equal(uploads.at(-1).options.contentType,'image/webp');
-
-const second=await api.upload('post-media',clip,'post-2');
-assert.ok(second.endsWith('.mp4'));
-assert.equal(uploads.at(-1).options.cacheControl,'60', 'Cultural video cache must also be short');
-
-await api.upload('avatars',pic,'profile');
-assert.equal(uploads.at(-1).options.cacheControl,'3600', 'Only cultural posts have reduced cache TTL');
-await api.upload('covers',pic,'cover');
-assert.equal(uploads.at(-1).options.cacheControl,'3600');
-
-const already=uploads.length;
-for(const [bucket,file] of [
-  ['post-media',new SyntheticFile('image/jpeg',0)],
-  ['post-media',new SyntheticFile('application/pdf',1024)],
-  ['post-media',new SyntheticFile('video/mp4',51*1024*1024)],
-  ['avatars',clip],
-  ['unknown-bucket',pic]
-]) {
-  await assert.rejects(api.upload(bucket,file,'unsafe'),/no permitido|límite permitido|límite|Formato|Destino|archivo/i);
-  assert.equal(uploads.length,already,'Invalid file must be refused before Storage request');
-}
-storageError=new Error('Synthetic Storage failure');
-await assert.rejects(api.upload('post-media',pic,'failure'),/Synthetic Storage failure/);
-assert.equal(urls.length,already,'Storage failure must not manufacture a public URL');
-
-console.log('PASS Cultural photos and videos use a 60-second browser cache TTL.');
-console.log('PASS Profile media retains a one-hour TTL and uploads never overwrite objects.');
-console.log('PASS Invalid uploads and Storage errors fail closed without real network requests.');
+assert.equal(uuidCounter,6,'Each upload receives an independent unpredictable nonce');
+storageError=null;
 
 const noCryptoWindow={
   supabase:{createClient:()=>client},
