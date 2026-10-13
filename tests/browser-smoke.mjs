@@ -67,11 +67,14 @@ async function desktopChecks() {
     if (!('serviceWorker' in navigator)) return { supported:false };
 
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const privateStaging = window.ORIGEN_CONFIG?.disableServiceWorker === true;
     let registration = await navigator.serviceWorker.getRegistration();
     const appRegistered = !!registration;
     let manualRegisterError = '';
 
-    if (!registration) {
+    // Never manually install a worker in an access-controlled staging build:
+    // the application intentionally unregisters it and clears all PWA caches.
+    if (!registration && !privateStaging) {
       try {
         registration = await navigator.serviceWorker.register('service-worker.js');
       } catch (error) {
@@ -97,6 +100,7 @@ async function desktopChecks() {
 
     return {
       supported: true,
+      privateStaging,
       appRegistered,
       manualRegisterError,
       registration: registration ? {
@@ -112,14 +116,24 @@ async function desktopChecks() {
   });
 
   check(swAudit.supported, 'Browser should support service workers');
-  check(swAudit.appRegistered, 'ORIGEN should register its service worker from app.js. Diagnostics: ' + JSON.stringify(swAudit));
-  check(swAudit.registration?.active === 'activated', 'Service worker should activate. Diagnostics: ' + JSON.stringify(swAudit));
-  check(swAudit.names.includes('origen-cultural-v8'), 'Service worker should create origen-cultural-v8 cache. Diagnostics: ' + JSON.stringify(swAudit));
-  check(swAudit.entries.length > 0, 'Service worker cache should contain public static assets');
-  check(swAudit.entries.every(entry => new URL(entry.url).origin === swAudit.origin), 'Service worker cache must contain same-origin URLs only');
-  check(swAudit.entries.every(entry => !/supabase\.co|cdn\.jsdelivr\.net|\/auth\//i.test(entry.url)), 'Service worker cache must not contain Supabase/CDN/Auth responses');
-  check(swAudit.entries.every(entry => !/\/(?:supabase-client|runtime-config)\.js(?:[?#]|$)/i.test(entry.url)),
-    'Service worker must never cache old Supabase backend code or runtime configuration');
+  if (swAudit.privateStaging) {
+    check(!swAudit.appRegistered && !swAudit.registration,
+      'Private staging must not register a service worker. Diagnostics: ' + JSON.stringify(swAudit));
+    check(!swAudit.names.some(name => name.startsWith('origen-cultural-v')),
+      'Private staging must not retain any ORIGEN offline PWA caches');
+    check(swAudit.entries.length === 0,
+      'Fresh private staging should not cache its protected static assets');
+  } else {
+    // Public/local builds can still work offline; staging MUST NOT.
+    check(swAudit.appRegistered, 'Public ORIGEN should register its service worker from app.js. Diagnostics: ' + JSON.stringify(swAudit));
+    check(swAudit.registration?.active === 'activated', 'Public service worker should activate. Diagnostics: ' + JSON.stringify(swAudit));
+    check(swAudit.names.includes('origen-cultural-v8'), 'Public service worker should create origen-cultural-v8 cache. Diagnostics: ' + JSON.stringify(swAudit));
+    check(swAudit.entries.length > 0, 'Public service worker cache should contain static assets');
+    check(swAudit.entries.every(entry => new URL(entry.url).origin === swAudit.origin), 'Service worker cache must contain same-origin URLs only');
+    check(swAudit.entries.every(entry => !/supabase\.co|cdn\.jsdelivr\.net|\/auth\//i.test(entry.url)), 'Service worker cache must not contain Supabase/CDN/Auth responses');
+    check(swAudit.entries.every(entry => !/\/(?:supabase-client|runtime-config)\.js(?:[?#]|$)/i.test(entry.url)),
+      'Service worker must never cache old Supabase backend code or runtime configuration');
+  }
   // Force a normal network request while the service worker is installed.
   // Neither security file may enter Cache Storage as a side effect.
   await page.evaluate(async () => {
