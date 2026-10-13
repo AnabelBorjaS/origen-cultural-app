@@ -48,6 +48,16 @@ const clip=new SyntheticFile('video/mp4',1024*1024);
 await assert.rejects(api.upload('post-media',pic,'photo'),/iniciar sesión/);
 assert.equal(uploads.length,0);
 api.cache.session={user:{id:A}};
+// Uploading cultural media is a creator-only path in the browser, independently
+// of MIME validation. The isolated Storage server must enforce this as RLS too.
+await assert.rejects(api.upload('post-media',pic,'unauthorized'),/Agente Cultural autorizado/);
+assert.equal(uploads.length,0);
+api.cache.profile={id:A,role:'explorer'};
+await assert.rejects(api.upload('post-media',pic,'explorer'),/Agente Cultural autorizado/);
+api.cache.profile={id:'22222222-2222-4222-8222-222222222222',role:'creator'};
+await assert.rejects(api.upload('post-media',pic,'stale-creator'),/Agente Cultural autorizado/);
+assert.equal(uploads.length,0);
+api.cache.profile={id:A,role:'creator'};
 
 const first=await api.upload('post-media',pic,'post-1');
 const duplicate=await api.upload('post-media',pic,'post-1');
@@ -97,6 +107,7 @@ const noCryptoWindow={
 };
 vm.runInNewContext(source,{window:noCryptoWindow,File:SyntheticFile,URL,console},{filename:'supabase-client.js no crypto'});
 noCryptoWindow.ORIGEN_API.cache.session={user:{id:A}};
+noCryptoWindow.ORIGEN_API.cache.profile={id:A,role:'creator'};
 const beforeNoCrypto=uploads.length;
 await assert.rejects(noCryptoWindow.ORIGEN_API.upload('post-media',pic,'same-name'),
   /HTTPS y un navegador actualizado/);
@@ -110,6 +121,7 @@ const byteWindow={
 };
 vm.runInNewContext(source,{window:byteWindow,File:SyntheticFile,URL,console},{filename:'supabase-client.js crypto bytes'});
 byteWindow.ORIGEN_API.cache.session={user:{id:A}};
+byteWindow.ORIGEN_API.cache.profile={id:A,role:'creator'};
 await byteWindow.ORIGEN_API.upload('post-media',pic,'fallback');
 assert.match(uploads.at(-1).path,/-(?:a5){16}-fallback\.webp$/,
   'Older secure browsers must use cryptographic random bytes, not Date.now alone');
