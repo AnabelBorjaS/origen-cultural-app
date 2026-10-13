@@ -38,13 +38,24 @@ assert.ok(failed({...auth,backendJS:backend('https://xwkjvoyicrrwjybjolld.supaba
 assert.equal(selectAuditMode({}), AUDIT_MODES.AUTH, 'Default mode must remain strict Auth staging');
 assert.equal(selectAuditMode({ORIGEN_STAGING_AUDIT_MODE:'visual-only'}), AUDIT_MODES.VISUAL);
 assert.throws(()=>selectAuditMode({ORIGEN_STAGING_AUDIT_MODE:'disabled'}),/Invalid audit mode/);
-for (const status of [401,403]) assert.equal(anonymousDenied(status,'',base),true);
+// A generic 401/403 is NOT proof of Access. A WAF or origin server may
+// reject the page while an alternate Pages URL still exposes the website.
+for (const status of [401,403]) {
+  assert.equal(anonymousDenied(status,'',base),false);
+  assert.equal(anonymousDenied(status,'/cdn-cgi/access/login',base),false);
+}
 assert.equal(anonymousDenied(302,'/cdn-cgi/access/login',base),true);
 assert.equal(anonymousDenied(302,'https://origen.cloudflareaccess.com/cdn-cgi/access/login/x',base),true);
 for (const [status,location] of [
   [200,''],[404,''],[302,'https://evil.example/login'],
   [302,'https://origen-cultural-staging.pages.dev.evil.example/cdn-cgi/access/login'],
   [302,'https://origen.cloudflareaccess.com.evil.example/cdn-cgi/access/login'],
-  [302,'/login'],[301,'/cdn-cgi/access/login']
+  [302,'/login'],[301,'/cdn-cgi/access/login'],
+  [302,'/cdn-cgi/access/not-login'],
+  [302,'/cdn-cgi/access/'],
+  [302,'/cdn-cgi/access/login-evil'],
+  [302,'https://origen.cloudflareaccess.com/cdn-cgi/access/authorize'],
+  [302,'http://origen.cloudflareaccess.com/cdn-cgi/access/login'],
+  [403,'https://origen.cloudflareaccess.com/cdn-cgi/access/login/x']
 ]) assert.equal(anonymousDenied(status,location,base),false,'Anonymous request must not falsely pass');
 console.log('PASS Mode-aware visual/Auth staging audit and independent Cloudflare Access denial tests.');
