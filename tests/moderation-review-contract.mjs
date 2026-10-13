@@ -39,9 +39,11 @@ assert.match(proposedSQL,/FORCE ROW LEVEL SECURITY/);
 assert.match(proposedSQL,/BEFORE UPDATE OR DELETE/);
 assert.match(proposedSQL,/ON DELETE RESTRICT/);
 
-for(const input of [null,undefined,[],{},Object.create(null),new Date(), 'x']) {
+for(const input of [null,undefined,[],Object.create(null),new Date(), 'x']) {
   assert.throws(()=>prepareReviewRecommendation(input),/plain review recommendation/i);
 }
+assert.throws(()=>prepareReviewRecommendation({}),/valid report UUID/i,
+  'A plain object with required fields missing must fail validation');
 for(const invalid of [
   {report_id:'not-a-uuid'},
   {report_id:'00000000-0000-0000-0000-000000000000'},
