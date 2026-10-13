@@ -25,3 +25,18 @@ La prueba `tests/browser-smoke.mjs` ya no registra manualmente una PWA en la bet
 **Restricciones de proyecto:** Cloudflare/Production no desplegados; `origencultural.com` no modificado; PR #3 DRAFT; no hay cargos ni nuevos contratos. Los problemas P0 #5, #8 y #12 permanecen abiertos.
 
 Referencias: https://supabase.com/docs/guides/database/postgres/row-level-security y https://supabase.com/docs/guides/database/functions
+
+## Capa de autorización del servidor (no desplegada)
+
+Se añadió `server/protected-moderation-review.mjs`, que utiliza el validador anterior `server/moderation-review-contract.mjs`. No está en el navegador ni tiene un servicio HTTP activo. Su método `record`:
+
+- Solo recibe una petición con cabecera Bearer y datos de recomendación estrictamente permitidos.
+- Delegaría la verificación del token al servicio de identidad de confianza `verifyAccessToken`. **Una cadena con forma de JWT nunca se considera autenticada por sí sola.**
+- Deriva el ID del revisor de la respuesta autenticada; rechaza usuarios anónimos y entradas que intentan escoger identidades o modificar publicaciones.
+- Llama a la interfaz interna `recordIfActiveAdmin`, cuyo contrato exige **una sola transacción** para revalidar el rol administrativo desde DB, comprobar la existencia del reporte y registrar el evento con idempotencia; esto evita separar chequeos y escrituras susceptibles a cambios de rol.
+- No devuelve el texto de la denuncia ni de la explicación al cliente; solo un recibo mínimo `{recorded:true,eventId}`.
+- No contiene credenciales, conexión a Supabase, SQL privilegiado, función Edge desplegada ni permisos para sanciones o eliminar archivos.
+
+**Importante:** `recordIfActiveAdmin` y la verificación Auth real **aún no están implementados**; la interfaz con dependencias simuladas no demuestra una autorización verdadera. No se debe conectar a la interfaz de usuarios antes de revisar esos adaptadores, desplegar solo en Staging, y completar un test de revocación de rol y concurrencia en una transacción real.
+
+Se añadió `tests/protected-moderation-review.mjs` al Quality Gate. **#468 SUCCESS**, con entradas sintéticas sin usuarios, contenido o escrituras reales. Hito 9 **incompleto**.
