@@ -13,13 +13,13 @@ const visual = {
   ...common, mode: AUDIT_MODES.VISUAL,
   html: '<body><div id="staging-preview-banner">Vista previa interna</div></body>',
   backendJS: backend('https://unconfigured-staging.invalid', 'sb_publishable_disabled_staging_preview'),
-  configJS: 'window.ORIGEN_CONFIG = {"turnstileSiteKey":"","stagingBackendConnected":false};',
+  configJS: 'window.ORIGEN_CONFIG = {"turnstileSiteKey":"","stagingBackendConnected":false,"disableServiceWorker":true};',
   csp: common.csp + " connect-src 'self' https://cdn.jsdelivr.net; frame-src 'none';"
 };
 const auth = {
   ...common, mode: AUDIT_MODES.AUTH,
   backendJS: backend('https://egujmptgnrpajgfpjjxu.supabase.co','sb_publishable_staging_unit_test_only_123'),
-  configJS: 'window.ORIGEN_CONFIG = {"turnstileSiteKey":"0x4AAAA_unit_test_only","stagingBackendConnected":true};',
+  configJS: 'window.ORIGEN_CONFIG = {"turnstileSiteKey":"0x4AAAA_unit_test_only","stagingBackendConnected":true,"disableServiceWorker":true};',
   csp: common.csp + " script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com;"
 };
 const failed = sample => inspectBundle(sample).filter(x => !x.ok).map(x => x.name);
@@ -30,6 +30,8 @@ assert.notDeepEqual(failed({...auth,mode:AUDIT_MODES.VISUAL}), [], 'Connected Au
 assert.ok(failed({...visual,html:'<body></body>'}).some(x => /warning/.test(x)));
 assert.ok(failed({...visual,csp:visual.csp + ' https://*.supabase.co'}).some(x => /CSP/.test(x)));
 assert.ok(failed({...visual,robots:''}).some(x => /noindex/.test(x)));
+assert.ok(failed({...visual,configJS:visual.configJS.replace('"disableServiceWorker":true','"disableServiceWorker":false')}).some(x => /offline PWA/.test(x)));
+assert.ok(failed({...auth,configJS:auth.configJS.replace('"disableServiceWorker":true','')}).some(x => /offline PWA/.test(x)));
 assert.ok(failed({...visual,configJS:visual.configJS.replace('"turnstileSiteKey":""', '"turnstileSiteKey":"injected"')}).length>0);
 assert.ok(failed({...auth,configJS:auth.configJS.replace('0x4AAAA_unit_test_only','')}).length>0);
 assert.ok(failed({...auth,backendJS:backend('https://xwkjvoyicrrwjybjolld.supabase.co','sb_publishable_bad_key_123')}).length>0);
