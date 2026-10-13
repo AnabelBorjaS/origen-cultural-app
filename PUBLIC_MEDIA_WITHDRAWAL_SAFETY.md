@@ -123,3 +123,13 @@ El método `removeOwnMedia` ahora requiere que la respuesta de Storage incluya e
 Documentación de referencia: https://supabase.com/docs/guides/storage/cdn/smart-cdn y https://supabase.com/docs/guides/storage/cdn/fundamentals
 
 **No declara cerrado P0 #12 y no modifica Production.**
+
+## 10. Protección contra colisiones de nombres al subir medios (13 octubre de 2026)
+
+**Mejora integrada en el código de la beta, todavía sin pruebas reales con Storage.** En `supabase-client.js`, `upload()` ya no utiliza solamente `user-id/timestamp-nombre.ext`; ahora exige aleatoriedad criptográfica del navegador (`crypto.randomUUID()` o, para navegadores antiguos compatibles, `crypto.getRandomValues()`) para generar un segmento aleatorio de 128 bits por archivo: `user-id/timestamp-nonce-nombre.ext`. Se mantienen la carpeta de propiedad del usuario, la extensión del MIME permitido, el filtro del nombre, el rechazo de archivos grandes y `upsert:false`.
+
+Esto evita colisiones de nombre en subidas simultáneas desde una misma cuenta, incluso con la misma hora y el mismo nombre. Si un navegador no dispone de generación aleatoria segura, la subida falla expresamente antes de escribir a Storage; no se utiliza una ruta predecible como alternativa. El código existente de análisis de URLs gestionadas puede seguir leyendo los archivos con nombres antiguos. El límite del nombre amigable es 64 caracteres.
+
+**Limitación importante:** los buckets de medios siguen siendo **públicos**; añadir un segmento aleatorio a la ruta no es cifrado, autorización ni revocación de acceso. Las URLs publicadas pueden copiarse y continuarán accesibles hasta que se cumplan las condiciones de borrado/retirada. Se mantienen íntegros los bloqueos de permisos, moderación, derechos culturales, pruebas con dos cuentas y retirada real de Storage/CDN.
+
+Pruebas sintéticas añadidas a `tests/cultural-media-cache.mjs`: dos archivos del mismo nombre en el mismo milisegundo obtienen rutas distintas, el modo seguro alternativo `getRandomValues()` funciona, y sin Web Crypto no se solicita ninguna escritura. **Quality Gate #494: aprobado.** No se ejecutaron subidas reales, ni cambios al bucket ni permisos de Supabase, y `main`/Production permanecen intactos.
