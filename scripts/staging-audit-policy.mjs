@@ -13,17 +13,20 @@ export function selectAuditMode(env = process.env) {
   return mode;
 }
 
-// Cloudflare Access may deny directly or redirect to its own login.
-// A generic redirect, an unprotected 200, or an unrelated 404 is not proof.
+// A generic 401/403 can come from Pages, WAF or an application endpoint;
+// it does NOT prove Cloudflare Access is guarding a Pages hostname. Count
+// only an actual redirect to Cloudflare Access's login route. Sites that
+// intentionally return direct 401/403 require a separate manual Access
+// dashboard/policy check; the automated audit must fail closed.
 export function anonymousDenied(status, location = '', base = 'https://origen-cultural-staging.pages.dev') {
-  if (status === 401 || status === 403) return true;
   if (![302, 303, 307, 308].includes(status) || !location) return false;
   let target;
   try { target = new URL(location, base); } catch { return false; }
-  return target.protocol === 'https:' && (
-    (target.origin === new URL(base).origin && target.pathname.startsWith('/cdn-cgi/access/')) ||
-    (target.hostname.endsWith('.cloudflareaccess.com') && target.hostname !== 'cloudflareaccess.com' &&
-      target.pathname.startsWith('/cdn-cgi/access/'))
+  const isAccessLogin = /^\/cdn-cgi\/access\/login(?:\/|$)/.test(target.pathname);
+  return target.protocol === 'https:' && isAccessLogin && (
+    target.origin === new URL(base).origin ||
+    (target.hostname.endsWith('.cloudflareaccess.com') &&
+      target.hostname !== 'cloudflareaccess.com')
   );
 }
 
