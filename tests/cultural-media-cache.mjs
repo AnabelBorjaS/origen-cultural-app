@@ -142,7 +142,7 @@ const byteWindow={
 vm.runInNewContext(source,{window:byteWindow,File:SyntheticFile,URL,console},{filename:'supabase-client.js crypto bytes'});
 byteWindow.ORIGEN_API.cache.session={user:{id:A}};
 await byteWindow.ORIGEN_API.upload('post-media',pic,'fallback');
-assert.match(uploads.at(-1).path,/-a5{16}-fallback\.webp$/,
+assert.match(uploads.at(-1).path,/-(?:a5){16}-fallback\.webp$/,
   'Older secure browsers must use cryptographic random bytes, not Date.now alone');
 
 console.log('PASS Unique cryptographic media paths prevent same-millisecond name collisions.');
