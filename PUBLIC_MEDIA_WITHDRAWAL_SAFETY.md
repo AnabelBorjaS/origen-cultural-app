@@ -109,3 +109,17 @@ El método `removeOwnMedia` ahora requiere que la respuesta de Storage incluya e
 **Evidencia:** Quality Gate #432 SUCCESS, con cuatro mensajes de prueba PASS en el log. CodeQL #236 y Browser QA #295 deben verificarse por separado en GitHub Actions antes de dar la batería completa por cerrada.
 
 **Limitación explícita:** un fallo durante la **propia subida a Storage** también puede dejar objetos cuya respuesta no llegó al navegador; todavía no existe reconciliación server-side. Preservar medios frente a una operación ambigua protege contra una pérdida accidental, pero puede dejar objetos huérfanos y no sustituye un inventario privado, limpieza supervisada o procedimiento administrativo. El P0 #12 continúa abierto hasta probarlo con Storage real, cuentas ficticias y moderación protegida.
+
+## 9. Menor retención en caché del navegador para medios culturales (13 octubre 2026)
+
+**Problema:** el cliente tenía `cacheControl: '3600'` para todas las subidas, incluidas las fotos y videos de `post-media`. Cuando se retira una publicación cultural, un navegador que ya descargó esos archivos puede conservarlos hasta que venza ese tiempo de caché. Suprimir el post o el objeto en Storage no elimina copias externas y no garantiza purgar cachés de navegadores.
+
+**Mitigación implementada únicamente en la beta PR #3:** `supabase-client.js` configura `cacheControl: '60'` para **nuevas** imágenes o videos de `post-media`; conserva `3600` segundos para `avatars` y `covers`. No modifica el `cacheControl` de archivos existentes. La elección prioriza posibles retiradas sensibles frente a la máxima reutilización local del archivo.
+
+**Prueba automática:** `tests/cultural-media-cache.mjs` simula la subida sin red y verifica 60 segundos para foto/video cultural, 3600 para perfil, `upsert:false`, rutas por propietario, rechazo de tipos/tamaños incorrectos y comportamiento ante fallos de Storage. Se ejecuta dentro de `npm run check`; Quality Gate **#447 SUCCESS** sobre commit `46eca8677adbb13731a12af958710fbc5cf76104`.
+
+**Límites y costos:** esta duración es una directiva de caché para el navegador, **no** una garantía de que el objeto sea inaccesible 60 segundos después de retirarlo; otros niveles de CDN, dispositivos, capturas y copias externas pueden seguir conservándolo. La reducción del caché puede elevar solicitudes/egress en un piloto de uso intenso; supervisar el consumo del plan gratuito sin añadir servicios de pago. Antes de recibir material restringido culturalmente siguen siendo esenciales la decisión bucket público/privado, permiso comunitario, operaciones humanas de retirada, auditoría de Storage/CDN y pruebas con cuentas sintéticas.
+
+Documentación de referencia: https://supabase.com/docs/guides/storage/cdn/smart-cdn y https://supabase.com/docs/guides/storage/cdn/fundamentals
+
+**No declara cerrado P0 #12 y no modifica Production.**
