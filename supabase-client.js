@@ -756,6 +756,15 @@
       cacheControl: bucket === 'post-media' ? '60' : '3600'
     });
     if (error) throw error;
+    // A long upload can finish after sign-out or a switch to another user.
+    // Never hand account A's now-public media URL to account B's composer.
+    // The object may have been written already: do NOT claim it was removed
+    // and do not try to delete it using B's session. This needs a server-side
+    // orphan-cleanup audit before opening the pilot.
+    if (cache.session?.user?.id !== uid) {
+      console.warn('ORIGEN media uploaded but the account changed before completion; orphan cleanup may be required.');
+      throw new Error('La sesión cambió durante la subida. El archivo podría seguir almacenado; solicita su revisión o eliminación a info.origencultural@gmail.com.');
+    }
     const { data } = client.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   }
