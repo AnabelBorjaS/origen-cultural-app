@@ -1054,6 +1054,27 @@ async function moderationInboxBrowserChecks() {
         check(state.reads === 1 && state.expected === '77777777-7777-4777-8777-777777777777',
           'Admin inbox must request reports with the exact signed-in account identity');
         check(state.injected === 0, 'Malicious complaint markup must not execute');
+
+        // Same account ID, revoked admin role: previously the Auth event only
+        // updated navigation, leaving report text in the old DOM. The private
+        // panel must disappear as soon as the changed role is restored.
+        await page.evaluate(() => {
+          const api = window.ORIGEN_API;
+          const oldRestore = api.restoreSession;
+          api.cache.profile.role = 'explorer';
+          api.restoreSession = async () => ({ ...(await oldRestore()), role:'explorer' });
+          window.dispatchEvent(new Event('origen-auth-change'));
+        });
+        await page.waitForFunction(() =>
+          (document.querySelector('#main-content h1')?.textContent || '').includes('Acceso restringido') &&
+          !document.querySelector('#moderation-queue'),
+          null, {timeout: 12000});
+        const afterDemotion = await page.locator('#main-content').innerText();
+        check(!afterDemotion.includes('synthetic-post-reference') &&
+              !afterDemotion.includes('Review requested'),
+          'Revoking admin privilege on same account must immediately erase private report DOM');
+        check((await page.evaluate(() => window.__moderationBrowserQA.reads)) === 1,
+          'Role demotion must never issue another private moderation query');
       } else {
         await page.locator('#main-content h1').waitFor({ timeout: 15000 });
         check((await page.locator('#main-content h1').innerText()).includes('Acceso restringido'),
