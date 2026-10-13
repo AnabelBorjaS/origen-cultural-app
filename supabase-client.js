@@ -721,6 +721,12 @@
   async function upload(bucket, file, nameHint='media') {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión.');
+    // Defense in depth only: users can call Storage APIs without this page.
+    // Supabase Storage RLS MUST separately restrict pre-publication media.
+    if (bucket === 'post-media' &&
+        (cache.profile?.id !== uid || cache.profile?.role !== 'creator')) {
+      throw new Error('Solo un Agente Cultural autorizado puede subir contenido al feed.');
+    }
     validateUpload(bucket, file);
     const extByMime = {
       'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp',
