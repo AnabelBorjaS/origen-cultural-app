@@ -39,6 +39,7 @@ vm.runInNewContext(source,{window,File:FakeFile,URL,console:{warn:v=>warning.pus
 const api=window.ORIGEN_API;
 const photo=new FakeFile();
 api.cache.session={user:{id:A}};
+api.cache.profile={id:A,role:'creator'};
 
 // The object may have been written by the first account, but the new account
 // must not receive a usable URL or any false claim of Storage deletion.
@@ -46,6 +47,7 @@ const stale=api.upload('post-media',photo,'switch');
 assert.equal(uploads.length,1);
 assert.equal(uploads[0].path.startsWith(A+'/'),true);
 api.cache.session={user:{id:B}};
+api.cache.profile={id:B,role:'creator'};
 pending.shift()({data:{path:uploads[0].path},error:null});
 await assert.rejects(stale,/sesión cambió durante la subida/i);
 assert.equal(reads.length,0,'No old-account media URL may be returned after switching');
@@ -54,6 +56,7 @@ assert.ok(!warning[0].includes(A),'Avoid exposing account identifiers in logs');
 
 // Sign-out during the upload has the same fail-closed behavior.
 api.cache.session={user:{id:A}};
+api.cache.profile={id:A,role:'creator'};
 const signOut=api.upload('post-media',photo,'logout');
 assert.equal(uploads.length,2);
 api.cache.session=null;
@@ -64,6 +67,7 @@ assert.equal(warning.length,2);
 
 // Normal session remains supported, with a unique, owner-scoped object path.
 api.cache.session={user:{id:B}};
+api.cache.profile={id:B,role:'creator'};
 const normal=api.upload('post-media',photo,'safe');
 assert.equal(uploads.length,3);
 assert.equal(uploads[2].path.startsWith(B+'/'),true);
