@@ -47,11 +47,15 @@ assert.match(client, /const PROJECT_URL = ["']https:\/\/unconfigured-staging\.in
 assert.match(client, /const PUBLISHABLE_KEY = ["']sb_publishable_disabled_staging_preview["'];/);
 assert.ok(!client.includes('xwkjvoyicrrwjybjolld.supabase.co'), 'Must not reference Production backend');
 assert.ok(runtime.includes('"stagingBackendConnected":false'));
+assert.ok(runtime.includes('"disableServiceWorker":true'),
+  'Private visual preview must disable offline PWA caches');
 assert.ok(runtime.includes('"turnstileSiteKey":""'));
 assert.ok(index.includes('id="staging-preview-banner"'));
 assert.ok(/Content-Security-Policy:.*connect-src 'self' https:\/\/cdn\.jsdelivr\.net;/.test(headers));
 assert.ok(!headers.includes('supabase.co'), 'CSP must never allow a Supabase endpoint');
 assert.ok(!headers.includes('challenges.cloudflare.com'), 'No live account CAPTCHAs');
 assert.ok(headers.includes('X-Robots-Tag: noindex'));
+assert.ok(headers.includes('Cache-Control: no-store'),
+  'Cloudflare visual preview must not cache protected HTML/assets');
 assert.ok(!headers.includes("frame-src https://challenges.cloudflare.com"));
 console.log('✓ Browser visual demo permits globe CDN while blocking Auth, uploads and production endpoints');
