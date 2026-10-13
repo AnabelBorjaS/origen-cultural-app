@@ -924,12 +924,14 @@
         <a href="#explorar"  data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
         <a href="#mundo"     data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
         ${user.accountType === 'creator' ? `<a href="#crear" data-route-link="crear">${es ? 'Crear' : 'Create'}</a>` : ''}
-        <a href="#guardados" data-route-link="guardados">${es ? 'Guardados' : 'Saved'}</a>`;
+        <a href="#guardados" data-route-link="guardados">${es ? 'Guardados' : 'Saved'}</a>
+        ${user.role === 'admin' ? `<a href="#moderacion" data-route-link="moderacion">${es ? 'Moderación' : 'Moderation'}</a>` : ''}`;
       if (dDrawer) dDrawer.innerHTML = `
         <a href="#feed">Feed</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
         <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
         ${user.accountType === 'creator' ? `<a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>` : ''}
-        <a href="#guardados">${es ? 'Guardados' : 'Saved'}</a><a href="#mi-perfil">${es ? 'Mi perfil' : 'My profile'}</a>`;
+        <a href="#guardados">${es ? 'Guardados' : 'Saved'}</a><a href="#mi-perfil">${es ? 'Mi perfil' : 'My profile'}</a>
+        ${user.role === 'admin' ? `<a href="#moderacion">${es ? 'Moderación' : 'Moderation'}</a>` : ''}`;
       if (dBottom) dBottom.innerHTML = user.accountType === 'creator'
         ? `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
             <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
@@ -1969,6 +1971,92 @@
   function currentRoute() { return location.hash.replace(/^#\/?/, '') || (isAuth() ? 'feed' : 'inicio'); }
   function go(route)       { location.hash = '#' + route; }
 
+  // Restricted moderation inbox: READ ONLY until a reviewed, auditable
+  // moderator-decision service exists. Supabase RLS remains authoritative.
+  function moderationQueueView() {
+    const es = state.lang === 'es';
+    if (!state.authReady) {
+      return `<section class="page-container" role="status">${es ? 'Cargando sesión…' : 'Loading session…'}</section>`;
+    }
+    if (!me() || me()?.role !== 'admin') {
+      return `<section class="page-container"><h1>${es ? 'Acceso restringido' : 'Restricted access'}</h1>
+        <p>${es ? 'Esta sección está disponible únicamente para moderadores autorizados.' :
+          'This section is available only to authorised moderators.'}</p>
+        <a href="#inicio">${es ? 'Volver al inicio' : 'Back to home'}</a></section>`;
+    }
+    return `<section class="page-container" aria-labelledby="moderation-queue-title">
+      <p class="eyebrow">${es ? 'SEGURIDAD Y COMUNIDAD' : 'SAFETY & COMMUNITY'}</p>
+      <h1 id="moderation-queue-title">${es ? 'Reportes para revisión' : 'Reports for review'}</h1>
+      <p>${es
+        ? 'Bandeja privada de solo lectura, limitada a los 50 reportes más recientes. No envía avisos ni aplica sanciones.'
+        : 'Private read-only inbox, limited to the 50 most recent reports. It does not notify users or apply sanctions.'}</p>
+      <p>${es
+        ? 'Los datos pueden ser sensibles. No los compartas fuera del proceso de moderación.'
+        : 'Reports may contain sensitive information. Do not share them outside moderation.'}</p>
+      <div id="moderation-queue" aria-live="polite" aria-busy="true"></div>
+    </section>`;
+  }
+
+  async function bindModerationQueue() {
+    const root = document.getElementById('moderation-queue');
+    const uid = me()?.id || null;
+    if (!root || !uid || me()?.role !== 'admin') return;
+    const es = state.lang === 'es';
+    root.textContent = es ? 'Consultando reportes…' : 'Loading reports…';
+    try {
+      const reports = await window.ORIGEN_API.listModerationReports(uid);
+      if (me()?.id !== uid || me()?.role !== 'admin' ||
+          currentRoute() !== 'moderacion' || !root.isConnected) return;
+      root.replaceChildren();
+      if (!reports.length) {
+        root.textContent = es ? 'No hay reportes para mostrar.' : 'No reports to display.';
+        return;
+      }
+      for (const report of reports) {
+        const item = document.createElement('article');
+        item.className = 'card';
+        item.style.marginBlock = '16px';
+        item.style.padding = '20px';
+
+        const title = document.createElement('h2');
+        title.textContent = String(report.reason || (es ? 'Sin motivo' : 'No reason'));
+        item.appendChild(title);
+
+        const metadata = document.createElement('p');
+        metadata.textContent = [
+          String(report.status || ''),
+          String(report.target_type || ''),
+          String(report.target_id || ''),
+          String(report.created_at || '')
+        ].join(' · ');
+        metadata.style.overflowWrap = 'anywhere';
+        item.appendChild(metadata);
+
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = es ? 'Ver contexto reportado' : 'View report context';
+        details.appendChild(summary);
+        const content = document.createElement('p');
+        // Untrusted user-submitted details MUST remain inert text, not HTML.
+        content.textContent = String(report.details || (es ? 'Sin contexto adicional.' : 'No additional context.'));
+        content.style.whiteSpace = 'pre-wrap';
+        content.style.overflowWrap = 'anywhere';
+        details.appendChild(content);
+        item.appendChild(details);
+        root.appendChild(item);
+      }
+    } catch (_) {
+      if (me()?.id !== uid || currentRoute() !== 'moderacion' || !root.isConnected) return;
+      root.textContent = es
+        ? 'No fue posible consultar los reportes. Verifica tu sesión y permisos.'
+        : 'Could not load reports. Check your session and permissions.';
+    } finally {
+      if (me()?.id === uid && currentRoute() === 'moderacion' && root.isConnected) {
+        root.setAttribute('aria-busy', 'false');
+      }
+    }
+  }
+
   let _prevRoute = '';
 
   function render(route, scroll = true) {
@@ -2003,6 +2091,7 @@
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
     else if (route === 'confianza')                html = trustCenterView();
+    else if (route === 'moderacion')               html = moderationQueueView();
     else if (route === 'solicitar-revision' || route.startsWith('solicitar-revision/')) html = rightsRequestView(route);
     else                                          html = isAuth() ? feedView() : landingView();
 
@@ -2030,6 +2119,7 @@
     if (route === 'restablecer')   bindResetPassword();
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
+    if (route === 'moderacion')    bindModerationQueue();
     if (route === 'mundo')         bindMundo();
     if (route === 'inicio')        bindLanding();
     bindFollowButtons();
