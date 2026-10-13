@@ -35,3 +35,14 @@ Para publicar realmente necesitamos **una sesión o conexión autorizada a la cu
 - https://developers.cloudflare.com/pages/get-started/direct-upload/
 - https://developers.cloudflare.com/pages/configuration/preview-deployments/
 - https://developers.cloudflare.com/pages/platform/known-issues/#enable-access-on-your-pagesdev-domain
+
+## Auditoría de la URL protegida — actualización 13 octubre 2026
+
+El auditor `npm run audit:staging` ahora separa explícitamente los dos tipos de revisión:
+
+- **Solo vista visual:** `ORIGEN_STAGING_AUDIT_MODE=visual-only`. Se exige banner visible, cliente desconectado del backend, sin widget de Turnstile, CSP sin orígenes Supabase/Turnstile y `X-Robots-Tag: noindex`. Estas verificaciones **no** sirven como prueba de Auth, RLS o consentimientos reales.
+- **Pruebas con cuentas (modo predeterminado):** `ORIGEN_STAGING_AUDIT_MODE=auth-staging`. Se exige el proyecto Supabase Staging autorizado y el sitio público de Turnstile en configuración y CSP. Nunca utilizar este modo en un paquete de solo demostración.
+
+**Para ambos modos:** el auditor requiere un Cloudflare Access Service Token exclusivo de pruebas, suministrado mediante variables/secretos cifrados, y comprueba sin credenciales que la portada, `index.html`, `app.js`, `supabase-client.js` y `runtime-config.js` devuelvan rechazo o redirección legítima a Cloudflare Access. No valida un despliegue público sin restricciones como si fuese una beta privada. Auditar **por separado** dominio base y alias/preview de despliegue, pues un resultado PASS en una URL no certifica las demás.
+
+El workflow `ORIGEN Staging Audit` ahora ofrece una selección `audit_mode`, pero su ejecución manual sigue dependiendo de la disponibilidad de `workflow_dispatch` en la rama por defecto; no fusionar el PR ni desplegar Production solo para activar el botón. Mantener `NO-GO` hasta que exista URL HTTPS protegida y puedan comprobarse los recorridos funcionales.
