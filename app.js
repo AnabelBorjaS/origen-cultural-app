@@ -2884,6 +2884,11 @@
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
       const uploaded = [];
+      // A failed upload before any DB request is safe to clean up. Once a
+      // cultural post INSERT is attempted, an interrupted network response
+      // cannot prove that the server did not commit the post. Preserve media
+      // rather than risk deleting files attached to a successfully saved story.
+      let postInsertAttempted = false;
       const filesToUpload = [...(state.createData.files || [])];
       try {
         for (let i = 0; i < filesToUpload.length; i++) {
@@ -2891,6 +2896,7 @@
           uploaded.push(await window.ORIGEN_API.upload('post-media', filesToUpload[i], `post-${i+1}`));
         }
         if (me()?.id !== user.id) throw new Error('La sesión cambió; publicación cancelada antes de enviarse.');
+        postInsertAttempted = true;
         await window.ORIGEN_API.createPost({
           type: state.createData.type,
           media: uploaded,
@@ -2909,15 +2915,35 @@
         showToast('¡Publicación creada!');
         go('feed');
       } catch (error) {
-        if (uploaded.length) {
-          Promise.allSettled(uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))).then(results => {
+        if (!postInsertAttempted) {
+          // The database write has NOT started; newly uploaded files are
+          // unattached. Wait for cleanup before telling the user its status.
+          if (uploaded.length) {
+            const results = await Promise.allSettled(
+              uploaded.map(url => window.ORIGEN_API.removeOwnMedia(url))
+            );
             if (results.some(result => result.status !== 'fulfilled' || result.value !== true)) {
-              console.warn('ORIGEN post upload cleanup incomplete after failed post creation.');
+              console.warn('ORIGEN post upload cleanup incomplete before post insert.');
             }
-          });
+          }
+          showToast(error.message || 'No pudimos crear la publicación.');
+          if (submit) { submit.disabled = false; submit.textContent = 'Publicar →'; }
+        } else {
+          // A database error or lost response does not always prove that an
+          // INSERT was not committed. Never delete uploaded cultural media.
+          // Stop an automatic retry, which could create a duplicate story.
+          const warning = state.lang === 'es'
+            ? 'No pudimos confirmar si tu publicación se guardó. No hemos borrado las fotos o videos. Revisa tu feed antes de volver a intentarlo.'
+            : 'We could not confirm whether your post was saved. We have not deleted your photos or videos. Check your feed before trying again.';
+          const inline = document.getElementById('post-safety-error');
+          if (inline) { inline.hidden = false; inline.textContent = warning; }
+          console.warn('ORIGEN post insert outcome uncertain; uploaded media preserved for review.');
+          showToast(warning);
+          if (submit) {
+            submit.disabled = true;
+            submit.textContent = state.lang === 'es' ? 'Revisa tu feed' : 'Check your feed';
+          }
         }
-        showToast(error.message || 'No pudimos crear la publicación.');
-        if (submit) { submit.disabled = false; submit.textContent = 'Publicar →'; }
       }
     });
   }
