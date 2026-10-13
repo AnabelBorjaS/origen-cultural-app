@@ -622,6 +622,32 @@
     return data;
   }
 
+  // Read-only moderator inbox. Real authority is the existing Supabase RLS
+  // owner/admin SELECT policy; this browser role check is only defense in depth.
+  // Do not fetch reporters' identities or expose any write/decision action here.
+  async function listModerationReports(expectedUserId = null) {
+    const uid = cache.session?.user?.id || null;
+    if (!uid || (expectedUserId && expectedUserId !== uid) || cache.profile?.id !== uid ||
+        cache.profile?.role !== 'admin') {
+      throw new Error('Solo una cuenta administradora autorizada puede revisar reportes.');
+    }
+    const { data, error } = await client.from('moderation_reports')
+      .select('id,target_type,target_id,reason,details,status,created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    // A pending read must never be displayed after switching accounts.
+    if (cache.session?.user?.id !== uid || cache.profile?.id !== uid || cache.profile?.role !== 'admin') {
+      throw new Error('La sesión cambió durante la lectura de los reportes.');
+    }
+    // Return a plain, fixed-shape copy. Do not expose reporter_user_id even
+    // if a future server query accidentally returns it.
+    return (data || []).map(r => ({
+      id: r.id, target_type: r.target_type, target_id: r.target_id,
+      reason: r.reason, details: r.details, status: r.status, created_at: r.created_at
+    }));
+  }
+
   const UPLOAD_RULES = {
     avatars: {
       maxBytes: 5 * 1024 * 1024,
@@ -742,6 +768,6 @@
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
     listPosts, loadMorePosts, getPublicPost, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
-    submitClaim, report, upload, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
+    submitClaim, report, listModerationReports, upload, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
   };
 })();
