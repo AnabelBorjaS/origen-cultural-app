@@ -786,20 +786,23 @@ window.MundoCultural = (() => {
     _geoData = geo;
 
     const points = getCreatorPoints();
+    const territoryLabels = Object.values(CULTURAL_DB).map(d => ({
+      lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
+    }));
 
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
       .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
       .lineHoverPrecision(0)
-      .atmosphereColor('rgba(200,169,126,0.25)')
-      .atmosphereAltitude(0.15)
+      .atmosphereColor('rgba(200,169,126,0.58)')
+      .atmosphereAltitude(0.20)
       .polygonsData(_geoData)
       .polygonAltitude(altitude)
       .polygonCapColor(capColor)
       .polygonSideColor(() => 'rgba(200,169,126,0.08)')
-      .polygonStrokeColor(() => '#2a2a2a')
+      .polygonStrokeColor(() => 'rgba(255,255,255,0.18)')
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
@@ -831,6 +834,18 @@ window.MundoCultural = (() => {
       .pointColor('color')
       .pointLabel(d => `<div class="globe-tooltip">🏛 ${d.label}</div>`)
       .onPointClick(d => {
+        if (d.countryKey) selectCountry(d.countryKey);
+      })
+      .labelsData(territoryLabels)
+      .labelLat('lat')
+      .labelLng('lng')
+      .labelText('text')
+      .labelColor(() => '#F3E4CF')
+      .labelSize(0.72)
+      .labelDotRadius(0.18)
+      .labelDotOrientation(() => 'bottom')
+      .labelAltitude(0.035)
+      .onLabelClick(d => {
         if (d.countryKey) selectCountry(d.countryKey);
       })
       (el);
@@ -1084,20 +1099,23 @@ window.HeroGlobe = (() => {
       if (_destroyed) return;
       _geoData = geo;
       container.innerHTML = '';
+      const territoryLabels = Object.values(getDB()).map(d => ({
+        lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
+      }));
 
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
         .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
         .lineHoverPrecision(0)
-        .atmosphereColor('rgba(200,169,126,0.30)')
-        .atmosphereAltitude(0.14)
+        .atmosphereColor('rgba(200,169,126,0.58)')
+        .atmosphereAltitude(0.20)
         .polygonsData(_geoData)
         .polygonAltitude(hAlt)
         .polygonCapColor(hCap)
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
-        .polygonStrokeColor(() => '#1f1f1f')
+        .polygonStrokeColor(() => 'rgba(255,255,255,0.18)')
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
@@ -1121,6 +1139,24 @@ window.HeroGlobe = (() => {
           } else {
             hidePopup();
           }
+          _globe.controls().autoRotate = false;
+          _rotating = false;
+          _updatePauseBtn();
+        })
+        .labelsData(territoryLabels)
+        .labelLat('lat')
+        .labelLng('lng')
+        .labelText('text')
+        .labelColor(() => '#F3E4CF')
+        .labelSize(0.68)
+        .labelDotRadius(0.16)
+        .labelDotOrientation(() => 'bottom')
+        .labelAltitude(0.03)
+        .onLabelClick(d => {
+          if (!d.countryKey) return;
+          const db = getDB();
+          showPopup(d.countryKey);
+          _globe.pointOfView({ lat: db[d.countryKey].lat, lng: db[d.countryKey].lng, altitude: 2.0 }, 700);
           _globe.controls().autoRotate = false;
           _rotating = false;
           _updatePauseBtn();
