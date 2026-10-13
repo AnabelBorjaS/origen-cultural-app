@@ -77,3 +77,11 @@ Para **Git integration** (no Direct Upload), se añadió `npm run audit:staging:
 Los archivos `scripts/staging-coverage.mjs`, `scripts/audit-staging-coverage.mjs` y `tests/staging-coverage.mjs` son seguros sin despliegue; las pruebas CI de cobertura solo validan hosts/configuración y nunca contactan a Cloudflare.
 
 **Todavía no se ha realizado esta auditoría HTTPS:** no existe URL Pages verificada ni autorización Cloudflare conectada. Hito privado #7 **PENDIENTE**; `main`, `origencultural.com`, Production y suscripciones intactos.
+
+## Endurecimiento de la evidencia de Cloudflare Access — 13 octubre de 2026
+
+Un HTTP **401 o 403 genérico no demuestra** que Cloudflare Access proteja el sitio: podría proceder de un WAF, del origen o de un endpoint sin login. El auditor de ORIGEN se ha actualizado para considerar prueba automática de bloqueo solo una redirección HTTP 302/303/307/308 hacia una ruta real `/cdn-cgi/access/login` del mismo origen o del subdominio autenticador `*.cloudflareaccess.com`, siempre bajo HTTPS. Rechaza redirecciones a destinos externos, rutas de login fingidas y códigos de error genéricos.
+
+**Límite deliberado:** si una política Access devuelve directamente 401/403 (sin redirigir), la auditoría falla aunque exista protección real; no se debe relajar el control automáticamente. Revisar la configuración de Cloudflare Access y sus logs, comprobar anónimo/incógnito y actualizar el procedimiento solo mediante revisión de seguridad documentada. La comprobación del dashboard de las dos políticas (dominio raíz y wildcard de previews) continúa siendo obligatoria: incluso una redirección puede simularse desde otro componente.
+
+Pruebas: `tests/staging-audit-policy.mjs` incluye ahora negativos para 401/403, rutas incorrectas, hosts ajenos y redirecciones no HTTPS. **No representa una prueba en la URL desplegada** hasta disponer de un sitio Pages y un token de servicio de auditoría válidos.
