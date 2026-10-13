@@ -133,3 +133,13 @@ Esto evita colisiones de nombre en subidas simultáneas desde una misma cuenta, 
 **Limitación importante:** los buckets de medios siguen siendo **públicos**; añadir un segmento aleatorio a la ruta no es cifrado, autorización ni revocación de acceso. Las URLs publicadas pueden copiarse y continuarán accesibles hasta que se cumplan las condiciones de borrado/retirada. Se mantienen íntegros los bloqueos de permisos, moderación, derechos culturales, pruebas con dos cuentas y retirada real de Storage/CDN.
 
 Pruebas sintéticas añadidas a `tests/cultural-media-cache.mjs`: dos archivos del mismo nombre en el mismo milisegundo obtienen rutas distintas, el modo seguro alternativo `getRandomValues()` funciona, y sin Web Crypto no se solicita ninguna escritura. **Quality Gate #494: aprobado.** No se ejecutaron subidas reales, ni cambios al bucket ni permisos de Supabase, y `main`/Production permanecen intactos.
+
+## 11. Aislamiento de cuentas durante subidas en curso — 13 octubre de 2026
+
+En la beta, `upload()` guarda el ID de la cuenta que inicia la solicitud. Tras confirmar una escritura de Storage, **comprueba de nuevo la sesión** antes de devolver la URL pública al editor. Si el usuario cerró sesión o cambió a otra cuenta, no devuelve la URL ni permite que el editor de la nueva cuenta reutilice accidentalmente el medio anterior. Emite un aviso de operación incompleta, sin publicar el identificador del usuario ni la URL en los logs, y remite al contacto oficial para revisión.
+
+**Riesgo residual P0:** la respuesta de Storage puede llegar después de que se haya creado el objeto; abortar la devolución de la URL **no elimina el objeto**, y el código no debe intentar eliminarlo con las credenciales de otra cuenta. Se necesita inventario/limpieza segura de archivos huérfanos en un backend autorizado y pruebas de Storage y CDN reales. No afirmar que se borró un archivo cuya retirada no ha sido verificada.
+
+Las pruebas `tests/media-upload-account-isolation.mjs` ejecutan el cliente real con respuestas de Storage sintéticas retrasadas: cambio A→B, cierre de sesión, y éxito de la cuenta que permanece conectada. `npm run check` exige estas pruebas en cada Quality Gate. **Quality Gate #498 SUCCESS** sobre el código implementado; no se usaron usuarios, medios ni claves reales.
+
+**El bloqueo para el piloto NO se levanta.** El servicio de revisión administrativa, la trazabilidad de retirada, la protección de datos culturales y las pruebas finales de permisos continúan pendientes.
