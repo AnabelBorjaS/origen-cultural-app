@@ -51,6 +51,7 @@ record('Final URL remains HTTPS', home.url.startsWith('https://'), home.url);
 record('HTML content type', (home.headers.get('content-type') || '').includes('text/html'), home.headers.get('content-type') || '');
 record('Anti-framing header', (home.headers.get('x-frame-options') || '').toUpperCase() === 'DENY', home.headers.get('x-frame-options') || '');
 record('MIME sniffing disabled', (home.headers.get('x-content-type-options') || '').toLowerCase() === 'nosniff', home.headers.get('x-content-type-options') || '');
+record('Protected HTML forbids browser/offline caching', /\\bno-store\\b/i.test(home.headers.get('cache-control') || ''), home.headers.get('cache-control') || '');
 record('Referrer policy present', Boolean(home.headers.get('referrer-policy')), home.headers.get('referrer-policy') || '');
 record('Permissions policy present', Boolean(home.headers.get('permissions-policy')), home.headers.get('permissions-policy') || '');
 const csp = home.headers.get('content-security-policy') || '';
@@ -62,6 +63,9 @@ record('ORIGEN app shell present', html.includes('runtime-config.js') && html.in
 for (const file of ['runtime-config.js','app.js','supabase-client.js','styles.css','manifest.webmanifest','service-worker.js']) {
   const response = await get('/' + file);
   record(`Public runtime available: ${file}`, response.ok, String(response.status));
+  record(`Protected asset is not cacheable: ${file}`,
+    /\\bno-store\\b/i.test(response.headers.get('cache-control') || ''),
+    response.headers.get('cache-control') || '');
 }
 
 for (const forbidden of ['_headers','PROJECT_STATUS.md','SECURITY_BASELINE.md','schema.sql','package.json','STAGING_PLAN.md','.github/workflows/quality.yml']) {
