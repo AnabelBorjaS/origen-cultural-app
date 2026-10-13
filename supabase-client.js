@@ -706,7 +706,11 @@
     const { error } = await client.storage.from(bucket).upload(path, file, {
       upsert: false,
       contentType: file.type,
-      cacheControl: '3600'
+      // Cultural post media can be withdrawn: limit its browser cache to
+      // 60 seconds instead of the default hour. This mitigates stale local
+      // copies; it does NOT revoke third-party copies or guarantee CDN purge.
+      // Keep the longer cache for replaceable profile avatars/covers.
+      cacheControl: bucket === 'post-media' ? '60' : '3600'
     });
     if (error) throw error;
     const { data } = client.storage.from(bucket).getPublicUrl(path);
