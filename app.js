@@ -3527,12 +3527,22 @@
     const generation = ++authUiGeneration;
     try {
       const previousUid = state.user?.id || null;
+      const previousRole = state.user?.role || null;
       const refreshedUser = await window.ORIGEN_API?.restoreSession() || null;
       if (generation !== authUiGeneration) return;
 
       const nextUid = refreshedUser?.id || null;
-      if (previousUid && previousUid !== nextUid) clearAccountDrafts();
+      const nextRole = refreshedUser?.role || null;
+      const roleChanged = !!previousUid && previousUid === nextUid && previousRole !== nextRole;
+      if (previousUid && (previousUid !== nextUid || roleChanged)) clearAccountDrafts();
       state.user = refreshedUser;
+      if (roleChanged) {
+        // A reviewer can lose admin rights without switching account IDs.
+        // Immediately destroy the already-rendered private moderation inbox
+        // before any slower network cache refresh; updating navigation alone
+        // would leave confidential report text visible in the DOM.
+        render(currentRoute(), false);
+      }
       if (state.user) {
         await Promise.allSettled([
           window.ORIGEN_API?.ensureCreatorCulturalProfile(),
