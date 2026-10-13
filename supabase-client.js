@@ -417,9 +417,17 @@
     };
     const { data, error } = await client.from('cultural_posts').insert(row).select('*').single();
     if (error) throw error;
-    // A successful insert should not be reported as a failure just because
-    // the user switched accounts while the response was in flight.
-    if (cache.session?.user?.id === uid) await listPosts();
+    // The insert is already committed. A feed refresh is optional, and
+    // must NEVER turn a successful publication into a false failure: the
+    // caller may otherwise delete media that belongs to the saved post.
+    // As with account switching, a refresh error must not affect the result.
+    if (cache.session?.user?.id === uid) {
+      try {
+        await listPosts();
+      } catch (_) {
+        console.warn('ORIGEN feed refresh unavailable after confirmed post creation.');
+      }
+    }
     return data;
   }
 
