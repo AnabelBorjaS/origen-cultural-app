@@ -58,3 +58,22 @@ El bundle privado de ORIGEN incorpora dos defensas adicionales, **sin necesidad 
 **Importante:** esta defensa no garantiza retirar contenidos que una persona haya copiado, capturado, descargado o que ya estén guardados en su dispositivo. Tampoco convierte por sí misma una URL en privada: **Cloudflare Access sigue siendo obligatorio** sobre dominio base y previews; verificar siempre el rechazo desde una sesión anónima nueva. Sin despliegue real, `no-store` y Access en cabeceras siguen sin estar comprobados en HTTP externo.
 
 El alojamiento sigue sin activarse. No cambiar `main`, `origencultural.com`, datos reales o suscripciones; mantener Cloudflare Pages **Free / $0**.
+
+## Auditoría de cobertura de Access (13 octubre de 2026)
+
+La protección de previews en Cloudflare Pages no protege automáticamente el dominio raíz del proyecto. Además, los previews pueden tener un alias de rama y URL inmutable por hash (incluso cuando el alias se actualiza). Véase:
+- https://developers.cloudflare.com/pages/configuration/preview-deployments/
+- https://developers.cloudflare.com/pages/platform/known-issues/#enable-access-on-your-pagesdev-domain
+
+Para **Git integration** (no Direct Upload), se añadió `npm run audit:staging:coverage`. Requiere tres direcciones HTTPS reales y distintas; no inventar la URL de hash y no empezar si Cloudflare no ha sido configurado.
+
+1. Proteger por separado `origen-cultural-staging.pages.dev` y `*.origen-cultural-staging.pages.dev` con Cloudflare Access, según las instrucciones oficiales. Confirmar las políticas desde el panel Cloudflare.
+2. Configurar `ORIGEN_CF_ACCESS_CLIENT_ID` y `ORIGEN_CF_ACCESS_CLIENT_SECRET` **solo en entorno/secretos privados autorizados**, nunca en código fuente, argumentos de comandos, capturas ni chat. El token de servicio requiere una política Access Service Auth apropiada. Para una vista exclusivamente visual, seleccionar `ORIGEN_STAGING_AUDIT_MODE=visual-only`.
+3. Obtener en el Dashboard las URLs reales del proyecto raíz, el alias de esta rama beta y el preview inmutable con hash. Ejecutar:
+   `npm run audit:staging:coverage -- <URL_ROOT_REAL> <URL_ALIAS_REAL> <URL_HASH_REAL>`
+4. Cada URL ejecuta **por separado** el auditor existente `scripts/verify-staging.mjs` sobre HTML y activos, verificando acceso anónimo denegado, Service Auth permitido, CSP, backend aislado y `no-store`. Si una falla, toda la cobertura falla.
+5. Revisar además todas las políticas wildcard y los previews históricos. Aprobar una URL hash individual no acredita protección exhaustiva de enlaces inmutables anteriores.
+
+Los archivos `scripts/staging-coverage.mjs`, `scripts/audit-staging-coverage.mjs` y `tests/staging-coverage.mjs` son seguros sin despliegue; las pruebas CI de cobertura solo validan hosts/configuración y nunca contactan a Cloudflare.
+
+**Todavía no se ha realizado esta auditoría HTTPS:** no existe URL Pages verificada ni autorización Cloudflare conectada. Hito privado #7 **PENDIENTE**; `main`, `origencultural.com`, Production y suscripciones intactos.
