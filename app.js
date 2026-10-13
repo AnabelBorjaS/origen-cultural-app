@@ -3485,6 +3485,22 @@
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => {
+      // Staging is access-controlled: offline app-shell caches must not
+      // preserve a private preview after the browser leaves Cloudflare Access.
+      // Release builds set this flag explicitly; local/public source retains
+      // normal PWA registration when the flag is absent.
+      if (window.ORIGEN_CONFIG?.disableServiceWorker === true) {
+        navigator.serviceWorker.getRegistrations().then(registrations =>
+          Promise.all(registrations.map(registration => registration.unregister()))
+        ).catch(() => console.warn('[ORIGEN] Could not clear staging service workers.'));
+        if (window.caches) {
+          window.caches.keys().then(keys => Promise.all(
+            keys.filter(key => key.startsWith('origen-cultural-v'))
+              .map(key => window.caches.delete(key))
+          )).catch(() => console.warn('[ORIGEN] Could not clear staging offline caches.'));
+        }
+        return;
+      }
       navigator.serviceWorker.register('service-worker.js').catch(error => {
         console.warn('[ORIGEN] Service worker registration failed:', error);
       });
