@@ -40,6 +40,7 @@ export function inspectBundle({ mode, html = '', backendJS = '', configJS = '', 
   const checks = [
     report('No Production Supabase host in deployed client', !backendJS.includes(PROD)),
     report('No private keys in deployed client', !/sb_secret_|service_role/i.test(backendJS)),
+    report('Private staging disables offline PWA worker', configJS.includes('"disableServiceWorker":true')),
     report('CSP blocks framing and object embeds',
       csp.includes("frame-ancestors 'none'") && csp.includes("object-src 'none'"))
   ];
