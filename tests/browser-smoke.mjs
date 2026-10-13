@@ -988,6 +988,89 @@ async function sessionDraftIsolationChecks() {
   }
 }
 
+async function moderationInboxBrowserChecks() {
+  // Uses synthetic sessions and mocked reads, never user reports or live
+  // Supabase. The real DOM route and event binder execute in Chromium.
+  for (const role of ['explorer', 'admin']) {
+    const page = await browser.newPage({ viewport: { width: 1260, height: 840 } });
+    await page.addInitScript(({ role }) => {
+      const id = '77777777-7777-4777-8777-777777777777';
+      const fakeUser = {
+        id, email: 'moderation-qa@qa.invalid',
+        role, accountType: 'explorer', name: 'Synthetic Reviewer',
+        categories: [], links: [], location: 'Synthetic Territory'
+      };
+      window.__moderationBrowserQA = { reads: 0, expected: null, injected: 0 };
+      let currentApi;
+      Object.defineProperty(window, 'ORIGEN_API', {
+        configurable: true,
+        get() { return currentApi; },
+        set(api) {
+          currentApi = api;
+          api.cache.session = { user: { id, email: fakeUser.email } };
+          api.cache.profile = { id, role, display_name: fakeUser.name };
+          api.restoreSession = async () => fakeUser;
+          api.listCulturalProfiles = async () => [];
+          api.listPublicProfiles = async () => [];
+          api.listPosts = async () => [];
+          api.myFollows = async () => [];
+          api.myFavorites = async () => [];
+          api.loadPostInteractions = async () => [];
+          api.listModerationReports = async expected => {
+            window.__moderationBrowserQA.reads++;
+            window.__moderationBrowserQA.expected = expected;
+            return [{
+              id: 'synthetic-moderation-id',
+              target_type: 'post',
+              target_id: 'synthetic-post-reference',
+              reason: '<img src=x onerror=window.__moderationBrowserQA.injected++>',
+              details: '<script>window.__moderationBrowserQA.injected++</script>',
+              status: 'open',
+              created_at: '2026-10-13T00:00:00Z',
+              reporter_user_id: 'PRIVATE-ID-MUST-NOT-BE-RENDERED'
+            }];
+          };
+        }
+      });
+    }, { role });
+
+    try {
+      await page.goto(baseURL + '#moderacion', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      if (role === 'admin') {
+        await page.locator('#moderation-queue article').waitFor({ timeout: 15000 });
+        const html = await page.locator('#moderation-queue').innerHTML();
+        const content = await page.locator('#moderation-queue').innerText();
+        const details = page.locator('#moderation-queue details');
+        check(await details.count() === 1, 'Admin should see expandable report context without resolution actions');
+        check(await page.locator('#moderation-queue button, #moderation-queue form').count() === 0,
+          'Read-only moderation queue must not expose report resolution or deletion controls');
+        check(html.indexOf('<img ') < 0 && html.indexOf('<script>') < 0,
+          'Untrusted cultural report must be rendered as text, not executable HTML');
+        check(content.includes('synthetic-post-reference') && content.includes('open'),
+          'Admin can inspect the report target and status');
+        check(!html.includes('PRIVATE-ID-MUST-NOT-BE-RENDERED'),
+          'Moderator inbox must not reveal reporting account IDs');
+        const state = await page.evaluate(() => window.__moderationBrowserQA);
+        check(state.reads === 1 && state.expected === '77777777-7777-4777-8777-777777777777',
+          'Admin inbox must request reports with the exact signed-in account identity');
+        check(state.injected === 0, 'Malicious complaint markup must not execute');
+      } else {
+        await page.locator('#main-content h1').waitFor({ timeout: 15000 });
+        check((await page.locator('#main-content h1').innerText()).includes('Acceso restringido'),
+          'Non-admin visiting moderator route must see a restricted-access message');
+        check(await page.locator('#moderation-queue').count() === 0,
+          'Ordinary explorers must never mount private moderation inbox');
+        check((await page.evaluate(() => window.__moderationBrowserQA.reads)) === 0,
+          'Ordinary explorers must not request moderation records');
+      }
+    } catch (error) {
+      failures.push('Moderation browser role ' + role + ': ' + (error?.message || error));
+    } finally {
+      await page.close();
+    }
+  }
+}
+
 async function registrationUploadFailureChecks() {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
@@ -1079,6 +1162,7 @@ try {
   await publicProfileStatusChecks();
   await roleChecks('explorer');
   await roleChecks('creator');
+  await moderationInboxBrowserChecks();
   await registrationUploadFailureChecks();
   await profileMediaRollbackChecks();
   await sessionDraftIsolationChecks();
