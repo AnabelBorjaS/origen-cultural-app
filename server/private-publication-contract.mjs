@@ -10,7 +10,7 @@ export const POST_PURPOSES=Object.freeze([
 ]);
 const purposes=new Set(POST_PURPOSES);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const safeMediaPath=/^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/([0-9]{10,16}-[a-f0-9]{32}-[a-z0-9_-]{1,64}\.(jpg|png|webp|mp4|webm|mov))$/i;
+const safeMediaPath=/^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/([0-9]{10,16}-[a-f0-9]{32}-[a-z0-9_-]{1,64}\.(jpg|png|webp|mp4|webm|mov))$/;
 const allowed=new Set([
   'idempotency_key','title','description','type','media_paths','contentPurpose',
   'category','territory','tags','cultural_profile_id',
@@ -69,9 +69,11 @@ export function preparePrivatePublicationSubmission(input) {
   const media_paths=input.media_paths.map(path=>{
     if(typeof path!=='string'||path.length>200||!safeMediaPath.test(path))
       throw new Error('Invalid private media object path.');
-    // Do not allow canonicalization of percent escapes, query strings,
-    // URLs, path traversal or a copied public bucket path.
-    return path.toLowerCase();
+    // Storage object names are case-sensitive. Require the exact canonical
+    // lowercase path originally issued by the browser; silently converting
+    // a path could bind to a different object or hide a forged receipt.
+    // Reject percent escapes, query strings, URLs and traversal altogether.
+    return path;
   });
   if(new Set(media_paths).size!==media_paths.length)
     throw new Error('A private media object cannot appear twice.');
