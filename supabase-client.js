@@ -725,12 +725,12 @@
   async function upload(bucket, file, nameHint='media') {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión.');
-    // The server-side cultural-rights promotion service is NOT built.
-    // Never hand the browser a direct public cultural upload.
+    // Server-reviewed promotion is NOT implemented. Browser public uploads
+    // are forbidden even if a session has a creator role.
     if (bucket === 'post-media') {
       throw new Error('La publicación de archivos culturales está pausada hasta su revisión segura.');
     }
-    // Defense in depth; Storage RLS independently checks creator role and owner.
+    // Defense in depth: Storage RLS also checks verified creator role and owner.
     if (bucket === 'post-media-intake' &&
         (cache.profile?.id !== uid || cache.profile?.role !== 'creator')) {
       throw new Error('Solo un Agente Cultural autorizado puede preparar archivos privados.');
@@ -780,7 +780,7 @@
       throw new Error('La sesión cambió durante la subida. El archivo podría seguir almacenado; solicita su revisión o eliminación a info.origencultural@gmail.com.');
     }
     if (bucket === 'post-media-intake') {
-      // Receipt is NOT a public URL, signed URL, approved post, or case record.
+      // No public or signed URL. The media is NOT an approved or reviewed post.
       return Object.freeze({kind:'private-media-intake',bucket,path,ownerId:uid});
     }
     const { data } = client.storage.from(bucket).getPublicUrl(path);
@@ -794,35 +794,7 @@
         receipt.kind!=='private-media-intake' || receipt.bucket!=='post-media-intake' ||
         receipt.ownerId!==uid || typeof receipt.path!=='string' ||
         receipt.path.length>200 ||
-        !new RegExp('^'+uid+'/[0-9]{10,16}-[a-f0-9]{32}-[a-z0-9_-]{1,64}\\.(?:jpg|png|webp|mp4|webm|mov)((event, session) => {
-    // Never call Supabase APIs inside this callback: an async query here can
-    // deadlock subsequent Auth/database calls while Supabase holds its lock.
-    const previousUid = cache.session?.user?.id || null;
-    const nextUid = session?.user?.id || null;
-    // Token refreshes for the same account must not cancel a pending
-    // getSession/profile restoration. Identity changes and sign-out do.
-    if (previousUid !== nextUid || event === 'SIGNED_OUT') authStateRevision++;
-    cache.session = session || null;
-    if (!nextUid || nextUid !== previousUid) clearPrivateCache();
-
-    // Refresh profile data outside the Auth callback/lock. Token refreshes do
-    // not need to cause another full UI/database reload.
-    if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event)) {
-      setTimeout(() => window.dispatchEvent(new CustomEvent('origen-auth-change')), 0);
-    }
-  });
-
-  window.ORIGEN_API = {
-    client, cache, restoreSession, signIn, signUp, signOut,
-    resetPassword, updatePassword, updateMyProfile,
-    listPublicProfiles, ensureCreatorCulturalProfile,
-    listCulturalProfiles, findCulturalProfile,
-    myFollows, toggleFollow, myFavorites, toggleFavorite,
-    listPosts, loadMorePosts, getPublicPost, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
-    submitClaim, report, listModerationReports, upload, discardPrivateMedia, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
-  };
-})();
-).test(receipt.path)) {
+        !new RegExp('^'+uid+'/[0-9]{10,16}-[a-f0-9]{32}-[a-z0-9_-]{1,64}\\.(?:jpg|png|webp|mp4|webm|mov)$').test(receipt.path)) {
       return false;
     }
     const {data,error}=await client.storage.from('post-media-intake').remove([receipt.path]);
@@ -856,6 +828,6 @@
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
     listPosts, loadMorePosts, getPublicPost, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
-    submitClaim, report, listModerationReports, upload, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
+    submitClaim, report, listModerationReports, upload, discardPrivateMedia, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
   };
 })();
