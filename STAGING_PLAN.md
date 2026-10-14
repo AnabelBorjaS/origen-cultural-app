@@ -174,7 +174,7 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 - ✅ **ORIGEN Cultural Staging** creado con aprobación expresa de la fundadora en organización **ORIGEN Cultural**, región **ap-southeast-2 (Sydney)**, plan Free, **costo confirmado $0/mes**.
 - Referencia de proyecto de pruebas: `egujmptgnrpajgfpjjxu`. Production: `xwkjvoyicrrwjybjolld`. Son proyectos distintos; jamás reutilizar datos ni credenciales de Production.
 - ✅ El proyecto responde `ACTIVE_HEALTHY`; inventario inicial **0 migraciones**, **0 tablas públicas de aplicación** y Security Advisor **0 lints**. Esta comprobación no valida aún la seguridad de la beta.
-- ⛔ **Aún no instalado**: 14 migraciones recuperadas, propuestas P0 de consentimiento, protección cultural, frontend aislado, protección Cloudflare Access y QA de dos cuentas. **No existe URL de aplicación Staging desplegada**.
+- ✅ El proyecto Staging independiente está creado y saludable; el esquema base y las migraciones de seguridad/consentimiento/derechos culturales están instaladas. ⛔ Aún no existe una URL de aplicación Staging protegida desplegada y el QA real de dos cuentas no se ha ejecutado.
 - Próximo paso: recuperar/validar la secuencia de migraciones y esquema en este proyecto aislado antes de crear usuarios sintéticos. Las propuestas `REVIEW_ONLY` no se ejecutan sin revisión de permisos, versión legal, rollback y pruebas.
 
 ## Instalación del esquema en Staging — 9 octubre 2026
@@ -198,7 +198,7 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 
 - `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` se ejecutó en el Supabase Staging aislado: **10/10 checks PASS** de estructura/permisos del control cultural. No se alteraron datos.
 - La aceptación de publicación cultural se configuró exclusivamente en staging; existe una tabla de eventos privada, CHECK de dos booleanos y triggers de auditoría. No se ha probado todavía ante dos usuarios con tokens reales ni la retirada del material.
-- El registro legal continúa pendiente: `origen_before_user_created` **no existe todavía en Staging** según comprobación de catálogo, y no hay hook Auth habilitado/comprobado. La propuesta SQL para registro no pudo aplicarse en la ejecución anterior; no se reintentó automáticamente tras el bloqueo.
+- El registro legal continúa pendiente: `origen_before_user_created` **no existe todavía en Staging** según comprobación de catálogo, y no hay hook Auth habilitado/comprobado. La función SQL `public.origen_before_user_created(event jsonb)` y el trigger `private.handle_new_user()` ya están instalados y verificados en catálogo. La **activación del hook en Authentication → Hooks sigue sin verificarse**, por lo que no se considera cerrado el control de registro.
 - No construir ni desplegar un frontend contra Production. Crear una web protegida de staging con costo aprobado, configurar Auth, legal y CAPTCHA y realizar QA A/B antes de invitar voluntarios.
 
 ## Auth pendiente y protección editorial — 10 Oct 2026
@@ -219,3 +219,12 @@ A failed staging audit is a **NO-GO** for Auth QA or release.
 Se endureció `scripts/verify-staging.mjs` para exigir servicio Cloudflare Access y comprobar como visitante no autenticado la **portada y cuatro archivos estáticos**. Un HTTP 200 público o un redireccionamiento genérico no se consideran barrera de acceso. El modo de auditoría por defecto `auth-staging` conserva las condiciones estrictas para pruebas con cuentas; `visual-only` permite evaluar la vista sin backend solo si se declara explícitamente y si el artefacto no contiene configuración de Auth, Turnstile o acceso a Supabase. El modo visual no representa autorización de beta, ni verifica bases de datos.
 
 Al desplegar Pages, auditar **dos veces** como mínimo: `origen-cultural-staging.pages.dev` y cada hostname preview/alias relevante. Guardar el token de auditoría exclusivamente en GitHub Actions Secrets o en un gestor de secretos local; nunca en el código o archivos públicos. Las pruebas unitarias están en `tests/staging-audit-policy.mjs`.
+
+
+## Checkpoint operativo — 14 Oct 2026
+- Staging: ACTIVE_HEALTHY, Sídney.
+- 0 usuarios Auth y 0 registros de aplicación: entorno sigue limpio para QA sintética.
+- Security Advisor: 1 INFO intencional en tabla privada de auditoría; sin hallazgo browser-facing confirmado.
+- PR #3 continúa como única Release Candidate, mergeable y Draft / NO-GO.
+- CI reciente de PR #3: Quality Gate, CodeQL y Browser QA en verde.
+- Próximo bloqueo externo: habilitar/verificar Before User Created en Supabase Auth, desplegar staging HTTPS protegido, configurar redirect allow-list y Turnstile, y recién entonces crear cuentas A/B.
