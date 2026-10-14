@@ -19,6 +19,8 @@ const allowed=new Set([
 const img=new Set(['jpg','png','webp']);
 const video=new Set(['mp4','webm','mov']);
 const typeSet=new Set(['photo','carousel','video']);
+// Opaque in-process validation provenance: caller cannot forge a 'prepared' object.
+const validatedSubmissions=new WeakSet();
 
 function plainObject(v) {
   return !!v && typeof v==='object' && !Array.isArray(v) &&
@@ -85,7 +87,7 @@ export function preparePrivatePublicationSubmission(input) {
   // Server must still check actual Storage metadata, MIME, file ownership,
   // immutable content digest and pending status with a trusted DB transaction.
   // Never accept user-supplied rights statement versions or published flags.
-  return Object.freeze({
+  const prepared=Object.freeze({
     idempotency_key:input.idempotency_key.toLowerCase(),
     title, description, type:input.type, contentPurpose:input.contentPurpose,
     category, territory,
@@ -94,9 +96,11 @@ export function preparePrivatePublicationSubmission(input) {
     tags:Object.freeze(tags),
     rightsAcknowledged:true,culturalAcknowledged:true
   });
+  validatedSubmissions.add(prepared);
+  return prepared;
 }
 export function bindPrivateSubmissionOwner(prepared,authenticatedUserId) {
-  if(!plainObject(prepared) && !Object.isFrozen(prepared))
+  if(!prepared || !validatedSubmissions.has(prepared))
     throw new TypeError('A validated submission is required.');
   if(typeof authenticatedUserId!=='string'||!uuid.test(authenticatedUserId))
     throw new Error('Verified account identity required.');
