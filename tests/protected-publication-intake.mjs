@@ -13,7 +13,6 @@ const B='22222222-2222-4222-8222-222222222222';
 const REQUEST='33333333-3333-4333-8333-333333333333';
 const ITEM='44444444-4444-4444-8444-444444444444';
 const auth='Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.synthetic';
-const privatePath=user=>user+'/1770000000000-a'.repeat(0);
 const image=A+'/1770000000000-'+('a'.repeat(32))+'-weaving.webp';
 const image2=A+'/1770000000001-'+('b'.repeat(32))+'-heritage.jpg';
 const clip=A+'/1770000000002-'+('c'.repeat(32))+'-community.mp4';
@@ -71,6 +70,7 @@ for(const [modify,pattern] of [
   [{media_paths:['https://example.com/'+image]},/Invalid private media/],
   [{media_paths:['post-media/'+image]},/Invalid private media/],
   [{media_paths:['post-media-intake/'+image]},/Invalid private media/],
+  [{media_paths:[image.toUpperCase()]},/Invalid private media/],
   [{media_paths:[A+'/../evil.webp']},/Invalid private media/],
   [{media_paths:[A+'/%2e%2e/file.webp']},/Invalid private media/],
   [{media_paths:[A+'/1770000000000-'+('a'.repeat(32))+'-story.webp?token=x']},/Invalid private media/],
