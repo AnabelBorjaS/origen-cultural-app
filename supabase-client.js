@@ -822,6 +822,9 @@
   });
 
   window.ORIGEN_API = {
+    // Client-facing UX flag ONLY, never server authorization. Publishing is
+    // disabled until a privileged rights-aware promotion service is tested.
+    culturalPublishingReady: false,
     client, cache, restoreSession, signIn, signUp, signOut,
     resetPassword, updatePassword, updateMyProfile,
     listPublicProfiles, ensureCreatorCulturalProfile,
