@@ -43,7 +43,7 @@ api.cache.profile={id:A,role:'creator'};
 
 // The object may have been written by the first account, but the new account
 // must not receive a usable URL or any false claim of Storage deletion.
-const stale=api.upload('post-media',photo,'switch');
+const stale=api.upload('post-media-intake',photo,'switch');
 assert.equal(uploads.length,1);
 assert.equal(uploads[0].path.startsWith(A+'/'),true);
 api.cache.session={user:{id:B}};
@@ -57,7 +57,7 @@ assert.ok(!warning[0].includes(A),'Avoid exposing account identifiers in logs');
 // Sign-out during the upload has the same fail-closed behavior.
 api.cache.session={user:{id:A}};
 api.cache.profile={id:A,role:'creator'};
-const signOut=api.upload('post-media',photo,'logout');
+const signOut=api.upload('post-media-intake',photo,'logout');
 assert.equal(uploads.length,2);
 api.cache.session=null;
 pending.shift()({data:{path:uploads[1].path},error:null});
@@ -68,17 +68,20 @@ assert.equal(warning.length,2);
 // Normal session remains supported, with a unique, owner-scoped object path.
 api.cache.session={user:{id:B}};
 api.cache.profile={id:B,role:'creator'};
-const normal=api.upload('post-media',photo,'safe');
+const normal=api.upload('post-media-intake',photo,'safe');
 assert.equal(uploads.length,3);
 assert.equal(uploads[2].path.startsWith(B+'/'),true);
 pending.shift()({data:{path:uploads[2].path},error:null});
-const url=await normal;
-assert.ok(url.includes('/post-media/'+B+'/'));
-assert.equal(reads.length,1);
+const receipt=await normal;
+assert.equal(receipt.kind,'private-media-intake');
+assert.equal(receipt.bucket,'post-media-intake');
+assert.equal(receipt.ownerId,B);
+assert.equal(receipt.path,uploads[2].path);
+assert.equal(reads.length,0,'Even successful private uploads must not expose public URLs');
 assert.equal(warning.length,2);
 assert.equal(uploads[2].options.upsert,false);
 assert.equal(uploads[2].options.cacheControl,'60');
 
 console.log('PASS Switching accounts or signing out during a media upload never hands a stale URL to the new session.');
-console.log('PASS Potential public Storage orphans are acknowledged; no fictitious successful cleanup.');
-console.log('PASS Same-account upload works with owner-scoped, unique paths and 60-second post-media cache.');
+console.log('PASS Possible private Storage orphan is acknowledged without fictitious cleanup.');
+console.log('PASS Same-account private upload returns an opaque receipt, never a public URL.');
