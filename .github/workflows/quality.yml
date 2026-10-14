@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ launch-beta-supabase, main ]
+    branches: [ launch-beta-supabase, release-beta-reconciled, main ]
 
 permissions:
   contents: read
