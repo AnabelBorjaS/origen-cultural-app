@@ -77,7 +77,7 @@ BEGIN
    WHERE schemaname='storage' AND tablename='objects' AND policyname='users upload own media';
   SELECT qual,with_check INTO update_rule,update_check FROM pg_policies
    WHERE schemaname='storage' AND tablename='objects' AND policyname='users update own media';
-  IF insert_rule IS NULL OR insert_rule NOT ILIKE '%public.profiles%' OR
+  IF insert_rule IS NULL OR insert_rule NOT ILIKE '%FROM profiles pr%' OR
      insert_rule NOT ILIKE '%creator%' OR insert_rule NOT ILIKE '%post-media%' OR
      update_rule IS NULL OR update_rule ILIKE '%post-media%' OR
      update_check IS NULL OR update_check ILIKE '%post-media%' OR
