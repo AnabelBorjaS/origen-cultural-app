@@ -336,6 +336,9 @@ async function roleChecks(role) {
       get() { return currentApi; },
       set(api) {
         currentApi = api;
+        // Isolated synthetic legacy submission: runtime defaults to NO-GO,
+        // but this mock keeps rights/declaration UI tests deterministic.
+        api.culturalPublishingReady = true;
         api.upload = async () => {
           window.__postSafetyQA.uploads++;
           return 'https://xwkjvoyicrrwjybjolld.supabase.co/storage/v1/object/public/post-media/qa/preview.webm';
@@ -466,6 +469,30 @@ async function roleChecks(role) {
       'Completed declarations permit exactly one media upload and post');
     check(safety.payload?.rightsAcknowledged === true && safety.payload?.culturalAcknowledged === true,
       'The client API receives explicit permissions declarations');
+
+    // Real beta defaults to NO-GO while media approval is unavailable.
+    // Simulate that configuration after the synthetic legacy UI exercise.
+    await page.evaluate(() => {
+      window.ORIGEN_API.culturalPublishingReady = false;
+      location.hash = '#crear';
+    });
+    await page.waitForSelector('#post-publication-paused', {timeout: 12000});
+    check(await page.locator('#create-form button[type="submit"]').isDisabled(),
+      'Unreviewed cultural media must not be publishable from the form');
+    const beforePaused = await page.evaluate(() => ({
+      uploads:window.__postSafetyQA.uploads,writes:window.__postSafetyQA.writes
+    }));
+    const forcedPaused = await page.evaluate(async () => {
+      const form=document.querySelector('#create-form');
+      form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+      await Promise.resolve();
+      return {uploads:window.__postSafetyQA.uploads,writes:window.__postSafetyQA.writes,
+        message:document.querySelector('#post-safety-error')?.textContent||''};
+    });
+    check(forcedPaused.uploads===beforePaused.uploads && forcedPaused.writes===beforePaused.writes,
+      'Programmatic submit while paused must not upload or write content');
+    check(forcedPaused.message.includes('no está disponible'),
+      'Paused publishing must explain failure instead of claiming success');
 
     // Signed-in report route must keep the current reporter identity,
     // canonical reason, target and details. This is a mocked server response.
