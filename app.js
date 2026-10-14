@@ -1419,6 +1419,9 @@
       </div></section>${footer()}`;
     }
     const d = state.createData;
+    // Purely a display/UX gate: Supabase Storage + Postgres RLS remain the
+    // authoritative security boundary. Never show a false "published" state.
+    const culturalPublishingReady = window.ORIGEN_API?.culturalPublishingReady === true;
     const isProvider = true;
     const types = isProvider
       ? [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video']]
@@ -1491,8 +1494,13 @@
             <p id="post-safety-error" class="post-safety-error" role="alert" aria-live="assertive" hidden></p>
           </fieldset>
           <div class="form-field full">
-            <button class="btn" type="submit" style="width:100%">${state.lang === 'es' ? 'Publicar →' : 'Publish →'}</button>
-            <p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>
+            ${!culturalPublishingReady ? `<p id="post-publication-paused" class="form-note" role="status" aria-live="polite">${state.lang === 'es'
+              ? 'La publicación está temporalmente pausada mientras verificamos la recepción privada y los derechos culturales. Puedes preparar una vista previa en este dispositivo, pero tus archivos y textos NO se enviarán ni guardarán en ORIGEN.'
+              : 'Publishing is temporarily paused while private intake and cultural rights are verified. You can prepare a preview on this device, but your files and text will NOT be submitted or saved to ORIGEN.'}</p>` : ''}
+            <button class="btn" type="submit" style="width:100%" ${culturalPublishingReady ? '' : 'disabled aria-disabled="true"'}>${culturalPublishingReady
+              ? (state.lang === 'es' ? 'Publicar →' : 'Publish →')
+              : (state.lang === 'es' ? 'Publicación en preparación' : 'Publishing not available yet')}</button>
+            ${culturalPublishingReady ? '<p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>' : ''}
           </div>
         </form>
       </div>
@@ -2949,6 +2957,17 @@
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const user = me(); if (!user) return;
+      // Programmatic form submission and stale DOM must fail closed too.
+      // This UX switch cannot authorize real Storage or DB writes.
+      if (window.ORIGEN_API?.culturalPublishingReady !== true) {
+        const message = state.lang === 'es'
+          ? 'La publicación aún no está disponible. Tu vista previa permanece solo en este dispositivo; ningún contenido se ha enviado a ORIGEN.'
+          : 'Publishing is not available yet. Your preview remains only on this device; no content has been sent to ORIGEN.';
+        const error = document.getElementById('post-safety-error');
+        if (error) { error.hidden = false; error.textContent = message; }
+        showToast(message);
+        return;
+      }
       const fd = Object.fromEntries(new FormData(form));
       if (fd.rightsAcknowledged !== 'on' || fd.culturalAcknowledged !== 'on') {
         const error = document.getElementById('post-safety-error');
