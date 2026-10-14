@@ -660,6 +660,10 @@
     'post-media': {
       maxBytes: 50 * 1024 * 1024,
       mime: ['image/jpeg','image/png','image/webp','video/mp4','video/webm','video/quicktime']
+    },
+    'post-media-intake': {
+      maxBytes: 50 * 1024 * 1024,
+      mime: ['image/jpeg','image/png','image/webp','video/mp4','video/webm','video/quicktime']
     }
   };
 
@@ -721,11 +725,15 @@
   async function upload(bucket, file, nameHint='media') {
     const uid = cache.session?.user?.id;
     if (!uid) throw new Error('Debes iniciar sesión.');
-    // Defense in depth only: users can call Storage APIs without this page.
-    // Supabase Storage RLS MUST separately restrict pre-publication media.
-    if (bucket === 'post-media' &&
+    // The server-side cultural-rights promotion service is NOT built.
+    // Never hand the browser a direct public cultural upload.
+    if (bucket === 'post-media') {
+      throw new Error('La publicación de archivos culturales está pausada hasta su revisión segura.');
+    }
+    // Defense in depth; Storage RLS independently checks creator role and owner.
+    if (bucket === 'post-media-intake' &&
         (cache.profile?.id !== uid || cache.profile?.role !== 'creator')) {
-      throw new Error('Solo un Agente Cultural autorizado puede subir contenido al feed.');
+      throw new Error('Solo un Agente Cultural autorizado puede preparar archivos privados.');
     }
     validateUpload(bucket, file);
     const extByMime = {
@@ -759,7 +767,7 @@
       // 60 seconds instead of the default hour. This mitigates stale local
       // copies; it does NOT revoke third-party copies or guarantee CDN purge.
       // Keep the longer cache for replaceable profile avatars/covers.
-      cacheControl: bucket === 'post-media' ? '60' : '3600'
+      cacheControl: bucket === 'post-media-intake' ? '60' : '3600'
     });
     if (error) throw error;
     // A long upload can finish after sign-out or a switch to another user.
@@ -771,8 +779,56 @@
       console.warn('ORIGEN media uploaded but the account changed before completion; orphan cleanup may be required.');
       throw new Error('La sesión cambió durante la subida. El archivo podría seguir almacenado; solicita su revisión o eliminación a info.origencultural@gmail.com.');
     }
+    if (bucket === 'post-media-intake') {
+      // Receipt is NOT a public URL, signed URL, approved post, or case record.
+      return Object.freeze({kind:'private-media-intake',bucket,path,ownerId:uid});
+    }
     const { data } = client.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
+  }
+
+  async function discardPrivateMedia(receipt) {
+    const uid=cache.session?.user?.id;
+    if (!uid) throw new Error('Debes iniciar sesión.');
+    if (!receipt || typeof receipt!=='object' || Array.isArray(receipt) ||
+        receipt.kind!=='private-media-intake' || receipt.bucket!=='post-media-intake' ||
+        receipt.ownerId!==uid || typeof receipt.path!=='string' ||
+        receipt.path.length>200 ||
+        !new RegExp('^'+uid+'/[0-9]{10,16}-[a-f0-9]{32}-[a-z0-9_-]{1,64}\\.(?:jpg|png|webp|mp4|webm|mov)((event, session) => {
+    // Never call Supabase APIs inside this callback: an async query here can
+    // deadlock subsequent Auth/database calls while Supabase holds its lock.
+    const previousUid = cache.session?.user?.id || null;
+    const nextUid = session?.user?.id || null;
+    // Token refreshes for the same account must not cancel a pending
+    // getSession/profile restoration. Identity changes and sign-out do.
+    if (previousUid !== nextUid || event === 'SIGNED_OUT') authStateRevision++;
+    cache.session = session || null;
+    if (!nextUid || nextUid !== previousUid) clearPrivateCache();
+
+    // Refresh profile data outside the Auth callback/lock. Token refreshes do
+    // not need to cause another full UI/database reload.
+    if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event)) {
+      setTimeout(() => window.dispatchEvent(new CustomEvent('origen-auth-change')), 0);
+    }
+  });
+
+  window.ORIGEN_API = {
+    client, cache, restoreSession, signIn, signUp, signOut,
+    resetPassword, updatePassword, updateMyProfile,
+    listPublicProfiles, ensureCreatorCulturalProfile,
+    listCulturalProfiles, findCulturalProfile,
+    myFollows, toggleFollow, myFavorites, toggleFavorite,
+    listPosts, loadMorePosts, getPublicPost, createPost, deletePost, loadPostInteractions, toggleLike, toggleSavePost, listComments, addComment,
+    submitClaim, report, listModerationReports, upload, discardPrivateMedia, removeOwnMedia, parseManagedMediaUrl, validateUpload, authRedirect, normaliseUser
+  };
+})();
+).test(receipt.path)) {
+      return false;
+    }
+    const {data,error}=await client.storage.from('post-media-intake').remove([receipt.path]);
+    if(error)throw error;
+    return Array.isArray(data)&&data.some(item=>item&&
+      (item.name===receipt.path||item.path===receipt.path));
   }
 
   client.auth.onAuthStateChange((event, session) => {
