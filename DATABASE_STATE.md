@@ -106,5 +106,16 @@ Do not treat the legacy root `schema.sql` as a complete representation of curren
 
 - Original 14 schema migrations plus experimental cultural-rights migration are installed in Staging only.
 - `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` ran SELECT-only and passed **10/10** schema/privilege/triggers checks; SQL is repeatable and checked into GitHub.
-- Registered Auth consent hook remains **absent in Staging** at last catalog check. Server-side signup consent remains a P0; no Auth settings changed and no users created.
+- `public.origen_before_user_created(event jsonb)` and `private.handle_new_user()` are now present in Staging and were re-verified on 14 Oct 2026. **Activation of the Before User Created hook inside Supabase Auth is still not verified**, so end-to-end signup enforcement remains P0. Staging still contains 0 Auth users and 0 application records.
 - Passing metadata checks does NOT establish authenticated A/B RLS, Storage cleanup or cultural authorization validity. Production unchanged.
+
+
+## Verification refresh — 14 Oct 2026
+- Staging project `egujmptgnrpajgfpjjxu`: **ACTIVE_HEALTHY**.
+- 17 tracked migrations are installed, including cultural-rights validation, strict signup-consent validation and the Before User Created hook function.
+- Verified catalog functions:
+  - `public.origen_before_user_created(event jsonb)` — SECURITY INVOKER.
+  - `private.handle_new_user()` — SECURITY DEFINER.
+- Data state remains clean: 0 Auth users, 0 profiles, 0 legal acceptances, 0 cultural posts and 0 moderation reports.
+- Security Advisor has one INFO-only finding: `private.cultural_post_rights_events` has RLS enabled with no browser policy. This is intentional for the private audit table and is not treated as a browser-facing exposure.
+- Remaining P0: verify Auth hook activation in Dashboard and then run controlled two-account E2E tests.
