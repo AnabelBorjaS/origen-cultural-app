@@ -13,7 +13,7 @@ const handler = source.slice(begin, end + "\n    });".length);
 
 const A = { id: '11111111-1111-4111-8111-111111111111', accountType: 'creator' };
 function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
-  submitFailure=false, cleanupDeferred=false, postCreated=true } = {}) {
+  submitFailure=false, cleanupDeferred=false, postCreated=true, publishingEnabled=true } = {}) {
   const activity = [];
   const notifications = [];
   const submitButton = {disabled:false, textContent:'Publicar →'};
@@ -43,6 +43,10 @@ function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
     }
   }
   const mockApi = {
+    // Enable only in synthetic tests of legacy post-commit handling.
+    // The checked-in runtime defaults to disabled, and Storage/Postgres RLS
+    // are the real authorization boundary.
+    culturalPublishingReady:publishingEnabled,
     async upload(bucket,file,name) {
       activity.push('upload:'+name);
       if(uploadFailureAt===name) throw Error('Mock media upload failed');
@@ -78,6 +82,19 @@ function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
   assert.equal(typeof onSubmit,'function');
   const invoke=()=>onSubmit({preventDefault() {activity.push('preventDefault');}});
   return {invoke,activity,notifications,submitButton,inline,state,getCleanupResolver:()=>pendingCleanupResolve};
+}
+
+// In actual Staging the publication service is unavailable. Even a forced
+// programmatic submit with complete consent cannot upload or write.
+for (const lang of ['es','en']) {
+  const h=makeTest({lang,publishingEnabled:false});
+  await h.invoke();
+  assert.ok(!h.activity.some(x=>x.startsWith('upload:')));
+  assert.equal(h.activity.includes('createPost'),false);
+  assert.equal(h.activity.includes('remove'),false);
+  assert.equal(h.inline.hidden,false);
+  assert.match(h.inline.textContent,lang==='es'?/no está disponible/:/not available yet/);
+  assert.ok(h.notifications.length>0);
 }
 
 // Confirmed INSERT: submit, clear draft, go to feed; never remove uploaded media.
