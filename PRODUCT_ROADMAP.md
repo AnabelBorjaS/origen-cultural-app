@@ -6,11 +6,12 @@
 - Definición de perfiles y datos
 - Flujo de registro y verificación
 
-## Fase 1 — Piloto Ecuador
-- 20-50 Creadores Culturales reales
-- Onboarding asistido
-- Perfiles premium aprobados manualmente
-- Analítica de búsquedas, visitas y clics externos
+## Fase 1 — Piloto Ecuador (aprendizaje controlado)
+- **Cohorte inicial: hasta 10 Agentes Culturales voluntarios**, solo después de que el Release Gate permita invitarlos y de contar con las autorizaciones culturales necesarias. No representan participantes confirmados.
+- Onboarding asistido, perfiles revisados por sus titulares y contenido publicado con permiso documentado.
+- Medir activación, comprensión de seguridad, dificultades de incorporación, tiempo de apoyo y voluntad de continuar; métricas de negocio propuestas en `PILOT_ECUADOR_PLAYBOOK.md`.
+- **Ampliación condicionada a 20–50 Agentes Culturales**, una meta posterior del proyecto original, solo si la cohorte inicial valida utilidad, seguridad, demanda y capacidad de soporte.
+- Evaluar analítica de búsquedas, visitas y clics externos únicamente después de aprobar privacidad y consentimiento apropiados.
 
 ## Fase 2 — MVP social
 - Autenticación
