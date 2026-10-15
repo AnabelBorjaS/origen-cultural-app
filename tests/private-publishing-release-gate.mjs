@@ -22,7 +22,7 @@ assert.match(app,/post-publication-paused/);
 assert.match(blocker,/ALTER POLICY "creator posts own insert"/);
 assert.match(blocker,/WITH CHECK \(false\)/,
   'Direct cultural post INSERT must remain denied on Staging');
-assert.match(intake,/post-media-intake','Private cultural intake must be provisioned');
+assert.match(intake,/post-media-intake/,'Private cultural intake must be provisioned');
 assert.match(intake,/VALUES\s*\(\s*'post-media-intake','post-media-intake',FALSE/,
   'Private intake bucket must not be publicly downloadable');
 assert.match(ledger,/ALTER TABLE private\.cultural_publication_requests FORCE ROW LEVEL SECURITY/);
