@@ -8,6 +8,16 @@ Ver desde tablet/móvil/PC la **beta real**, con portada y globo 3D flotante, na
 
 Costos objetivo: **$0 mensuales**, usando cuotas gratuitas de Cloudflare Pages y Cloudflare Zero Trust Access. Esto depende de la elegibilidad y configuración de la cuenta; no autorizar extras, métodos de pago o subidas de plan sin una nueva confirmación explícita.
 
+### Comprobación de costos (18 Oct 2026)
+
+- **Cloudflare Pages Free:** los límites oficiales actuales incluyen 500 builds al mes (1 build simultáneo) y hasta 20.000 archivos por sitio; esta beta estática no necesita Workers de pago.
+- **Cloudflare Zero Trust Access Free:** la página oficial de Cloudflare anuncia $0 para equipos de hasta 50 usuarios. Sin embargo, el onboarding de Zero Trust pide seleccionar un plan y datos de pago; Cloudflare indica que no cobra si se selecciona **Free**.
+- **Cloudflare Turnstile Free:** hasta 20 widgets y desafíos ilimitados; $0.
+- Esto no se presenta como un mes de prueba: el plan seleccionado debe decir **Free**, no Pro, Pay-as-you-go, trial ni una opción pagada. La afirmación de que no hay cobro después del primer mes es una inferencia basada en la descripción oficial de Free como $0, no en una pantalla de la cuenta de ORIGEN.
+- **Regla de ORIGEN:** no agregar ni enviar datos de pago, no aceptar una prueba con renovación y no pulsar una opción pagada. Si Cloudflare los exige antes de completar el plan Free, detener la configuración y revisar el costo con la titular antes de continuar.
+
+Fuentes oficiales consultadas el 18 Oct 2026: [Pages limits](https://developers.cloudflare.com/pages/platform/limits/), [Zero Trust onboarding](https://developers.cloudflare.com/cloudflare-one/setup/), [Zero Trust Free](https://www.cloudflare.com/), [Turnstile plans](https://developers.cloudflare.com/turnstile/plans/).
+
 ## Paquete listo en GitHub
 
 - Rama: `reconcile-main-beta-2026-10-07`
