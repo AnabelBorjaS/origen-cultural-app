@@ -115,16 +115,16 @@ Public beta remains NO-GO until:
 - [ ] Repository owner/admin 2FA must be confirmed manually; this connector cannot inspect account-level 2FA state.
 
 
-## Consentimiento obligatorio en servidor — nuevo bloqueo P0 (8 Oct 2026)
+## Consentimiento obligatorio en servidor — implementación activa, E2E pendiente (18 Oct 2026)
 
-- [x] Auditoría de solo lectura: existe `private.handle_new_user()` en `auth.users`, pero actualmente omite registrar aceptación si falta el indicador; **no rechaza** el alta.
-- [x] Cliente mejorado: solo acepta `acceptedLegal === true`, con pruebas automáticas de valores no booleanos.
-- [ ] **P0:** configurar validación de consentimiento en servidor y versionado legal aprobado, con migración y revisión del flujo de invitaciones. Ver `BACKEND_CONSENT_REVIEW.md`.
-- [ ] Probar en staging peticiones directas sin consentimiento / consentimiento inválido para verificar que no se crean cuentas ni perfiles.
-- [ ] Confirmar que las versiones legales aceptadas las fija el servidor, no los campos enviados por usuarios.
-- [ ] Revisar contenido legal y registro probatorio con asesoría jurídica antes de público.
+- [x] La lógica de consentimiento está instalada en Staging: `private.handle_new_user()` rechaza datos ausentes o inválidos y registra versiones legales fijadas por servidor.
+- [x] La UI acepta únicamente `acceptedLegal === true`, con pruebas automáticas de valores no booleanos.
+- [x] Hook Auth **Before User Created** habilitado en Staging el 18 Oct 2026, conectado a `public.origen_before_user_created`; EXECUTE para `supabase_auth_admin` verificado en consulta read-only.
+- [ ] Probar por Auth API solicitudes sin consentimiento y con valores false, null, string o número, y confirmar que no se crean cuentas/perfiles/aceptaciones.
+- [ ] Confirmar mediante alta real que las versiones legales aceptadas las fija el servidor, no los metadatos enviados por usuarios.
+- [ ] Revisar contenido legal y registro probatorio con asesoría jurídica antes del público.
 
-**Importante:** 0 alertas de Security Advisor no equivale a prueba de consentimiento obligatorio en servidor. No GO hasta que todo lo anterior quede verificado.
+**Importante:** la instalación y activación del hook no equivalen a una prueba E2E. No abrir registro público hasta completar las pruebas negativas y la revisión legal.
 
 ## Data API grants + RLS regression baseline
 
@@ -148,15 +148,15 @@ Public beta remains NO-GO until:
 - [x] En Staging, las 14 migraciones de base quedaron instaladas y la propuesta adicional de derechos culturales quedó aplicada solo al entorno aislado.
 - [x] Auditoría read-only reutilizable `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` **10/10 PASS** sobre catálogo y restricciones de acceso a la tabla privada de eventos.
 - [ ] **NO-GO P0 #7**: probar con dos cuentas reales ficticias las solicitudes REST directas, rechazo de declaraciones ausentes/falsas, creación simultánea del evento, cambios de contenido, retirada de medios, moderación y retención legal. Los 10 checks no prueban estos comportamientos.
-- [ ] **NO-GO P0 #6**: instalar, habilitar y probar el hook de Auth de consentimiento legal y el registro de versiones fijadas por servidor en Staging; la función de hook no existe al último audit read-only.
+- [x] **NO-GO P0 #6 — configuración:** el hook Before User Created está instalado y ENABLED en Staging desde el 18 Oct 2026; función y EXECUTE revisados. **E2E sigue pendiente**: probar consentimientos inválidos y versions del servidor con cuentas sintéticas tras publicar staging protegido.
 - [ ] **NO-GO P0 #5**: desplegar frontend Staging aislado detrás de Access y confirmar HTTPS/redirecciones sin conectar a Production.
 
 ## P0 — Verificador A/B seguro preparado, no ejecutado
 
 - [x] Verificador `scripts/staging-auth-qa-readonly.mjs` y documentación `STAGING_AB_RLS_READONLY_QA.md` en beta: acceso solo a Supabase Staging concreto, solo login de dos usuarios ficticios **ya existentes**, y lecturas REST de perfil/aceptación privada, guardados privados, post no publicado y bitácora cultural. No crea/modifica datos.
 - [x] Tests offline de aislamiento de URL de producción, clave y fixtures en Quality Gate.
-- [x] Predicado **propuesto** de aceptación legal validado por SQL SELECT-only en Staging, **8/8 PASS**; test robusto ante `NULL`, sin habilitar un hook.
-- [ ] Antes de ejecutar la QA real: configurar y validar consentimiento Auth del servidor (#6), preparar dos cuentas y fixtures ficticios autorizados únicamente en Staging, mantener acceso protegido, luego ejecutar `npm run qa:staging:auth:readonly` con secretos efímeros fuera del repo.
+- [x] Lógica de consentimiento probada en SQL en Staging **8/8 PASS**; el hook se activó después, el 18 Oct 2026. Todavía no hay cuentas reales de prueba ni flujo Auth E2E.
+- [ ] Antes de ejecutar la QA real: desplegar Staging con Access, configurar Turnstile y URLs Auth, preparar dos cuentas y fixtures sintéticos únicamente en Staging, luego ejecutar `npm run qa:staging:auth:readonly` con secretos efímeros fuera del repo.
 - [ ] El script de solo lectura **NO sustituye** pruebas adversariales con INSERT/UPDATE, atomicidad de eventos culturales, recuperación de cuentas, retirada Storage, moderación y revisión legal.
 
 ## P0 — Editorial/privilegios y Auth Staging — 10 Oct 2026
@@ -164,14 +164,14 @@ Public beta remains NO-GO until:
 - [x] Auditoría SELECT-only `ORIGEN_STAGING_EDITORIAL_BYPASS_AUDIT_READ_ONLY.sql`: **13/13 PASS** de políticas y triggers (configuración, no adversarial).
 - [ ] Probar con dos JWT de cuentas sintéticas la falsificación de `is_editorial=true`, origen y contadores, mutación de publicaciones ajenas y derechos incompletos.
 - [ ] Evaluar menor privilegio mediante GRANT por columna; el permiso de tabla actual es amplio pero RLS/trigger controlan su uso. Evitar cambios sin pruebas de compatibilidad del cliente.
-- [ ] Habilitar/validar `Before User Created` en Supabase Auth exclusivamente en Staging conforme a `STAGING_AUTH_HOOK_ACTIVATION.md`. SQL instalado no equivale a configuración de Auth.
+- [x] `Before User Created` se habilitó en Supabase Auth exclusivamente en Staging el 18 Oct 2026, conforme a `STAGING_AUTH_HOOK_ACTIVATION.md`. [ ] E2E del hook sigue pendiente.
 
 ## P0 — Approved Staging identity check — 10 Oct 2026
 
 - [x] Staging builder is restricted to the **exact founder-approved** Supabase project URL `https://egujmptgnrpajgfpjjxu.supabase.co`, rather than any unrelated Supabase host; offline visual preview continues to use a disabled endpoint.
 - [x] Deployed Staging audit requires the same exact identity; a different but valid Supabase project must cause failure.
 - [x] Regression tests cover Production, unrelated Supabase projects, invalid host, insecure HTTP, reusable Production key and secret misuse.
-- [ ] Live protected deployment and Auth hook E2E with two synthetic users remain pending. No production release.
+- [ ] Live protected deployment and Auth hook E2E with two synthetic users remain pending. The hook was enabled in Staging on 18 Oct 2026. No production release.
 
 ## Source-level Production disconnection — 10 Oct 2026
 
