@@ -1,30 +1,30 @@
 # ORIGEN — Activación controlada de Before User Created (Staging solamente)
 
-**Fecha:** 10 octubre 2026  
+**Fecha de actualización:** 18 octubre 2026 (original: 10 octubre 2026)  
 **Entorno:** Supabase `ORIGEN Cultural Staging` `egujmptgnrpajgfpjjxu` (Sídney, Free).  
-**Estado:** funciones instaladas y auditadas; **activación del hook en Supabase Auth NO verificada**. **No ejecutar en Production** (`xwkjvoyicrrwjybjolld`).
+**Estado al 18 octubre 2026:** hook Before User Created **activo y visible como ENABLED** en Authentication → Hooks de Staging, conectado a `public.origen_before_user_created`. **No ejecutar en Production** (`xwkjvoyicrrwjybjolld`). Aún no hay una prueba de signup end-to-end: falta desplegar la web de Staging con HTTPS protegido y configurar Turnstile.
 
 ## Qué ya está verificado
 
 - `public.origen_before_user_created(jsonb)` existe en Staging como `SECURITY INVOKER`; `supabase_auth_admin` puede ejecutarla, `anon` y `authenticated` no.
 - `private.handle_new_user()` es el trigger de `auth.users`, exige `accepted_legal=true` booleano, sólo email y no anónimo, crea `profiles` y `legal_acceptances` con versiones `v1.2` del servidor.
 - 8/8 casos de la función SQL Before User Created aprobaron `supabase/proposals/ORIGEN_CONSENT_STAGING_QA_READ_ONLY.sql`.
-- 11/11 verificaciones de estructura Auth en `ORIGEN_STAGING_AUTH_CONFIGURATION_AUDIT_READ_ONLY.sql` aprobaron. No equivalen a activación Auth real.
+- 11/11 verificaciones de estructura Auth en `ORIGEN_STAGING_AUTH_CONFIGURATION_AUDIT_READ_ONLY.sql` aprobaron; la activación de Auth quedó confirmada después en el Dashboard de Staging.
+- El 18 de octubre, una consulta SQL de solo lectura confirmó que `supabase_auth_admin` puede ejecutar la función. `auth.users` y `public.profiles` siguen con 0 filas tras activar el hook.
 - **Ninguna cuenta ficticia** estaba creada en la última auditoría. No se implementó flujo real de correo de prueba.
 
-## Paso único de configuración que requiere acceso autorizado al Dashboard
+## Configuración completada en el Dashboard de Staging
 
-1. Entrar **sólo** en el proyecto de Staging, confirmar en encabezado `ORIGEN Cultural Staging` y referencia `egujmptgnrpajgfpjjxu`; **nunca** `ORIGEN Cultural Production`.
-2. Ir a **Authentication → Hooks**. Elegir **Before User Created**, implementación **Postgres Function**.
-3. Seleccionar `public.origen_before_user_created` (`jsonb`) y habilitar/guardar. No usar función de Production ni escribir contraseñas en el repositorio.
-4. Registrar captura o evidencia privada del nombre y estado del hook; **no** adjuntar claves, emails ni datos de usuarios a tickets GitHub.
-5. No habilitar métodos de registro distintos del flujo beta de email con consentimiento hasta revisar flujos de OAuth, teléfono e invitaciones. Confirmar CAPTCHA y confirmación de correo antes de pruebas operativas.
+1. Se confirmó el proyecto `ORIGEN Cultural Staging`, referencia `egujmptgnrpajgfpjjxu`; Production no se modificó.
+2. El hook **Before User Created** quedó habilitado como **Postgres function**, esquema `public`, función `origen_before_user_created`.
+3. La captura del Dashboard confirmó estado **ENABLED**. La consulta SQL de solo lectura confirmó la firma `event jsonb`, retorno `jsonb` y permiso `EXECUTE` para `supabase_auth_admin`.
+4. La evidencia visual se conserva en la conversación privada; no se copiaron secretos, emails ni datos personales a GitHub.
 
-**Importante:** ninguna herramienta conectada en esta conversación ofrece una operación documentada para modificar directamente la configuración `Authentication → Hooks`. Crear SQL NO equivale a activar Auth.
+El hook está configurado, pero la activación no sustituye las pruebas reales. No se han creado cuentas y el flujo Auth aún debe verificarse desde la web desplegada. Ningún secreto debe escribirse en el repositorio.
 
 Documentación: https://supabase.com/docs/guides/auth/auth-hooks y https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook
 
-## QA obligatorio después de activar — entorno de pruebas privado
+## QA obligatorio pendiente — entorno de pruebas privado
 
 - Hacer un alta con **correo de prueba controlado** + `user_metadata.accepted_legal=true` (booleano). Confirmar `auth.users` (1), `public.profiles` (1), `legal_acceptances` (1), versiones del servidor `v1.2`; confirmar correo y login.
 - Probar por Auth API directa las variantes consentimiento **ausente, false, null, string 'true', número 1**: todas rechazadas y sin filas huérfanas.
