@@ -1,5 +1,18 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Estado ejecutivo actualizado — 18 octubre 2026
+
+- Supabase **Staging** `egujmptgnrpajgfpjjxu` está ACTIVE_HEALTHY y separado de Production.
+- El hook Auth **Before User Created** está ENABLED en Staging y llama a `public.origen_before_user_created`. Una consulta read-only confirmó EXECUTE para `supabase_auth_admin`.
+- Staging conserva **0 Auth users y 0 profiles**. No se ha ejecutado un alta real ni una prueba A/B.
+- Supabase **Production** `xwkjvoyicrrwjybjolld` reporta **INACTIVE**; no se modificó.
+- PR #3 sigue **Draft / NO-GO**. En el commit `dcd7cc52ff15399fcbe714741e5ede1b44c0e724`, Quality Gate, CodeQL y Browser QA terminaron en PASS. Chromium smoke y captura visual no conectan a Supabase.
+- No existe URL de Cloudflare Pages configurada. Faltan vista HTTPS protegida con Access, URLs Auth exactas, widget/validación Turnstile y pruebas end-to-end.
+- Siguiente secuencia: configurar Cloudflare Pages/Access dentro de Free, comprobar que la vista está bloqueada para visitantes no autorizados, conectar exclusivamente Staging, configurar Turnstile y ejecutar pruebas con cuentas sintéticas. Detenerse si el alta de Zero Trust solicita datos de pago, salvo decisión expresa de la titular.
+- No cambiar `main`, Production, `origencultural.com` ni DNS; mantener gasto objetivo **$0**. La beta pública sigue NO-GO hasta cerrar pruebas Auth/RLS/Storage, moderación, privacidad, recuperación y revisión legal/cultural.
+
+Las secciones fechadas más abajo registran hallazgos históricos en su fecha original; no describen el estado actual cuando contradicen este resumen.
+
 ## Validación reproducible en Supabase Staging — 9 octubre 2026
 
 - ✅ Se creó `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` y se ejecutó sin escrituras sobre `ORIGEN Cultural Staging` (`egujmptgnrpajgfpjjxu`): **10/10 comprobaciones de configuración PASS** (CHECK de dos derechos culturales, campos NOT NULL/default FALSE, dos triggers habilitados, tabla privada RLS y revocación de accesos, restricciones de ejecución y revisión estructural de identidad/versiones de la función). No se crearon cuentas ni publicaciones.
