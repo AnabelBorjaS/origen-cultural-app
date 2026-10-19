@@ -662,12 +662,12 @@
     let media = '';
     if ((post.type === 'photo' || post.type === 'carousel') && post.media && post.media.length) {
       const isCarousel = post.type === 'carousel' && post.media.length > 1;
-      media = `<div class="post-media${isCarousel ? ' is-carousel' : ''}" data-pid="${post.id}">
+      media = `<div class="post-media${isCarousel ? ' is-carousel' : ''}" data-pid="${esc(post.id)}">
         <img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">
         ${isCarousel ? `
-          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${post.id}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
-          ${cidx > 0 ? `<button class="car-btn car-l" data-car="${post.id}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
-          ${cidx < post.media.length - 1 ? `<button class="car-btn car-r" data-car="${post.id}" data-cdir="1" aria-label="Siguiente">›</button>` : ''}
+          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${esc(post.id)}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
+          ${cidx > 0 ? `<button class="car-btn car-l" data-car="${esc(post.id)}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
+          ${cidx < post.media.length - 1 ? `<button class="car-btn car-r" data-car="${esc(post.id)}" data-cdir="1" aria-label="Siguiente">›</button>` : ''}
           <span class="car-count">${cidx + 1} / ${post.media.length}</span>
         ` : ''}
       </div>`;
@@ -677,9 +677,9 @@
 
     const authorHref = author._kind === 'creator' ? `#perfil/${author.id}` : `#usuario/${author.id}`;
 
-    return `<article class="post-card${post.type === 'text' ? ' post-text' : ''}" data-pid="${post.id}">
+    return `<article class="post-card${post.type === 'text' ? ' post-text' : ''}" data-pid="${esc(post.id)}">
       <div class="post-head">
-        <a class="post-author-link" href="${authorHref}">
+        <a class="post-author-link" href="${esc(authorHref)}">
           ${avatarEl(author, 'sm')}
           <div class="post-author-info">
             <strong>${esc(author.name)} ${verBadge(author)}</strong>
@@ -687,9 +687,9 @@
           </div>
         </a>
         <div class="post-head-r">
-          ${user && !isOwn && !following ? `<button class="btn-follow-sm" data-fuser="${post.authorId}">+ Seguir</button>` : ''}
-          ${user && !isOwn && following  ? `<button class="btn-follow-sm on" data-fuser="${post.authorId}">Siguiendo</button>` : ''}
-          <button class="post-more-btn" data-pmore="${post.id}" aria-label="Más opciones">···</button>
+          ${user && !isOwn && !following ? `<button class="btn-follow-sm" data-fuser="${esc(post.authorId)}">+ Seguir</button>` : ''}
+          ${user && !isOwn && following  ? `<button class="btn-follow-sm on" data-fuser="${esc(post.authorId)}">Siguiendo</button>` : ''}
+          <button class="post-more-btn" data-pmore="${esc(post.id)}" aria-label="Más opciones">···</button>
         </div>
       </div>
       ${media}
@@ -703,16 +703,16 @@
         ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
       </div>
       <div class="post-actions">
-        <button class="pact like-btn${liked ? ' on' : ''}" data-like="${post.id}" ${!user ? 'data-needs-auth' : ''} aria-label="Me gusta">
+        <button class="pact like-btn${liked ? ' on' : ''}" data-like="${esc(post.id)}" ${!user ? 'data-needs-auth' : ''} aria-label="Me gusta">
           ${liked ? '♥' : '♡'}<span>${totalLikes}</span>
         </button>
-        <button class="pact com-btn" data-tcoms="${post.id}" aria-label="Comentarios">
+        <button class="pact com-btn" data-tcoms="${esc(post.id)}" aria-label="Comentarios">
           ◎<span>${coms.length}</span>
         </button>
-        <button class="pact save-btn${saved ? ' on' : ''}" data-save="${post.id}" ${!user ? 'data-needs-auth' : ''} aria-label="${saved ? 'Guardado' : 'Guardar'}">
+        <button class="pact save-btn${saved ? ' on' : ''}" data-save="${esc(post.id)}" ${!user ? 'data-needs-auth' : ''} aria-label="${saved ? 'Guardado' : 'Guardar'}">
           ${saved ? '◆' : '◇'}
         </button>
-        ${shareable ? `<button class="pact share-btn" data-share="${post.id}" aria-label="${state.lang === 'es' ? 'Compartir esta historia' : 'Share this story'}">↗</button>` : ''}
+        ${shareable ? `<button class="pact share-btn" data-share="${esc(post.id)}" aria-label="${state.lang === 'es' ? 'Compartir esta historia' : 'Share this story'}">↗</button>` : ''}
         <button class="pact report-btn" data-report="${post.id}" aria-label="Reportar" style="margin-left:auto">⚑</button>
       </div>
       <div class="post-rights-link"><a href="#solicitar-revision/post/${encodeURIComponent(post.id)}">${state.lang === 'es' ? '¿Uso no autorizado? Solicitar revisión' : 'Unauthorised use? Request a review'}</a></div>
@@ -722,7 +722,7 @@
 
   function commentBlock(postId, coms) {
     const user = me();
-    return `<div class="com-section" id="coms-${postId}">
+    return `<div class="com-section" id="coms-${esc(postId)}">
       ${coms.slice(-10).map(c => {
         const a = getProfile(c.authorId);
         return `<div class="com-row">
@@ -735,7 +735,7 @@
         </div>`;
       }).join('')}
       ${user
-        ? `<form class="com-form" data-cf="${postId}">
+        ? `<form class="com-form" data-cf="${esc(postId)}">
             ${avatarEl(user, 'xs')}
             <input type="text" name="text" placeholder="Añade un comentario..." required autocomplete="off">
             <button type="submit" aria-label="Publicar">→</button>
@@ -760,7 +760,7 @@
         const isCreator = !!creators.find(c => c.id === a.id);
         const href      = isCreator ? `#perfil/${a.id}` : `#usuario/${a.id}`;
         const ring      = myFollow.includes(a.id) ? ' following' : '';
-        return `<a class="story-item" href="${href}">
+        return `<a class="story-item" href="${esc(href)}">
           <div class="story-ring${ring}">${avatarEl(a, 'story')}</div>
           <span>${esc((a.name || '').split(' ')[0])}</span>
         </a>`;
@@ -779,17 +779,17 @@
     const image = c.image || c.avatar || 'assets/logo-mark.svg';
     return `<article class="creator-card">
       <div class="creator-card-image">
-        <a href="${href}" aria-label="${esc(t('profile'))}: ${esc(c.name)}"><img src="${esc(safeMediaUrl(image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}: ${esc(c.category)}" loading="lazy"></a>
-        <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${c.id}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
+        <a href="${esc(href)}" aria-label="${esc(t('profile'))}: ${esc(c.name)}"><img src="${esc(safeMediaUrl(image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}: ${esc(c.category)}" loading="lazy"></a>
+        <button class="favorite-button ${saved ? 'active' : ''}" data-favorite="${esc(c.id)}" aria-pressed="${saved}">${saved ? '◆' : '◇'}</button>
       </div>
       <div class="creator-card-body">
         <div class="creator-meta"><span>${esc(c.type)}</span><span>${verBadge(c)} ${esc(c.location)}</span></div>
         ${c.culturalIdentity ? `<p class="form-note">${state.lang === 'es' ? 'Comparte:' : 'Shares:'} ${esc(c.culturalIdentity)}</p>` : ''}
-        <h3><a href="${href}">${esc(c.name)}</a></h3>
+        <h3><a href="${esc(href)}">${esc(c.name)}</a></h3>
         <div class="creator-trust-label">${profileTrustChip(c)}</div>
         <p>${esc(c.short)}</p>
         <div class="creator-tags">${(c.tags || []).map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers || 0)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
+        <div class="creator-card-footer"><span>${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers || 0)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</span><a class="link-arrow" href="${esc(href)}">${t('profile')}</a></div>
       </div>
     </article>`;
   }
@@ -1085,7 +1085,7 @@
           <div><p class="eyebrow">${es ? 'CURADURÍA CULTURAL' : 'CULTURAL CURATION'}</p><h2>${t('featured')}</h2></div>
           <div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div>
         </div>
-        <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
+        <div class="story-grid">${featured.map(c => `<a class="story-card" href="${esc('#perfil/' + c.id)}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
       </div>
     </section>
 
@@ -1214,9 +1214,9 @@
           <p class="eyebrow">${es ? 'DESCUBRIR' : 'DISCOVER'}</p>
           <h3>${es ? 'Agentes culturales' : 'Cultural Agents'}</h3>
           ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
-            <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
-            <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
-            <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? (es ? 'Siguiendo' : 'Following') : (es ? '+ Seguir' : '+ Follow')}</button>
+            <a href="${esc('#perfil/' + c.id)}">${avatarEl(c, 'sm')}</a>
+            <div class="aside-row-info"><a href="${esc('#perfil/' + c.id)}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
+            <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${esc(c.id)}">${myFollows.includes(c.id) ? (es ? 'Siguiendo' : 'Following') : (es ? '+ Seguir' : '+ Follow')}</button>
           </div>`).join('')}
           <a class="link-arrow" href="#explorar" style="display:block;margin-top:18px;font-size:12px">${es ? 'Ver todos' : 'View all'} →</a>
         </div>
@@ -1294,8 +1294,8 @@
           <p>${esc(c.category)} · ${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</p>
         </div>
         <div class="profile-actions">
-          <button class="btn light" data-fuser="${c.id}">${isFollowing ? t('following') : t('follow')}</button>
-          <button class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" data-favorite="${c.id}">${isSaved ? t('saved') : t('save')}</button>
+          <button class="btn light" data-fuser="${esc(c.id)}">${isFollowing ? t('following') : t('follow')}</button>
+          <button class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" data-favorite="${esc(c.id)}">${isSaved ? t('saved') : t('save')}</button>
         </div>
       </div>
     </section>
@@ -1366,7 +1366,7 @@
         <div class="profile-actions">
           ${isMe
             ? `<a class="btn light" href="#editar-perfil">${es ? 'Editar perfil' : 'Edit profile'}</a>`
-            : `<button class="btn light" data-fuser="${id}">${following ? t('following') : t('follow')}</button>`}
+            : `<button class="btn light" data-fuser="${esc(id)}">${following ? t('following') : t('follow')}</button>`}
         </div>
       </div>
     </section>
@@ -3597,7 +3597,7 @@
     const $res = document.getElementById('search-results');
     if (!$res) return;
     $res.innerHTML = [
-      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${href}" data-close-search><div class="ava ava-sm"><img src="${esc(safeMediaUrl(c.image || c.avatar) || 'assets/logo-mark.svg')}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${esc(c.category)} · ${esc(c.location)}</p>${profileTrustChip(c)}</div><span class="link-arrow">Ver</span></a>`; }),
+      ...results.map(c => { const href = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`; return `<a class="search-result" href="${esc(href)}" data-close-search><div class="ava ava-sm"><img src="${esc(safeMediaUrl(c.image || c.avatar) || 'assets/logo-mark.svg')}" alt=""></div><div><h4>${esc(c.name)} ${verBadge(c)}</h4><p>${esc(c.category)} · ${esc(c.location)}</p>${profileTrustChip(c)}</div><span class="link-arrow">Ver</span></a>`; }),
       ...resPosts.map(p => { const a = getProfile(p.authorId); return `<a class="search-result" href="#feed" data-close-search data-clear-comments><div class="ava ava-sm ava-init">${p.type === 'text' ? 'T' : '◫'}</div><div><h4>${esc(p.title)}</h4><p>${a ? esc(a.name) : ''} · ${timeAgo(p.timestamp)}</p></div><span class="link-arrow">Ver</span></a>`; })
     ].join('') || `<div class="empty-state">${t('noResults')}</div>`;
   }
