@@ -58,5 +58,4 @@
   function findCity(id) { return rows.find(row => String(row.id) === String(id)) || null; }
 
   window.ORIGEN_LOCATIONS = { load, countries, cities, findCity, get ready() { return rows.length > 0; } };
-  void load();
 })();
