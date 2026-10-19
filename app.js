@@ -2771,7 +2771,10 @@
     // template, URL or persistent browser storage.
     const previousPassword = document.querySelector('#reg-basic [name="password"]');
     if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
-    if (state.regStep === 2) bindLocationSelects(document.getElementById('reg-basic'));
+    if (state.regStep === 2) {
+      bindLocationSelects(document.getElementById('reg-basic'));
+      void window.ORIGEN_LOCATIONS?.load?.();
+    }
     if (state.regStep === 5) void mountTurnstile('signup');
     /* account type selection */
     document.querySelectorAll('[data-atype]').forEach(card => {
@@ -3154,6 +3157,7 @@
   /* Edit profile */
   function bindEditProfile() {
     bindLocationSelects(document.getElementById('edit-form'));
+    void window.ORIGEN_LOCATIONS?.load?.();
     /* category chips */
     const userCats = { list: me() ? (me().categories || []) : [] };
     document.querySelectorAll('[data-cat]').forEach(chip => {
