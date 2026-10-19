@@ -135,6 +135,14 @@
     }
   };
   const t = k => (copy[state.lang] || copy.es)[k] || k;
+  const l = (spanish, english) => state.lang === 'es' ? spanish : english;
+  const SEED_PROFILE_COPY_EN = Object.freeze({
+    pakarina: { type: 'Craft collective', category: 'Craft and tradition', short: 'Editorial pilot reference about embroidery and textile making connected to Yaruquí.', story: 'This is an ORIGEN pilot reference profile. An authorised representative must review, correct or adopt its content before it can be presented as official.', tags: ['Embroidery', 'Textiles', 'Living memory'] },
+    chawar: { type: 'Cultural enterprise', category: 'Ancestral foodways', short: 'Editorial pilot reference about Andean agave and traditional practices connected to the territory.', story: 'This is an ORIGEN pilot reference profile. An authorised representative must review, correct or adopt its content before it can be presented as official.', tags: ['Andean agave', 'Foodways', 'Territory'] },
+    'aji-de-piedra': { type: 'Cultural business', category: 'Traditional food', short: 'Editorial pilot reference about traditional food connected to Yaruquí.', story: 'This is an ORIGEN pilot reference profile. An authorised representative must review, correct or adopt its content before it can be presented as official.', tags: ['Traditional cooking', 'Recipes', 'Hospitality'] },
+    'pushkana-runa': { type: 'Intercultural centre', category: 'Culture, embroidery and dance', short: 'Editorial pilot reference about intercultural activities related to embroidery, dance and cultural research.', story: 'This is an ORIGEN pilot reference profile. An authorised representative must review, correct or adopt its content before it can be presented as official.', tags: ['Intercultural practice', 'Embroidery', 'Dance'] }
+  });
+  const localizedSeedProfile = profile => state.lang === 'en' && profile && SEED_PROFILE_COPY_EN[profile.id] ? { ...profile, ...SEED_PROFILE_COPY_EN[profile.id] } : profile;
 
   /* ═══════════════════════════════════════════════════════════
      UTILS
@@ -755,6 +763,7 @@
      CREATOR CARD (directory)
   ═══════════════════════════════════════════════════════════ */
   function creatorCard(c) {
+    c = localizedSeedProfile(c);
     const favs  = remoteFavoriteRefs();
     const saved = favs.includes(c.id);
     const href  = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`;
@@ -770,7 +779,7 @@
         <div class="creator-trust-label">${profileTrustChip(c)}</div>
         <p>${esc(c.short)}</p>
         <div class="creator-tags">${(c.tags || []).map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat('es').format(c.followers || 0)} seguidores</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
+        <div class="creator-card-footer"><span>${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers || 0)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</span><a class="link-arrow" href="${href}">${t('profile')}</a></div>
       </div>
     </article>`;
   }
@@ -779,14 +788,15 @@
      FOOTER
   ═══════════════════════════════════════════════════════════ */
   function footer() {
+    const es = state.lang === 'es';
     return `<footer class="footer"><div class="footer-inner">
       <div class="footer-top">
-        <div class="footer-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"><p>${t('tagline')}<br><br>Una red social cultural para descubrir, seguir y valorar culturas vivas.</p></div>
-        <div><h4>Explorar</h4><div class="footer-links"><a href="#explorar">Perfiles culturales</a><a href="#feed">Feed cultural</a><a href="#pasaporte">Pasaporte Cultural</a></div></div>
-        <div><h4>Proyecto</h4><div class="footer-links"><a href="#impacto">Impacto</a><a href="#confianza">Centro de confianza</a><a href="#registro">Unirse</a><a href="mailto:info.origencultural@gmail.com">Contacto</a></div></div>
+        <div class="footer-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"><p>${t('tagline')}<br><br>${es ? 'Una red social cultural para descubrir, seguir y valorar culturas vivas.' : 'A cultural social network to discover, follow and celebrate living cultures.'}</p></div>
+        <div><h4>${es ? 'Explorar' : 'Explore'}</h4><div class="footer-links"><a href="#explorar">${es ? 'Perfiles culturales' : 'Cultural profiles'}</a><a href="#feed">${es ? 'Feed cultural' : 'Cultural feed'}</a><a href="#pasaporte">${es ? 'Pasaporte Cultural' : 'Cultural Passport'}</a></div></div>
+        <div><h4>${es ? 'Proyecto' : 'Project'}</h4><div class="footer-links"><a href="#impacto">${es ? 'Impacto' : 'Impact'}</a><a href="#confianza">${es ? 'Centro de confianza' : 'Trust Center'}</a><a href="#registro">${es ? 'Unirse' : 'Join'}</a><a href="mailto:info.origencultural@gmail.com">${es ? 'Contacto' : 'Contact'}</a></div></div>
         <div><h4>Social</h4><div class="footer-links"><a href="https://www.instagram.com/origen.cultural" target="_blank" rel="noreferrer">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></div></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Origen Cultural. Todos los derechos reservados.</span><span>Beta controlada · Datos sincronizados con Supabase</span></div>
+      <div class="footer-bottom"><span>© 2026 Origen Cultural. ${es ? 'Todos los derechos reservados.' : 'All rights reserved.'}</span><span>${es ? 'Beta controlada · Datos sincronizados con Supabase' : 'Controlled beta · Data synced with Supabase'}</span></div>
     </div></footer>`;
   }
 
@@ -818,6 +828,10 @@
     };
 
     setText('#skip-link', 'Saltar al contenido', 'Skip to content');
+    const pageDescription = document.querySelector('meta[name="description"]');
+    if (pageDescription) pageDescription.content = es ? 'Origen Cultural: red social cultural global para descubrir, seguir y valorar culturas vivas.' : 'Origen Cultural: a global cultural social network to discover, follow and celebrate living cultures.';
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) ogDescription.content = es ? 'Conectando al mundo con sus raíces culturales.' : 'Connecting the world with its cultural roots.';
     setText('#connection-status-text',
       'Parece que estás sin conexión. El registro, las publicaciones y los cambios de cuenta requieren internet.',
       'You appear to be offline. Registration, posting and account changes require internet.');
@@ -996,29 +1010,32 @@
 
   /* ── LANDING ─────────────────────────────────────────────── */
   function landingView() {
-    const featured = directoryProfiles().slice(0, 5);
+    const es = state.lang === 'es';
+    const featured = directoryProfiles().slice(0, 5).map(localizedSeedProfile);
+    const manifesto = t('manifest');
+    const manifestoEmphasis = es ? 'identidad, memoria, conocimiento y futuro' : 'identity, memory, knowledge and future';
     return `
     <!-- HERO GLOBE -->
     <section class="hero-globe-section">
       <div class="hero-globe-copy">
-        <p class="eyebrow">RED SOCIAL CULTURAL GLOBAL</p>
+        <p class="eyebrow">${es ? 'RED SOCIAL CULTURAL GLOBAL' : 'GLOBAL CULTURAL SOCIAL NETWORK'}</p>
         <div class="hero-wordmark">
           <span class="hwm-origen">ORIGEN</span>
           <span class="hwm-cultural">CULTURAL</span>
         </div>
-        <p class="hero-tagline">Conectando al mundo con sus raíces culturales</p>
+        <p class="hero-tagline">${t('tagline')}</p>
         <p class="hero-desc">${t('intro')}</p>
         <div class="hero-globe-actions">
-          <a class="btn light hga-primary" href="#mundo">🌍&nbsp; Explorar el mundo cultural</a>
-          <a class="btn hga-outline" href="#registro">Compartir mi cultura</a>
+          <a class="btn light hga-primary" href="#mundo">🌍&nbsp; ${es ? 'Explorar el mundo cultural' : 'Explore the cultural world'}</a>
+          <a class="btn hga-outline" href="#registro">${es ? 'Compartir mi cultura' : 'Share my culture'}</a>
         </div>
-        <a href="#login" class="hero-login-link">¿Ya tienes cuenta? Entrar →</a>
+        <a href="#login" class="hero-login-link">${es ? '¿Ya tienes cuenta? Entrar →' : 'Already have an account? Sign in →'}</a>
         <div class="hero-globe-stats">
-          <div class="hero-gstat"><strong>6</strong><span>Territorios explorables</span></div>
+          <div class="hero-gstat"><strong>6</strong><span>${es ? 'Territorios explorables' : 'Territories to explore'}</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>4</strong><span>Perfiles de referencia</span></div>
+          <div class="hero-gstat"><strong>4</strong><span>${es ? 'Perfiles de referencia' : 'Reference profiles'}</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>Beta</strong><span>Controlada</span></div>
+          <div class="hero-gstat"><strong>Beta</strong><span>${es ? 'Controlada' : 'Controlled pilot'}</span></div>
         </div>
       </div>
       <div class="hero-globe-right">
@@ -1026,16 +1043,16 @@
         <div class="hero-globe-popup" id="hero-globe-popup" hidden></div>
         <div class="hero-globe-ui">
           <div class="hero-globe-ctrl-bar">
-            <button id="hero-globe-pause" class="hero-ctrl-btn" title="Pausar / Reanudar rotación" aria-label="Pausar o reanudar rotación">⏸</button>
-            <button id="hero-globe-zoom-in" class="hero-ctrl-btn" title="Acercar" aria-label="Acercar globo">+</button>
-            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="Alejar" aria-label="Alejar globo">−</button>
+            <button id="hero-globe-pause" class="hero-ctrl-btn" title="${es ? 'Pausar / Reanudar rotación' : 'Pause / Resume rotation'}" aria-label="${es ? 'Pausar o reanudar rotación' : 'Pause or resume rotation'}">⏸</button>
+            <button id="hero-globe-zoom-in" class="hero-ctrl-btn" title="${es ? 'Acercar' : 'Zoom in'}" aria-label="${es ? 'Acercar globo' : 'Zoom in on globe'}">+</button>
+            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="${es ? 'Alejar' : 'Zoom out'}" aria-label="${es ? 'Alejar globo' : 'Zoom out on globe'}">−</button>
           </div>
-          <a href="#mundo" class="hero-mundo-link">Mundo Cultural completo →</a>
+          <a href="#mundo" class="hero-mundo-link">${es ? 'Mundo Cultural completo' : 'Explore the full Cultural World'} →</a>
         </div>
-        <p class="hero-globe-hint">Toca un país para explorar su cultura</p>
+        <p class="hero-globe-hint">${es ? 'Toca un país para explorar su cultura' : 'Select a country to explore its culture'}</p>
         <div class="hero-globe-territories">
-          ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪','Perú'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽','México'],['japan','🇯🇵','Japón']]
-            .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="Ver ${n}">${f} ${n}</button>`).join('')}
+          ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪',es ? 'Perú' : 'Peru'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽',es ? 'México' : 'Mexico'],['japan','🇯🇵',es ? 'Japón' : 'Japan']]
+            .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="${es ? 'Ver' : 'Explore'} ${n}">${f} ${n}</button>`).join('')}
         </div>
       </div>
     </section>
@@ -1043,10 +1060,10 @@
     <!-- MANIFESTO -->
     <section class="section manifesto">
       <div class="section-inner manifesto-grid">
-        <p class="eyebrow">DECLARACIÓN FUNDACIONAL</p>
+        <p class="eyebrow">${es ? 'DECLARACIÓN FUNDACIONAL' : 'FOUNDING STATEMENT'}</p>
         <div>
-          <p class="manifesto-quote">${t('manifest').replace('identidad, memoria, conocimiento y futuro', '<em>identidad, memoria, conocimiento y futuro</em>')}</p>
-          <p class="manifesto-copy">Origen Cultural nace para que la cultura se muestre con el valor que merece: con contexto, autonomía, belleza, pertenencia y proyección global.</p>
+          <p class="manifesto-quote">${manifesto.replace(manifestoEmphasis, `<em>${manifestoEmphasis}</em>`)}</p>
+          <p class="manifesto-copy">${es ? 'Origen Cultural nace para que la cultura se muestre con el valor que merece: con contexto, autonomía, belleza, pertenencia y proyección global.' : 'Origen Cultural exists so culture can be seen for what it is worth: presented with context, autonomy, beauty, belonging and a global outlook.'}</p>
         </div>
       </div>
     </section>
@@ -1055,7 +1072,7 @@
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
-          <div><p class="eyebrow">CURADURÍA CULTURAL</p><h2>${t('featured')}</h2></div>
+          <div><p class="eyebrow">${es ? 'CURADURÍA CULTURAL' : 'CULTURAL CURATION'}</p><h2>${t('featured')}</h2></div>
           <div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div>
         </div>
         <div class="story-grid">${featured.map(c => `<a class="story-card" href="#perfil/${c.id}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
@@ -1065,7 +1082,7 @@
     <!-- CREADORES -->
     <section class="section" style="background:var(--grey-2)">
       <div class="section-inner">
-        <div class="section-head"><div><p class="eyebrow">EXPLORAR</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
+        <div class="section-head"><div><p class="eyebrow">${es ? 'EXPLORAR' : 'EXPLORE'}</p><h2>${t('creatorsTitle')}</h2></div><p>${t('creatorsBody')}</p></div>
         <div class="creator-grid">${directoryProfiles().slice(0, 3).map(creatorCard).join('')}</div>
       </div>
     </section>
@@ -1073,19 +1090,19 @@
     <!-- IMPACTO -->
     <section class="section impact-band">
       <div class="section-inner">
-        <div class="section-head"><div><p class="eyebrow">MVP · PILOTO ECUADOR</p><h2>${t('impactTitle')}</h2></div><p>${t('impactBody')}</p></div>
-        <div class="impact-grid">${impact.map(i => `<div class="impact-item"><strong>${i.value}</strong><span>${i.label}</span></div>`).join('')}</div>
+        <div class="section-head"><div><p class="eyebrow">${es ? 'MVP · PILOTO ECUADOR' : 'MVP · ECUADOR PILOT'}</p><h2>${t('impactTitle')}</h2></div><p>${t('impactBody')}</p></div>
+        <div class="impact-grid">${impact.map((i, index) => { const labels = ['Pilot reference profiles', 'Country in initial validation', 'Shared web backend and future apps', 'Profiles subject to consent and verification']; return `<div class="impact-item"><strong>${i.value}</strong><span>${es ? i.label : (labels[index] || i.label)}</span></div>`; }).join('')}</div>
       </div>
     </section>
 
     <!-- CTA -->
     <section class="cta-panel">
-      <img src="assets/images/mural.jpg" alt="Mural cultural">
+      <img src="assets/images/mural.jpg" alt="${es ? 'Mural cultural' : 'Cultural mural'}">
       <div class="cta-content">
-        <p class="eyebrow">AGENTES CULTURALES</p>
-        <h2>Tu historia cultural merece ser encontrada.</h2>
-        <p>Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.</p>
-        <a class="btn light" href="#registro">Empezar ahora</a>
+        <p class="eyebrow">${es ? 'AGENTES CULTURALES' : 'CULTURAL AGENTS'}</p>
+        <h2>${es ? 'Tu historia cultural merece ser encontrada.' : 'Your cultural story deserves to be found.'}</h2>
+        <p>${es ? 'Crea una presencia digital premium, conserva el control de tu narrativa y conecta con exploradores y aliados alrededor del mundo.' : 'Create a considered digital presence, stay in control of your story, and connect with explorers and partners around the world.'}</p>
+        <a class="btn light" href="#registro">${es ? 'Empezar ahora' : 'Get started'}</a>
       </div>
     </section>
     ${footer()}`;
@@ -1163,6 +1180,7 @@
 
   /* ── FEED ────────────────────────────────────────────────── */
   function feedView() {
+    const es = state.lang === 'es';
     if (!isAuth()) return loginView();
     const posts = feedPosts();
     const user  = me();
@@ -1171,38 +1189,38 @@
       ${storiesRow()}
       <div class="feed-col">
         <div class="feed-hdr">
-          <h2>Feed cultural</h2>
-          <a class="btn" href="#crear" style="min-height:38px;padding:0 20px;font-size:11px;letter-spacing:.1em">＋ Publicar</a>
+          <h2>${es ? 'Feed cultural' : 'Cultural feed'}</h2>
+          <a class="btn" href="#crear" style="min-height:38px;padding:0 20px;font-size:11px;letter-spacing:.1em">＋ ${es ? 'Publicar' : 'Post'}</a>
         </div>
         <div id="feed-posts">
           ${posts.length
             ? posts.map(postCard).join('')
-            : `<div class="empty-feed"><p>Sigue agentes culturales para ver su contenido aquí.</p><a class="btn" href="#explorar">Explorar agentes culturales</a></div>`}
+            : `<div class="empty-feed"><p>${es ? 'Sigue agentes culturales para ver su contenido aquí.' : 'Follow Cultural Agents to see their posts here.'}</p><a class="btn" href="#explorar">${es ? 'Explorar agentes culturales' : 'Explore Cultural Agents'}</a></div>`}
           ${posts.length ? `<div id="feed-sentinel" class="feed-sentinel${window.ORIGEN_API?.cache?.postsExhausted ? ' done' : ''}" aria-live="polite"></div>` : ''}
         </div>
       </div>
       <aside class="feed-aside">
         <div class="aside-card">
-          <p class="eyebrow">DESCUBRIR</p>
-          <h3>Agentes culturales</h3>
+          <p class="eyebrow">${es ? 'DESCUBRIR' : 'DISCOVER'}</p>
+          <h3>${es ? 'Agentes culturales' : 'Cultural Agents'}</h3>
           ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
             <a href="#perfil/${c.id}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="#perfil/${c.id}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
-            <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? 'Siguiendo' : '+ Seguir'}</button>
+            <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${c.id}">${myFollows.includes(c.id) ? (es ? 'Siguiendo' : 'Following') : (es ? '+ Seguir' : '+ Follow')}</button>
           </div>`).join('')}
-          <a class="link-arrow" href="#explorar" style="display:block;margin-top:18px;font-size:12px">Ver todos →</a>
+          <a class="link-arrow" href="#explorar" style="display:block;margin-top:18px;font-size:12px">${es ? 'Ver todos' : 'View all'} →</a>
         </div>
         <div class="aside-card">
-          <p class="eyebrow">CATEGORÍAS</p>
-          ${categories.slice(1).map(cat => `<a href="#explorar" class="aside-cat">${cat}</a>`).join('')}
+          <p class="eyebrow">${es ? 'CATEGORÍAS' : 'CATEGORIES'}</p>
+          ${categories.slice(1).map(cat => { const names = { Artesanía: 'Crafts', Gastronomía: 'Food', Territorio: 'Territory', 'Música y danza': 'Music and dance', Comunidad: 'Community' }; return `<a href="#explorar" class="aside-cat">${es ? cat : (names[cat] || cat)}</a>`; }).join('')}
         </div>
         <div class="aside-card">
-          <p class="eyebrow">MI PERFIL</p>
+          <p class="eyebrow">${es ? 'MI PERFIL' : 'MY PROFILE'}</p>
           <div class="aside-row">
             ${avatarEl(user, 'sm')}
-            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? 'Agente Cultural' : 'Explorador Cultural'}</p></div>
+            <div class="aside-row-info"><strong>${esc(user.name)}</strong><p>${user.accountType === 'creator' ? (es ? 'Agente Cultural' : 'Cultural Agent') : (es ? 'Explorador Cultural' : 'Cultural Explorer')}</p></div>
           </div>
-          <a href="#mi-perfil" class="link-arrow" style="display:block;margin-top:12px;font-size:12px">Ver mi perfil →</a>
+          <a href="#mi-perfil" class="link-arrow" style="display:block;margin-top:12px;font-size:12px">${es ? 'Ver mi perfil' : 'View my profile'} →</a>
         </div>
       </aside>
     </div>`;
@@ -1210,9 +1228,10 @@
 
   /* ── EXPLORE ─────────────────────────────────────────────── */
   function exploreView() {
+    const es = state.lang === 'es';
     return `<section class="page-hero">
       <div class="section-inner">
-        <p class="eyebrow">DIRECTORIO CULTURAL</p>
+        <p class="eyebrow">${es ? 'DIRECTORIO CULTURAL' : 'CULTURAL DIRECTORY'}</p>
         <h1>${t('discover')}</h1>
         <p class="lead">${t('discoverSub')}</p>
       </div>
@@ -1221,10 +1240,10 @@
       <div class="section-inner">
         <div class="search-toolbar">
           <input id="explore-search" class="search-input" type="search" placeholder="${t('searchPlaceholder')}" value="${esc(state.query)}">
-          <button class="btn" id="clear-filters">Limpiar filtros</button>
+          <button class="btn" id="clear-filters">${es ? 'Limpiar filtros' : 'Clear filters'}</button>
         </div>
-        <div class="category-strip" aria-label="Categorías">
-          ${categories.map(cat => `<button class="chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">${cat}</button>`).join('')}
+        <div class="category-strip" aria-label="${es ? 'Categorías' : 'Categories'}">
+          ${categories.map(cat => { const labels = { Todos: 'All', Artesanía: 'Crafts', Gastronomía: 'Food', Territorio: 'Territory', 'Música y danza': 'Music and dance', Comunidad: 'Community' }; return `<button class="chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">${es ? cat : (labels[cat] || cat)}</button>`; }).join('')}
         </div>
         <div id="explore-grid" class="creator-grid"></div>
       </div>
@@ -1241,14 +1260,14 @@
     });
     grid.innerHTML = filtered.length
       ? filtered.map(creatorCard).join('')
-      : `<div class="empty-state"><h3>${t('noResults')}</h3><p>Prueba con otra categoría o palabra clave.</p></div>`;
+      : `<div class="empty-state"><h3>${t('noResults')}</h3><p>${state.lang === 'es' ? 'Prueba con otra categoría o palabra clave.' : 'Try another category or keyword.'}</p></div>`;
     bindFavorites();
   }
 
   /* ── CREATOR PROFILE ─────────────────────────────────────── */
   function creatorProfileView(id) {
-    const c = creators.find(x => x.id === id);
-    if (!c) return `<section class="section"><div class="section-inner"><h2>Perfil no encontrado</h2><a class="btn" href="#explorar">Volver a explorar</a></div></section>`;
+    const c = localizedSeedProfile(creators.find(x => x.id === id));
+    if (!c) return `<section class="section"><div class="section-inner"><h2>${state.lang === 'es' ? 'Perfil no encontrado' : 'Profile not found'}</h2><a class="btn" href="#explorar">${state.lang === 'es' ? 'Volver a explorar' : 'Back to explore'}</a></div></section>`;
     const user = me();
     const myFollows = user ? remoteFollowRefs() : [];
     const isFollowing = myFollows.includes(c.id);
@@ -1256,13 +1275,13 @@
     const isSaved = favs.includes(c.id);
     const cPosts = allPosts().filter(p => p.authorId === c.id);
     return `<section class="profile-hero">
-      <img class="profile-cover" src="${esc(safeMediaUrl(c.cover))}" alt="Portada de ${esc(c.name)}">
+      <img class="profile-cover" src="${esc(safeMediaUrl(c.cover))}" alt="${state.lang === 'es' ? 'Portada de' : 'Cover image for'} ${esc(c.name)}">
       <div class="profile-hero-content">
         <img class="profile-avatar" src="${esc(safeMediaUrl(c.image))}" alt="${esc(c.name)}">
         <div class="profile-title">
           <p class="eyebrow">${esc(c.type)} · ${esc(c.location)}</p>
           <h1>${esc(c.name)} ${verBadge(c)}</h1>
-          <p>${esc(c.category)} · ${Intl.NumberFormat('es').format(c.followers)} seguidores</p>
+          <p>${esc(c.category)} · ${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</p>
         </div>
         <div class="profile-actions">
           <button class="btn light" data-fuser="${c.id}">${isFollowing ? t('following') : t('follow')}</button>
@@ -1274,27 +1293,27 @@
       <div>
         ${profileTrustNotice(c)}
         <div class="profile-story">
-          <p class="eyebrow">SU HISTORIA CULTURAL</p>
-          <h2>Una puerta directa a su identidad</h2>
+          <p class="eyebrow">${state.lang === 'es' ? 'SU HISTORIA CULTURAL' : 'THEIR CULTURAL STORY'}</p>
+          <h2>${state.lang === 'es' ? 'Una puerta directa a su identidad' : 'A direct window into their identity'}</h2>
           <p>${esc(c.story)}</p>
           <div class="creator-tags">${c.tags.map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
         </div>
         <div style="margin-top:60px">
-          <p class="eyebrow">PUBLICACIONES (${cPosts.length || c.posts.length})</p>
+          <p class="eyebrow">${state.lang === 'es' ? 'PUBLICACIONES' : 'POSTS'} (${cPosts.length || c.posts.length})</p>
           ${cPosts.length
             ? `<div id="creator-posts" style="margin-top:20px">${cPosts.map(postCard).join('')}</div>`
             : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${esc(safeMediaUrl(p.image))}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
         </div>
       </div>
       <aside class="profile-aside">
-        <p class="eyebrow">PERFIL CULTURAL</p>
+        <p class="eyebrow">${state.lang === 'es' ? 'PERFIL CULTURAL' : 'CULTURAL PROFILE'}</p>
         <dl>
-          <div><dt>Tipo</dt><dd>${esc(c.type)}</dd></div>
-          <div><dt>Ubicación</dt><dd>${esc(c.location)}</dd></div>
+          <div><dt>${state.lang === 'es' ? 'Tipo' : 'Type'}</dt><dd>${esc(c.type)}</dd></div>
+          <div><dt>${state.lang === 'es' ? 'Ubicación' : 'Location'}</dt><dd>${esc(c.location)}</dd></div>
           <div><dt>${state.lang === 'es' ? 'Estado del perfil' : 'Profile status'}</dt><dd>${esc(profileTrustInfo(c).label)}</dd></div>
         </dl>
         ${socialLinksHtml(c)}
-        <p class="form-note" style="margin-top:20px">Origen Cultural no administra ventas ni se apropia de la historia del creador.</p>
+        <p class="form-note" style="margin-top:20px">${state.lang === 'es' ? 'Origen Cultural no administra ventas ni se apropia de la historia del creador.' : 'Origen Cultural does not manage sales or claim ownership of a creator’s story.'}</p>
       </aside>
     </section>
     ${footer()}`;
@@ -1312,9 +1331,10 @@
 
   /* ── USER PROFILE ────────────────────────────────────────── */
   function userProfileView(id) {
+    const es = state.lang === 'es';
     const user    = me();
     const profile = (user && user.id === id) ? user : normalisePublicProvider((window.ORIGEN_API?.cache?.publicProfiles || []).find(x => x.id === id));
-    if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>Perfil no encontrado</h2><a href="#feed" class="btn" style="margin-top:20px">Volver</a></div></div>`;
+    if (!profile) return `<div class="section"><div class="section-inner" style="padding:80px 20px;text-align:center"><h2>${es ? 'Perfil no encontrado' : 'Profile not found'}</h2><a href="#feed" class="btn" style="margin-top:20px">${es ? 'Volver' : 'Back'}</a></div></div>`;
     const myFollows = user ? remoteFollowRefs() : [];
     const isMe      = !!(user && user.id === id);
     const following = myFollows.includes(id);
@@ -1324,18 +1344,18 @@
     const uPosts = allPosts().filter(p => p.authorId === id);
     return `<section class="profile-hero">
       ${profile.cover
-        ? `<img class="profile-cover" src="${esc(safeMediaUrl(profile.cover))}" alt="Portada">`
+        ? `<img class="profile-cover" src="${esc(safeMediaUrl(profile.cover))}" alt="${es ? 'Portada' : 'Cover'}">`
         : `<div class="profile-cover-blank"></div>`}
       <div class="profile-hero-content">
         ${avatarEl(profile, 'lg')}
         <div class="profile-title">
-          <p class="eyebrow">${profile.accountType === 'creator' ? 'Agente Cultural' : 'Explorador Cultural'}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
+          <p class="eyebrow">${profile.accountType === 'creator' ? (es ? 'Agente Cultural' : 'Cultural Agent') : (es ? 'Explorador Cultural' : 'Cultural Explorer')}${profile.location ? ' · ' + esc(profile.location) : ''}</p>
           <h1>${esc(profile.name)}</h1>
-          <p>${follCount} seguidores · ${followCount} siguiendo · ${uPosts.length} publicaciones</p>
+          <p>${follCount} ${es ? 'seguidores' : 'followers'} · ${followCount} ${es ? 'siguiendo' : 'following'} · ${uPosts.length} ${es ? 'publicaciones' : 'posts'}</p>
         </div>
         <div class="profile-actions">
           ${isMe
-            ? `<a class="btn light" href="#editar-perfil">Editar perfil</a>`
+            ? `<a class="btn light" href="#editar-perfil">${es ? 'Editar perfil' : 'Edit profile'}</a>`
             : `<button class="btn light" data-fuser="${id}">${following ? t('following') : t('follow')}</button>`}
         </div>
       </div>
@@ -1343,30 +1363,30 @@
     <section class="profile-layout">
       <div>
         ${profile.accountType === 'creator' ? profileTrustNotice(profile) : ''}
-        ${profile.story ? `<div class="profile-story"><p class="eyebrow">HISTORIA CULTURAL</p><p>${esc(profile.story)}</p></div>` : ''}
+        ${profile.story ? `<div class="profile-story"><p class="eyebrow">${es ? 'HISTORIA CULTURAL' : 'CULTURAL STORY'}</p><p>${esc(profile.story)}</p></div>` : ''}
         ${profile.accountType === 'creator' ? `<section class="provider-professional"><div class="provider-prof-head"><div><p class="eyebrow">PERFIL PROFESIONAL CULTURAL</p><h2>${esc(profile.providerHeadline || 'Servicios y conocimiento cultural')}</h2></div>${profile.website ? `<a class="btn secondary" href="${esc(safeExternalUrl(profile.website))}" target="_blank" rel="noopener noreferrer">Visitar sitio web ↗</a>` : ''}</div>${profile.serviceDescription ? `<p class="provider-prof-copy">${esc(profile.serviceDescription)}</p>` : ''}${profile.services && profile.services.length ? `<div class="service-grid">${profile.services.map(service => `<div class="service-chip">${esc(service)}</div>`).join('')}</div>` : `<p class="form-note">Añade tus servicios, talleres, experiencias o conocimientos desde “Editar perfil”.</p>`}<div class="provider-contact-row">${profile.publicEmail ? `<a href="mailto:${esc(profile.publicEmail)}">✉ ${esc(profile.publicEmail)}</a>` : ''}${profile.publicWhatsapp ? `<span>WhatsApp: ${esc(profile.publicWhatsapp)}</span>` : ''}</div></section>` : ''}
         ${profile.categories && profile.categories.length ? `<div class="creator-tags" style="margin:18px 0">${profile.categories.map(cat => `<span>${esc(cat)}</span>`).join('')}</div>` : ''}
         <div style="margin-top:40px">
-          <p class="eyebrow">PUBLICACIONES (${uPosts.length})</p>
+          <p class="eyebrow">${es ? 'PUBLICACIONES' : 'POSTS'} (${uPosts.length})</p>
           ${uPosts.length
             ? `<div style="margin-top:20px">${uPosts.map(postCard).join('')}</div>`
             : `<div class="empty-state" style="margin-top:20px;border:1px dashed #ddd;padding:40px;text-align:center">
-                <p>Aún no hay publicaciones.</p>
-                ${isMe ? `<a class="btn" href="#crear" style="margin-top:14px">Crear primera publicación</a>` : ''}
+                <p>${es ? 'Aún no hay publicaciones.' : 'No posts yet.'}</p>
+                ${isMe ? `<a class="btn" href="#crear" style="margin-top:14px">${es ? 'Crear primera publicación' : 'Create your first post'}</a>` : ''}
               </div>`}
         </div>
       </div>
       <aside class="profile-aside">
-        <p class="eyebrow">PERFIL CULTURAL</p>
+        <p class="eyebrow">${es ? 'PERFIL CULTURAL' : 'CULTURAL PROFILE'}</p>
         <dl>
-          <div><dt>Tipo</dt><dd>${profile.accountType === 'creator' ? 'Agente Cultural' : 'Explorador Cultural'}</dd></div>
-          ${profile.location ? `<div><dt>Ubicación</dt><dd>${esc(profile.location)}</dd></div>` : ''}
-          ${profile.categories && profile.categories.length ? `<div><dt>Categorías</dt><dd>${profile.categories.map(esc).join(', ')}</dd></div>` : ''}
+          <div><dt>${es ? 'Tipo' : 'Type'}</dt><dd>${profile.accountType === 'creator' ? (es ? 'Agente Cultural' : 'Cultural Agent') : (es ? 'Explorador Cultural' : 'Cultural Explorer')}</dd></div>
+          ${profile.location ? `<div><dt>${es ? 'Ubicación' : 'Location'}</dt><dd>${esc(profile.location)}</dd></div>` : ''}
+          ${profile.categories && profile.categories.length ? `<div><dt>${es ? 'Categorías' : 'Categories'}</dt><dd>${profile.categories.map(esc).join(', ')}</dd></div>` : ''}
         </dl>
         ${socialLinksHtml(profile)}
         ${isMe ? `<a href="#editar-perfil" class="btn secondary" style="width:100%;margin-top:20px;text-align:center">Editar perfil</a>
-                  <a href="mailto:info.origencultural@gmail.com?subject=ORIGEN%20-%20Solicitud%20de%20privacidad%20o%20eliminaci%C3%B3n%20de%20cuenta" class="text-button privacy-request-link" style="display:block;width:100%;margin-top:14px;text-align:center">Solicitar privacidad / eliminación de cuenta</a>
-                  <button id="logout-btn-aside" class="btn" style="width:100%;margin-top:10px;background:transparent;color:#888;border-color:#ddd">Cerrar sesión</button>` : ''}
+                  <a href="mailto:info.origencultural@gmail.com?subject=ORIGEN%20-%20Solicitud%20de%20privacidad%20o%20eliminaci%C3%B3n%20de%20cuenta" class="text-button privacy-request-link" style="display:block;width:100%;margin-top:14px;text-align:center">${es ? 'Solicitar privacidad / eliminación de cuenta' : 'Request privacy support or account deletion'}</a>
+                  <button id="logout-btn-aside" class="btn" style="width:100%;margin-top:10px;background:transparent;color:#888;border-color:#ddd">${es ? 'Cerrar sesión' : 'Sign out'}</button>` : ''}
       </aside>
     </section>
     ${footer()}`;
@@ -1379,22 +1399,23 @@
 
   /* ── SAVED ───────────────────────────────────────────────── */
   function savedView() {
+    const es = state.lang === 'es';
     const user = me();
     if (!user) { go('login'); return ''; }
     const saves = window.ORIGEN_API?.cache?.saves || [];
     const saved = allPosts().filter(p => saves.includes(p.id));
     return `<section class="page-hero">
       <div class="section-inner">
-        <p class="eyebrow">MI COLECCIÓN</p>
-        <h1>Guardados</h1>
-        <p class="lead">${saved.length} publicación${saved.length !== 1 ? 'es' : ''} guardada${saved.length !== 1 ? 's' : ''}</p>
+        <p class="eyebrow">${es ? 'MI COLECCIÓN' : 'MY COLLECTION'}</p>
+        <h1>${es ? 'Guardados' : 'Saved'}</h1>
+        <p class="lead">${saved.length} ${es ? 'publicaciones guardadas' : 'saved posts'}</p>
       </div>
     </section>
     <section class="section">
       <div class="section-inner">
         ${saved.length
           ? `<div class="saved-grid">${saved.map(postCard).join('')}</div>`
-          : `<div class="empty-state"><h3>Aún no guardaste publicaciones</h3><p>Guarda publicaciones del feed para verlas aquí.</p><a class="btn" href="#feed" style="margin-top:20px">Ir al feed</a></div>`}
+          : `<div class="empty-state"><h3>${es ? 'Aún no guardaste publicaciones' : 'No saved posts yet'}</h3><p>${es ? 'Guarda publicaciones del feed para verlas aquí.' : 'Save posts from your feed to see them here.'}</p><a class="btn" href="#feed" style="margin-top:20px">${es ? 'Ir al feed' : 'Go to feed'}</a></div>`}
       </div>
     </section>
     ${footer()}`;
@@ -1403,6 +1424,8 @@
   /* ── CREATE POST ─────────────────────────────────────────── */
   function createPostView() {
     const user = me();
+    const es = state.lang === 'es';
+    const L = (s, e) => es ? s : e;
     if (!user) { go('login'); return ''; }
     if (user.accountType !== 'creator') {
       const es = state.lang === 'es';
@@ -1424,26 +1447,26 @@
     const culturalPublishingReady = window.ORIGEN_API?.culturalPublishingReady === true;
     const isProvider = true;
     const types = isProvider
-      ? [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video']]
-      : [['photo','◫ Foto'],['carousel','⊟ Carrusel'],['video','▷ Video'],['text','Ⅱ Texto']];
-    const CATS  = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+      ? [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')]]
+      : [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')],['text',L('Ⅱ Texto','Ⅱ Text')]];
+    const CATS  = [['Artesanía y tradición','Crafts and tradition'],['Gastronomía ancestral','Ancestral gastronomy'],['Música y danza','Music and dance'],['Territorio y patrimonio','Territory and heritage'],['Arte y cultura','Art and culture'],['Educación cultural','Cultural education'],['Comunidad','Community']];
     const PURPOSES = [
-      ['education','Educación cultural'],
-      ['history','Historia y memoria'],
-      ['technique','Técnica / proceso'],
-      ['territory','Territorio'],
-      ['language','Lengua'],
-      ['gastronomy','Gastronomía'],
-      ['arts','Artes / expresión'],
-      ['heritage','Patrimonio'],
-      ['community','Comunidad']
+      ['education',L('Educación cultural','Cultural education')],
+      ['history',L('Historia y memoria','History and memory')],
+      ['technique',L('Técnica / proceso','Technique / process')],
+      ['territory',L('Territorio','Territory')],
+      ['language',L('Lengua','Language')],
+      ['gastronomy',L('Gastronomía','Gastronomy')],
+      ['arts',L('Artes / expresión','Arts / expression')],
+      ['heritage',L('Patrimonio','Heritage')],
+      ['community',L('Comunidad','Community')]
     ];
     const hasMedia = d.media && d.media.length > 0;
 
     return `<section class="page-hero" style="min-height:220px">
       <div class="section-inner">
-        <p class="eyebrow">NUEVA PUBLICACIÓN</p>
-        <h1>Compartir cultura</h1>
+        <p class="eyebrow">${L('NUEVA PUBLICACIÓN','NEW POST')}</p>
+        <h1>${L('Compartir cultura','Share culture')}</h1>
       </div>
     </section>
     <div class="create-layout">
@@ -1458,17 +1481,17 @@
                 ? `<video src="${esc(safeMediaUrl(src))}" controls muted playsinline preload="metadata" aria-label="Vista previa del video"></video>`
                 : `<img src="${esc(safeMediaUrl(src))}" alt="Vista previa de imagen ${i + 1}">`}
                 <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
-              : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? 'Selecciona un video' : d.type === 'carousel' ? 'Selecciona fotos (puedes elegir varias)' : 'Selecciona una foto'}</p><small>Haz clic para subir</small></div>`}
+              : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? L('Selecciona un video','Select a video') : d.type === 'carousel' ? L('Selecciona fotos (puedes elegir varias)','Select photos (you can choose multiple)') : L('Selecciona una foto','Select a photo')}</p><small>${L('Haz clic para subir','Click to upload')}</small></div>`}
             <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
           </div>` : ''}
         <form class="form-grid" id="create-form">
-          ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">FEED CULTURAL Y EDUCATIVO</p><p>Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.</p></div>` : ''}
-          <div class="form-field full"><label>Título *</label><input name="title" required placeholder="Un título que invite a descubrir" value="${esc(d.title || '')}"></div>
-          <div class="form-field full"><label>Descripción *</label><textarea name="description" rows="4" required placeholder="Comparte el contexto, la historia o el significado cultural...">${esc(d.description || '')}</textarea></div>
-          <div class="form-field"><label>Categoría cultural</label><select name="category">${CATS.map(c => `<option${d.category === c ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
-          <div class="form-field"><label>Propósito cultural *</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
-          <div class="form-field"><label>Territorio</label><input name="territory" placeholder="Ciudad, región o país" value="${esc(d.territory || '')}"></div>
-          <div class="form-field full"><label>Etiquetas <small style="color:#888;font-weight:400">(separadas por coma)</small></label><input name="tags" placeholder="Bordado, Ecuador, Memoria" value="${esc((d.tags || []).join(', '))}"></div>
+          ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">${L('FEED CULTURAL Y EDUCATIVO','CULTURAL AND EDUCATIONAL FEED')}</p><p>${L('Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.','Share knowledge, context, techniques, stories or territory through a photo, carousel or video. Present services on your professional profile; avoid generic advertising in the feed.')}</p></div>` : ''}
+          <div class="form-field full"><label>${L('Título *','Title *')}</label><input name="title" required placeholder="${L('Un título que invite a descubrir','A title that invites discovery')}" value="${esc(d.title || '')}"></div>
+          <div class="form-field full"><label>${L('Descripción *','Description *')}</label><textarea name="description" rows="4" required placeholder="${L('Comparte el contexto, la historia o el significado cultural...','Share the context, story or cultural meaning...')}">${esc(d.description || '')}</textarea></div>
+          <div class="form-field"><label>${L('Categoría cultural','Cultural category')}</label><select name="category">${CATS.map(([v,label]) => `<option value="${v}"${d.category === v ? ' selected' : ''}>${es ? v : label}</option>`).join('')}</select></div>
+          <div class="form-field"><label>${L('Propósito cultural *','Cultural purpose *')}</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
+          <div class="form-field"><label>${L('Territorio','Territory')}</label><input name="territory" placeholder="${L('Ciudad, región o país','City, region or country')}" value="${esc(d.territory || '')}"></div>
+          <div class="form-field full"><label>${L('Etiquetas','Tags')} <small style="color:#888;font-weight:400">${L('(separadas por coma)','(comma-separated)')}</small></label><input name="tags" placeholder="${L('Bordado, Ecuador, Memoria','Embroidery, Ecuador, Memory')}" value="${esc((d.tags || []).join(', '))}"></div>
           <fieldset class="post-cultural-safety form-field full" aria-describedby="post-safety-intro">
             <legend>${state.lang === 'es' ? 'Responsabilidad cultural antes de publicar' : 'Cultural responsibility before publishing'}</legend>
             <p id="post-safety-intro">${state.lang === 'es'
@@ -1500,16 +1523,16 @@
             <button class="btn" type="submit" style="width:100%" ${culturalPublishingReady ? '' : 'disabled aria-disabled="true"'}>${culturalPublishingReady
               ? (state.lang === 'es' ? 'Publicar →' : 'Publish →')
               : (state.lang === 'es' ? 'Publicación en preparación' : 'Publishing not available yet')}</button>
-            ${culturalPublishingReady ? '<p class="form-note" style="margin-top:12px">Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.</p>' : ''}
+            ${culturalPublishingReady ? `<p class="form-note" style="margin-top:12px">${L('Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.','Your post will be saved to ORIGEN and linked to your account.')}</p>` : ''}
           </div>
         </form>
       </div>
       <div class="create-preview-wrap">
-        <p class="eyebrow" style="margin-bottom:16px">VISTA PREVIA</p>
+        <p class="eyebrow" style="margin-bottom:16px">${L('VISTA PREVIA','PREVIEW')}</p>
         <div id="create-live-preview">
           ${d.title || hasMedia
-            ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || 'Título', description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
-            : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>La vista previa aparecerá aquí.</p></div>`}
+            ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || L('Título','Title'), description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+            : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>${L('La vista previa aparecerá aquí.','Your preview will appear here.')}</p></div>`}
         </div>
       </div>
     </div>`;
@@ -1518,13 +1541,15 @@
   /* ── EDIT PROFILE ────────────────────────────────────────── */
   function editProfileView() {
     const user = me();
+    const es = state.lang === 'es';
+    const L = (s, e) => es ? s : e;
     if (!user) { go('login'); return ''; }
-    const CATS = ['Artesanía y tradición','Gastronomía ancestral','Música y danza','Territorio y patrimonio','Arte y cultura','Educación cultural','Comunidad'];
+    const CATS = [['Artesanía y tradición','Crafts and tradition'],['Gastronomía ancestral','Ancestral gastronomy'],['Música y danza','Music and dance'],['Territorio y patrimonio','Territory and heritage'],['Arte y cultura','Art and culture'],['Educación cultural','Cultural education'],['Comunidad','Community']];
     const userCats = user.categories || [];
     return `<section class="page-hero" style="min-height:200px">
       <div class="section-inner">
-        <p class="eyebrow">MI CUENTA</p>
-        <h1>Editar perfil</h1>
+        <p class="eyebrow">${L('MI CUENTA','MY ACCOUNT')}</p>
+        <h1>${L('Editar perfil','Edit profile')}</h1>
       </div>
     </section>
     <div class="edit-wrap">
@@ -1532,33 +1557,33 @@
         <div class="upload-zone" id="edit-avatar-zone">
           ${user.avatar ? `<img src="${esc(safeMediaUrl(user.avatar))}" class="edit-avatar-preview" alt="Avatar">` : avatarEl(user, 'lg')}
           <input type="file" id="edit-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn" type="button" data-file-trigger="edit-avatar-input">Cambiar foto</button>
+          <button class="btn" type="button" data-file-trigger="edit-avatar-input">${L('Cambiar foto','Change photo')}</button>
         </div>
         <div class="upload-zone wide" id="edit-cover-zone">
           ${user.cover
             ? `<img src="${esc(safeMediaUrl(user.cover))}" class="edit-cover-preview" alt="Portada">`
-            : `<div class="upload-placeholder"><span>+</span><p>Foto de portada</p></div>`}
+            : `<div class="upload-placeholder"><span>+</span><p>${L('Foto de portada','Cover photo')}</p></div>`}
           <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <button class="btn secondary" type="button" data-file-trigger="edit-cover-input">Cambiar portada</button>
+          <button class="btn secondary" type="button" data-file-trigger="edit-cover-input">${L('Cambiar portada','Change cover')}</button>
         </div>
       </div>
       <form class="form-grid" id="edit-form">
-        <div class="form-field"><label>Nombre</label><input name="name" value="${esc(user.name || '')}"></div>
-        <div class="form-field"><label>Ubicación</label><input name="location" value="${esc(user.location || '')}" placeholder="Ciudad, País"></div>
-        <div class="form-field full"><label>Tu historia cultural</label><textarea name="story" rows="4" placeholder="¿Quién eres, qué representas y qué deseas compartir?">${esc(user.story || '')}</textarea></div>
+        <div class="form-field"><label>${L('Nombre','Name')}</label><input name="name" value="${esc(user.name || '')}"></div>
+        <div class="form-field"><label>${L('Ubicación','Location')}</label><input name="location" value="${esc(user.location || '')}" placeholder="${L('Ciudad, País','City, Country')}"></div>
+        <div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir?','Who are you, what do you represent, and what would you like to share?')}">${esc(user.story || '')}</textarea></div>
         <div class="form-field full">
-          <label>Categorías culturales</label>
-          <div class="cat-chips">${CATS.map(cat => `<button type="button" class="chip${userCats.includes(cat) ? ' active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}</div>
+          <label>${L('Categorías culturales','Cultural categories')}</label>
+          <div class="cat-chips">${CATS.map(([cat, label]) => `<button type="button" class="chip${userCats.includes(cat) ? ' active' : ''}" data-cat="${cat}">${es ? cat : label}</button>`).join('')}</div>
         </div>
-        ${user.accountType === 'creator' ? `<p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">PERFIL PROFESIONAL CULTURAL</p><div class="form-field full"><label>Titular profesional</label><input name="providerHeadline" maxlength="180" value="${esc(user.providerHeadline || '')}" placeholder="Ej. Talleres de bordado tradicional y educación cultural"></div><div class="form-field full"><label>Servicios / oferta cultural</label><input name="services" value="${esc((user.services || []).join(', '))}" placeholder="Talleres, piezas por encargo, demostraciones, charlas"></div><div class="form-field full"><label>Descripción de servicios</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="Explica qué ofreces, para quién y cómo pueden contactarte.">${esc(user.serviceDescription || '')}</textarea></div>` : ''}
-        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">REDES Y CONTACTO</p>
-        ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email','Correo'],['web','Sitio web']].map(([k, label]) =>
-          `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(user.links && user.links[k] ? user.links[k] : '')}" placeholder="URL o usuario"></div>`).join('')}
+        ${user.accountType === 'creator' ? `<p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">${L('PERFIL PROFESIONAL CULTURAL','CULTURAL PROFESSIONAL PROFILE')}</p><div class="form-field full"><label>${L('Titular profesional','Professional headline')}</label><input name="providerHeadline" maxlength="180" value="${esc(user.providerHeadline || '')}" placeholder="${L('Ej. Talleres de bordado tradicional y educación cultural','E.g. Traditional embroidery workshops and cultural education')}"></div><div class="form-field full"><label>${L('Servicios / oferta cultural','Services / cultural offering')}</label><input name="services" value="${esc((user.services || []).join(', '))}" placeholder="${L('Talleres, piezas por encargo, demostraciones, charlas','Workshops, commissions, demonstrations, talks')}"></div><div class="form-field full"><label>${L('Descripción de servicios','Service description')}</label><textarea name="serviceDescription" rows="3" maxlength="4000" placeholder="${L('Explica qué ofreces, para quién y cómo pueden contactarte.','Describe what you offer, who it is for, and how people can contact you.')}">${esc(user.serviceDescription || '')}</textarea></div>` : ''}
+        <p class="eyebrow" style="grid-column:1/-1;margin-bottom:4px">${L('REDES Y CONTACTO','SOCIAL LINKS AND CONTACT')}</p>
+        ${[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['email',L('Correo','Email')],['web',L('Sitio web','Website')]].map(([k, label]) =>
+          `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(user.links && user.links[k] ? user.links[k] : '')}" placeholder="${L('URL o usuario','URL or username')}"></div>`).join('')}
         <div class="form-field full">
-          <button class="btn" type="submit" style="width:100%">Guardar cambios</button>
+          <button class="btn" type="submit" style="width:100%">${L('Guardar cambios','Save changes')}</button>
         </div>
       </form>
-      <button id="logout-btn" class="btn secondary" style="width:100%;margin-top:16px;color:#666;border-color:#ddd">Cerrar sesión</button>
+      <button id="logout-btn" class="btn secondary" style="width:100%;margin-top:16px;color:#666;border-color:#ddd">${L('Cerrar sesión','Sign out')}</button>
     </div>`;
   }
 
@@ -1734,10 +1759,11 @@
 
   /* ── PASSPORT ────────────────────────────────────────────── */
   function passportView() {
+    const es = state.lang === 'es';
     const user = me();
     const favs = remoteFavoriteRefs();
     const foll = remoteFollowRefs();
-    const name = user ? user.name : 'Explorador Cultural';
+    const name = user ? user.name : (es ? 'Explorador Cultural' : 'Cultural Explorer');
     const init = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
     const collectedRefs = new Set([...favs, ...foll]);
@@ -1747,11 +1773,11 @@
 
     const score = collected.length + (countries.length * 2) + cultures.length;
     const levels = [
-      { name:'Semilla', min:0, next:3 },
-      { name:'Caminante Cultural', min:3, next:7 },
-      { name:'Cartógrafo Cultural', min:7, next:12 },
-      { name:'Explorador Global', min:12, next:20 },
-      { name:'Conector Cultural', min:20, next:null }
+      { name:es ? 'Semilla' : 'Seed', min:0, next:3 },
+      { name:es ? 'Caminante Cultural' : 'Cultural Wayfinder', min:3, next:7 },
+      { name:es ? 'Cartógrafo Cultural' : 'Cultural Cartographer', min:7, next:12 },
+      { name:es ? 'Explorador Global' : 'Global Explorer', min:12, next:20 },
+      { name:es ? 'Conector Cultural' : 'Cultural Connector', min:20, next:null }
     ];
     const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
     const progress = level.next ? Math.max(0, Math.min(100, Math.round(((score - level.min) / (level.next - level.min)) * 100))) : 100;
@@ -1764,41 +1790,41 @@
       </div>`;
 
     return `<section class="passport-page"><div class="passport-shell">
-      <div class="section-head"><div><p class="eyebrow">COLECCIÓN CULTURAL GLOBAL</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>Tu Pasaporte Cultural crece cuando descubres, guardas y sigues cultura viva. El progreso premia aprendizaje y diversidad, no tiempo de pantalla.</p></div>
+      <div class="section-head"><div><p class="eyebrow">${es ? 'COLECCIÓN CULTURAL GLOBAL' : 'GLOBAL CULTURAL COLLECTION'}</p><h1 style="font-size:clamp(48px,7vw,92px)">${t('passportTitle')}</h1></div><p>${es ? 'Tu Pasaporte Cultural crece cuando descubres, guardas y sigues cultura viva. El progreso premia aprendizaje y diversidad, no tiempo de pantalla.' : 'Your Cultural Passport grows as you discover, save and follow living culture. Progress celebrates learning and diversity, not screen time.'}</p></div>
 
       <article class="passport-card">
-        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">PASAPORTE CULTURAL<br>COLECCIÓN PERSONAL</div></div>
-        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? 'AGENTE CULTURAL' : 'EXPLORADOR CULTURAL'}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : 'Explorando cultura viva alrededor del mundo'}</p></div></div>
+        <div class="passport-head"><img class="passport-logo" src="assets/logo-lockup.svg" alt="Origen Cultural"><div class="passport-id">${es ? 'PASAPORTE CULTURAL<br>COLECCIÓN PERSONAL' : 'CULTURAL PASSPORT<br>PERSONAL COLLECTION'}</div></div>
+        <div class="passport-person"><div class="avatar">${init}</div><div><p class="eyebrow">${user && user.accountType === 'creator' ? (es ? 'AGENTE CULTURAL' : 'CULTURAL AGENT') : (es ? 'EXPLORADOR CULTURAL' : 'CULTURAL EXPLORER')}</p><h2>${esc(name)}</h2><p>${user && user.location ? esc(user.location) : (es ? 'Explorando cultura viva alrededor del mundo' : 'Exploring living culture around the world')}</p></div></div>
         <div class="passport-progress">
-          <div class="progress-stat"><strong>${collected.length}</strong><span>Perfiles en tu colección</span></div>
-          <div class="progress-stat"><strong>${countries.length}</strong><span>Países descubiertos</span></div>
-          <div class="progress-stat"><strong>${cultures.length}</strong><span>Categorías culturales</span></div>
+          <div class="progress-stat"><strong>${collected.length}</strong><span>${es ? 'Perfiles en tu colección' : 'Profiles in your collection'}</span></div>
+          <div class="progress-stat"><strong>${countries.length}</strong><span>${es ? 'Países descubiertos' : 'Countries discovered'}</span></div>
+          <div class="progress-stat"><strong>${cultures.length}</strong><span>${es ? 'Categorías culturales' : 'Cultural categories'}</span></div>
         </div>
       </article>
 
       <div class="level-section">
-        <p class="eyebrow">NIVEL DE EXPLORACIÓN</p>
+        <p class="eyebrow">${es ? 'NIVEL DE EXPLORACIÓN' : 'EXPLORATION LEVEL'}</p>
         <h2>${level.name}</h2>
         <div class="level-track"><div class="level-fill" style="width:${progress}%"></div></div>
-        <p>${level.next ? `${progress}% hacia el siguiente nivel. Cada nueva cultura, territorio o categoría suma a tu recorrido.` : 'Has alcanzado el nivel más alto de esta primera colección.'}</p>
+        <p>${level.next ? (es ? `${progress}% hacia el siguiente nivel. Cada nueva cultura, territorio o categoría suma a tu recorrido.` : `${progress}% to the next level. Every new culture, territory or category adds to your journey.`) : (es ? 'Has alcanzado el nivel más alto de esta primera colección.' : 'You have reached the highest level in this first collection.')}</p>
 
         <div class="collection-strip">
-          <div><strong>${countries.length || 0}</strong><span>Sellos de país</span></div>
-          <div><strong>${cultures.length || 0}</strong><span>Colecciones temáticas</span></div>
-          <div><strong>${favs.length}</strong><span>Memorias guardadas</span></div>
+          <div><strong>${countries.length || 0}</strong><span>${es ? 'Sellos de país' : 'Country stamps'}</span></div>
+          <div><strong>${cultures.length || 0}</strong><span>${es ? 'Colecciones temáticas' : 'Themed collections'}</span></div>
+          <div><strong>${favs.length}</strong><span>${es ? 'Memorias guardadas' : 'Saved memories'}</span></div>
         </div>
 
-        ${countries.length ? `<div class="passport-stamps"><p class="eyebrow">MIS SELLOS</p><div class="creator-tags">${countries.map(country => `<span>⌖ ${esc(country)}</span>`).join('')}</div></div>` : ''}
+        ${countries.length ? `<div class="passport-stamps"><p class="eyebrow">${es ? 'MIS SELLOS' : 'MY STAMPS'}</p><div class="creator-tags">${countries.map(country => { const names = { Perú: 'Peru', México: 'Mexico', Japón: 'Japan' }; return `<span>⌖ ${esc(!es ? (names[country] || country) : country)}</span>`; }).join('')}</div></div>` : ''}
 
         <div class="badges">
-          ${badge(collected.length >= 1, '⌖', 'Primer descubrimiento', collected.length >= 1 ? 'Guardaste o seguiste tu primer perfil cultural.' : 'Descubre y guarda tu primer perfil cultural.')}
-          ${badge(collected.length >= 3, '◇', 'Coleccionista curioso', collected.length >= 3 ? 'Ya reuniste tres perfiles culturales.' : 'Reúne tres perfiles culturales en tu Pasaporte.')}
-          ${badge(countries.length >= 2, '◎', 'Cruce de fronteras', countries.length >= 2 ? 'Tu colección ya conecta al menos dos países.' : 'Descubre cultura de al menos dos países.')}
+          ${badge(collected.length >= 1, '⌖', es ? 'Primer descubrimiento' : 'First discovery', collected.length >= 1 ? (es ? 'Guardaste o seguiste tu primer perfil cultural.' : 'You saved or followed your first cultural profile.') : (es ? 'Descubre y guarda tu primer perfil cultural.' : 'Discover and save your first cultural profile.'))}
+          ${badge(collected.length >= 3, '◇', es ? 'Coleccionista curioso' : 'Curious collector', collected.length >= 3 ? (es ? 'Ya reuniste tres perfiles culturales.' : 'You have collected three cultural profiles.') : (es ? 'Reúne tres perfiles culturales en tu Pasaporte.' : 'Collect three cultural profiles in your Passport.'))}
+          ${badge(countries.length >= 2, '◎', es ? 'Cruce de fronteras' : 'Crossing borders', countries.length >= 2 ? (es ? 'Tu colección ya conecta al menos dos países.' : 'Your collection now connects at least two countries.') : (es ? 'Descubre cultura de al menos dos países.' : 'Discover culture from at least two countries.'))}
         </div>
 
         <div class="passport-philosophy">
-          <p class="eyebrow">JUGAR SIN PERDER EL EQUILIBRIO</p>
-          <p>ORIGEN puede usar colecciones, niveles, sellos y retos culturales. No premiamos permanecer conectado más tiempo y evitamos castigar al usuario por tomarse días de descanso.</p>
+          <p class="eyebrow">${es ? 'JUGAR SIN PERDER EL EQUILIBRIO' : 'PLAY IN BALANCE'}</p>
+          <p>${es ? 'ORIGEN puede usar colecciones, niveles, sellos y retos culturales. No premiamos permanecer conectado más tiempo y evitamos castigar al usuario por tomarse días de descanso.' : 'ORIGEN may use collections, levels, stamps and cultural challenges. We do not reward longer screen time or penalise people for taking a break.'}</p>
         </div>
       </div>
     </div></section>${footer()}`;
@@ -1806,28 +1832,36 @@
 
   /* ── IMPACT ──────────────────────────────────────────────── */
   function impactView() {
-    const values = [
+    const es = state.lang === 'es';
+    const values = es ? [
       ['Dignidad cultural','La cultura se presenta con respeto, contexto y valor, no como espectáculo vacío.'],
       ['Autenticidad','La voz y la historia de cada Agente Cultural permanecen como eje central.'],
       ['Autonomía','Cada perfil conserva sus canales, decisiones, historia e identidad.'],
       ['Conexión global','La plataforma conecta culturas con públicos, aliados y oportunidades internacionales.'],
       ['Innovación ética','La tecnología apoya claridad y alcance sin inventar tradiciones.'],
       ['Soberanía narrativa','Cada creador decide qué mostrar, qué reservar y cómo ser contactado.']
+    ] : [
+      ['Cultural dignity','Culture is presented with respect, context and value, not as an empty spectacle.'],
+      ['Authenticity','Each Cultural Agent’s voice and story remain at the centre.'],
+      ['Autonomy','Every profile keeps control of its channels, decisions, story and identity.'],
+      ['Global connection','The platform connects cultures with audiences, partners and international opportunities.'],
+      ['Ethical innovation','Technology supports clarity and reach without inventing traditions.'],
+      ['Narrative sovereignty','Each creator decides what to share, what to keep private and how to be contacted.']
     ];
     return `<section class="page-hero" style="background:var(--black);color:var(--white)">
-      <div class="section-inner"><p class="eyebrow">PROPÓSITO · ÉTICA · ESCALA</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div>
+      <div class="section-inner"><p class="eyebrow">${es ? 'PROPÓSITO · ÉTICA · ESCALA' : 'PURPOSE · ETHICS · SCALE'}</p><h1>${t('impactPage')}</h1><p class="lead" style="color:#ccc">${t('impactPageSub')}</p></div>
     </section>
     <section class="section"><div class="section-inner">
-      <div class="section-head"><div><p class="eyebrow">VALORES DE MARCA</p><h2>La cultura con el valor que merece</h2></div><p>Origen Cultural prioriza consentimiento, representación autónoma, contexto y conexión humana.</p></div>
+      <div class="section-head"><div><p class="eyebrow">${es ? 'VALORES DE MARCA' : 'BRAND VALUES'}</p><h2>${es ? 'La cultura con el valor que merece' : 'Culture with the value it deserves'}</h2></div><p>${es ? 'Origen Cultural prioriza consentimiento, representación autónoma, contexto y conexión humana.' : 'Origen Cultural prioritises consent, self-representation, context and human connection.'}</p></div>
       <div class="values-grid">${values.map((v, i) => `<article class="value-card"><span class="number">0${i + 1}</span><h3>${v[0]}</h3><p>${v[1]}</p></article>`).join('')}</div>
     </div></section>
     <section class="section impact-band"><div class="section-inner">
-      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>De historias auténticas a una comunidad global</h2></div><p>Primero crecemos con Agentes que comparten cultura y Exploradores que descubren, siguen y comparten historias libremente. La publicidad pagada solo tendría sentido después de lograr una audiencia real.</p></div>
+      <div class="section-head"><div><p class="eyebrow">ROADMAP</p><h2>${es ? 'De historias auténticas a una comunidad global' : 'From authentic stories to a global community'}</h2></div><p>${es ? 'Primero crecemos con Agentes que comparten cultura y Exploradores que descubren, siguen y comparten historias libremente. La publicidad pagada solo tendría sentido después de lograr una audiencia real.' : 'We begin by growing with Cultural Agents who share culture and Explorers who freely discover, follow and share stories. Paid promotion would only make sense after building a real audience.'}</p></div>
       <div class="impact-grid">
-        <div class="impact-item"><strong>0</strong><span>Preparación, identidad y criterios de verificación</span></div>
-        <div class="impact-item"><strong>1</strong><span>Piloto Ecuador: hasta 10 Agentes Culturales voluntarios, después de aprobar seguridad y consentimiento</span></div>
-        <div class="impact-item"><strong>2</strong><span>Comunidad orgánica: publicar historias culturales, descubrir Agentes, seguir, guardar y compartir sin pagar</span></div>
-        <div class="impact-item"><strong>3+</strong><span>Futuro: promociones pagadas opcionales; después, posibles comisiones acordadas por ventas derivadas a webs oficiales</span></div>
+        <div class="impact-item"><strong>0</strong><span>${es ? 'Preparación, identidad y criterios de verificación' : 'Preparation, identity and verification criteria'}</span></div>
+        <div class="impact-item"><strong>1</strong><span>${es ? 'Piloto Ecuador: hasta 10 Agentes Culturales voluntarios, después de aprobar seguridad y consentimiento' : 'Ecuador pilot: up to 10 volunteer Cultural Agents, after safety and consent approval'}</span></div>
+        <div class="impact-item"><strong>2</strong><span>${es ? 'Comunidad orgánica: publicar historias culturales, descubrir Agentes, seguir, guardar y compartir sin pagar' : 'Organic community: publish cultural stories, discover Agents, follow, save and share for free'}</span></div>
+        <div class="impact-item"><strong>3+</strong><span>${es ? 'Futuro: promociones pagadas opcionales; después, posibles comisiones acordadas por ventas derivadas a webs oficiales' : 'Future: optional paid promotion, followed by possible commissions agreed for sales referred to official websites'}</span></div>
       </div>
     </div></section>${footer()}`;
   }
@@ -1835,19 +1869,22 @@
   /* ── TRUST CENTER ───────────────────────────────────────── */
   function trustCenterView() {
     const trust = window.ORIGEN_TRUST;
-    if (!trust) return `<section class="section"><div class="section-inner"><h2>Centro de confianza no disponible</h2></div></section>`;
+    const es = state.lang === 'es';
+    const L = (s, e) => es ? s : e;
+    if (!trust) return `<section class="section"><div class="section-inner"><h2>${L('Centro de confianza no disponible','Trust Center unavailable')}</h2></div></section>`;
+    const sections = es ? trust.sections : (trust.sections_en || trust.sections);
     return `<section class="page-hero trust-hero"><div class="section-inner">
-      <p class="eyebrow">CONFIANZA · PRIVACIDAD · CULTURA</p>
-      <h1>Centro de confianza</h1>
-      <p class="lead">Lo esencial para entender cómo ORIGEN cuida tu cuenta, tus datos, el contenido cultural y la comunidad.</p>
+      <p class="eyebrow">${L('CONFIANZA · PRIVACIDAD · CULTURA','TRUST · PRIVACY · CULTURE')}</p>
+      <h1>${L('Centro de confianza','Trust Center')}</h1>
+      <p class="lead">${L('Lo esencial para entender cómo ORIGEN cuida tu cuenta, tus datos, el contenido cultural y la comunidad.','Learn how ORIGEN cares for your account, data, cultural content and community.')}</p>
       <div class="trust-meta"><span>${esc(trust.version)}</span><span>${esc(trust.updated)}</span></div>
     </div></section>
     <section class="section trust-section"><div class="section-inner trust-layout">
-      <aside class="trust-nav">${trust.sections.map(s => `<a href="#trust-${s.id}">${esc(s.title)}</a>`).join('')}</aside>
+      <aside class="trust-nav">${sections.map(s => `<a href="#trust-${s.id}">${esc(s.title)}</a>`).join('')}</aside>
       <div class="trust-content">
-        <div class="trust-status"><strong>Estado beta</strong><p>${esc(trust.status)}</p></div>
-        ${trust.sections.map(s => `<article class="trust-card" id="trust-${s.id}"><p class="eyebrow">${esc(s.title)}</p>${s.body.map(p => `<p>${esc(p)}</p>`).join('')}</article>`).join('')}
-        <article class="trust-card trust-contact"><p class="eyebrow">CONTACTO</p><h2>Ayuda, reportes y solicitudes</h2><p><a href="#solicitar-revision">${state.lang === 'es' ? 'Solicitar corrección o retirada sin crear cuenta' : 'Request correction or removal without an account'}</a></p><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
+        <div class="trust-status"><strong>${L('Estado beta','Beta status')}</strong><p>${esc(es ? trust.status : (trust.status_en || trust.status))}</p></div>
+        ${sections.map(s => `<article class="trust-card" id="trust-${s.id}"><p class="eyebrow">${esc(s.title)}</p>${s.body.map(p => `<p>${esc(p)}</p>`).join('')}</article>`).join('')}
+        <article class="trust-card trust-contact"><p class="eyebrow">${L('CONTACTO','CONTACT')}</p><h2>${L('Ayuda, reportes y solicitudes','Help, reports and requests')}</h2><p><a href="#solicitar-revision">${L('Solicitar corrección o retirada sin crear cuenta','Request a correction or removal without an account')}</a></p><p><a href="mailto:${esc(trust.contact)}">${esc(trust.contact)}</a></p></article>
       </div>
     </div></section>${footer()}`;
   }
@@ -2136,6 +2173,7 @@
 
   /* ── MUNDO CULTURAL ─────────────────────────────────────────── */
   function mundoView() {
+    const es = state.lang === 'es';
     const continents = ['Todos','América del Sur','América del Norte','Asia','Oceanía','Europa','África'];
     const featured   = [
       { key:'ecuador',   flag:'🇪🇨', name:'Ecuador'   },
@@ -2148,34 +2186,34 @@
     return `
       <div class="mundo-page">
         <div class="mundo-header">
-          <p class="eyebrow">EXPLORACIÓN CULTURAL</p>
-          <h1 class="mundo-title">Mundo Cultural</h1>
-          <p class="mundo-lead">Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus agentes culturales.</p>
+          <p class="eyebrow">${es ? 'EXPLORACIÓN CULTURAL' : 'CULTURAL EXPLORATION'}</p>
+          <h1 class="mundo-title">${es ? 'Mundo Cultural' : 'Cultural World'}</h1>
+          <p class="mundo-lead">${es ? 'Descubre culturas vivas alrededor del planeta. Gira el globo, selecciona un territorio y conecta con sus agentes culturales.' : 'Discover living cultures around the world. Rotate the globe, select a territory and connect with its cultural agents.'}</p>
         </div>
         <div class="mundo-body">
           <div class="mundo-globe-wrap">
             <div id="globe-container"></div>
             <div class="globe-ui-top">
               <div class="continent-pills">
-                ${continents.map((c, i) => `<button class="cont-pill${i===0?' active':''}" data-cont="${c}">${c}</button>`).join('')}
+                ${continents.map((c, i) => { const names = { Todos: 'All', 'América del Sur': 'South America', 'América del Norte': 'North America', Asia: 'Asia', Oceanía: 'Oceania', Europa: 'Europe', África: 'Africa' }; return `<button class="cont-pill${i===0?' active':''}" data-cont="${c}">${es ? c : names[c]}</button>`; }).join('')}
               </div>
             </div>
             <div class="globe-ui-bottom">
               <div class="globe-controls">
-                <button id="globe-zoom-in" class="globe-ctrl" title="Acercar" aria-label="Acercar globo">+</button>
-                <button id="globe-pause" class="globe-ctrl" title="Pausar rotación" aria-label="Pausar o reanudar rotación">⏸</button>
-                <button id="globe-reset" class="globe-ctrl" title="Vista inicial" aria-label="Restablecer vista del globo">⟳</button>
-                <button id="globe-zoom-out" class="globe-ctrl" title="Alejar" aria-label="Alejar globo">−</button>
+                <button id="globe-zoom-in" class="globe-ctrl" title="${es ? 'Acercar' : 'Zoom in'}" aria-label="${es ? 'Acercar globo' : 'Zoom in on globe'}">+</button>
+                <button id="globe-pause" class="globe-ctrl" title="${es ? 'Pausar rotación' : 'Pause rotation'}" aria-label="${es ? 'Pausar o reanudar rotación' : 'Pause or resume rotation'}">⏸</button>
+                <button id="globe-reset" class="globe-ctrl" title="${es ? 'Vista inicial' : 'Reset view'}" aria-label="${es ? 'Restablecer vista del globo' : 'Reset globe view'}">⟳</button>
+                <button id="globe-zoom-out" class="globe-ctrl" title="${es ? 'Alejar' : 'Zoom out'}" aria-label="${es ? 'Alejar globo' : 'Zoom out on globe'}">−</button>
               </div>
-              <p class="globe-hint">Gira · Acerca · Toca un país</p>
+              <p class="globe-hint">${es ? 'Gira · Acerca · Toca un país' : 'Rotate · Zoom in · Select a country'}</p>
             </div>
           </div>
           <aside class="mundo-panel" id="mundo-panel">
             <div class="panel-welcome">
               <div class="panel-welcome-icon">◎</div>
-              <h3>Selecciona un territorio</h3>
-              <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.</p>
-              <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
+              <h3>${es ? 'Selecciona un territorio' : 'Select a territory'}</h3>
+              <p>${es ? 'Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.' : 'Select a country on the globe to discover its cultural identity and the cultural agents registered with Origen Cultural.'}</p>
+              <p class="eyebrow" style="margin-top:28px">${es ? 'TERRITORIOS DISPONIBLES' : 'AVAILABLE TERRITORIES'}</p>
               <div class="featured-countries">
                 ${featured.map(f => `<button class="featured-country" data-fc="${f.key}"><span>${f.flag}</span><span>${f.name}</span></button>`).join('')}
               </div>
