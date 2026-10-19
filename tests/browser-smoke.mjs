@@ -1198,7 +1198,14 @@ async function registrationUploadFailureChecks() {
     await page.locator('#reg-basic [name="name"]').fill('QA Cultural Agent');
     await page.locator('#reg-basic [name="email"]').fill('pilot-qa@example.invalid');
     await page.locator('#reg-basic [name="password"]').fill('TestPassword2026!');
-    await page.locator('#reg-basic [name="location"]').fill('Yaruquí, Ecuador');
+    await page.waitForFunction(() => window.ORIGEN_LOCATIONS?.ready === true, null, { timeout: 20000 });
+    const country = page.locator('#reg-basic [name="country"]');
+    const city = page.locator('#reg-basic [name="cityGeonameId"]');
+    await country.selectOption('Australia');
+    const brisbaneValue = await city.locator('option').evaluateAll(options =>
+      options.find(option => option.textContent.trim().startsWith('Brisbane'))?.value || '');
+    if (!brisbaneValue) throw new Error('Brisbane is missing from the Australia city options');
+    await city.selectOption(brisbaneValue);
     await page.locator('#reg-next').click();
 
     await page.locator('#reg-avatar-input').setInputFiles({
