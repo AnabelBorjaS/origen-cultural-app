@@ -417,10 +417,10 @@ window.MundoCultural = (() => {
   /* ── COLORS ─────────────────────────────────────────────────── */
   function capColor(feat) {
     const key = matchKey(feat);
-    if (feat === _selected) return 'rgba(200,169,126,0.92)';
-    if (feat === _hovered)  return 'rgba(200,169,126,0.58)';
-    if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(18,18,18,0.72)';
+    if (feat === _selected) return 'rgba(200,169,126,0.82)';
+    if (feat === _hovered)  return 'rgba(230,207,170,0.45)';
+    if (key)                return 'rgba(200,169,126,0.16)';
+    return 'rgba(18,18,18,0.04)';
   }
   function altitude(feat) {
     return feat === _hovered ? 0.016 : 0.006;
@@ -842,16 +842,16 @@ window.MundoCultural = (() => {
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-blue-marble.jpg')
       .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
       .lineHoverPrecision(0)
-      .atmosphereColor('rgba(200,169,126,0.25)')
-      .atmosphereAltitude(0.15)
+      .atmosphereColor('#d6b783')
+      .atmosphereAltitude(0.18)
       .polygonsData(_geoData)
       .polygonAltitude(altitude)
       .polygonCapColor(capColor)
       .polygonSideColor(() => 'rgba(200,169,126,0.08)')
-      .polygonStrokeColor(() => '#2a2a2a')
+      .polygonStrokeColor(feat => matchKey(feat) ? 'rgba(230,207,170,0.62)' : 'rgba(210,220,235,0.14)')
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
@@ -1043,6 +1043,12 @@ window.MundoCultural = (() => {
 window.HeroGlobe = (() => {
   'use strict';
 
+  function hEsc(value) {
+    const node = document.createElement('div');
+    node.textContent = String(value ?? '');
+    return node.innerHTML;
+  }
+
   const MC         = () => window.MundoCultural;   // lazy ref para evitar orden de carga
   const matchKey   = feat => MC()._matchKey(feat);
   const getDB      = ()   => MC()._db;
@@ -1061,39 +1067,28 @@ window.HeroGlobe = (() => {
   /* colors */
   function hCap(feat) {
     const key = matchKey(feat);
-    if (feat === _selected) return 'rgba(200,169,126,0.95)';
-    if (feat === _hovered)  return 'rgba(200,169,126,0.55)';
-    if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(18,18,18,0.78)';
+    if (feat === _selected) return 'rgba(200,169,126,0.82)';
+    if (feat === _hovered)  return 'rgba(230,207,170,0.45)';
+    if (key)                return 'rgba(200,169,126,0.16)';
+    // Leave the land texture visible: opaque dark polygon caps were hiding it.
+    return 'rgba(18,18,18,0.04)';
   }
   function hAlt(feat) { return feat === _hovered ? 0.014 : 0.006; }
-
-  /* stats for popup */
-  function stats(key) {
-    const db = getDB()[key];
-    if (!db) return { creators: 0, posts: 0 };
-    const providers = getCreatorsForKey(key);
-    const providerIds = new Set(providers.map(p => p.id));
-    const posts = (window.ORIGEN_API?.cache?.posts || []).filter(p => providerIds.has(p.authorId)).length;
-    return { creators: providers.length, posts };
-  }
 
   /* popup */
   function showPopup(key) {
     if (!_popup) return;
     const db = getDB()[key];
     if (!db) { hidePopup(); return; }
-    const { creators, posts } = stats(key);
+    const story = db.microhistorias?.[0];
     _popup.innerHTML = `
       <button class="hpop-close" id="hpop-close" aria-label="Cerrar historia">×</button>
-      <div class="hpop-flag">${_esc(db.flag)}</div>
-      <h3 class="hpop-name">${_esc(db.name)}</h3>
-      <p class="hpop-cont">${_esc(db.continent)}</p>
-      <div class="hpop-stats">
-        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Agentes culturales</span></div>
-        <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
-        <div class="hpop-stat"><strong>${db.traditions.length}</strong><span>Tradiciones</span></div>
+      <div class="hpop-heading"><span class="hpop-flag" aria-hidden="true">${hEsc(db.flag)}</span>
+        <div><p class="hpop-cont">${hEsc(db.continent)}</p><h3 class="hpop-name">${hEsc(db.name)}</h3></div>
       </div>
+      ${story ? `<p class="hpop-kicker">¿Sabías que…? · ${hEsc(story.cat)}</p>
+        <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">Fuente: ${hEsc(story.src)}</p>`
+        : '<p class="hpop-fact">Estamos preparando una historia cultural para este territorio.</p>'}
       <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">Explorar cultura →</a>`;
     _popup.hidden = false;
     document.getElementById('hpop-close')?.addEventListener('click', () => {
@@ -1140,20 +1135,20 @@ window.HeroGlobe = (() => {
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-dark.jpg')
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-blue-marble.jpg')
         .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
         .lineHoverPrecision(0)
-        .atmosphereColor('rgba(200,169,126,0.30)')
-        .atmosphereAltitude(0.14)
+        .atmosphereColor('#d6b783')
+        .atmosphereAltitude(0.18)
         .polygonsData(_geoData)
         .polygonAltitude(hAlt)
         .polygonCapColor(hCap)
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
-        .polygonStrokeColor(() => '#1f1f1f')
+        .polygonStrokeColor(feat => matchKey(feat) ? 'rgba(230,207,170,0.62)' : 'rgba(210,220,235,0.14)')
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
-          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${_esc(n)}</div>`;
+          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${hEsc(n)}</div>`;
         })
         .onPolygonHover(poly => {
           if (_destroyed) return;
