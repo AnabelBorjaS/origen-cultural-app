@@ -87,6 +87,7 @@ const checks = [
   ['Service worker caches only navigation/static assets', serviceWorker.includes('if (!isNavigation && !isStatic) return;')],
   ['Service worker rejects private/no-store/error responses', serviceWorker.includes('response.ok') && serviceWorker.includes('no-store|private')],
   ['App sanitizes persisted media URLs', app.includes('function safeMediaUrl(value)') && app.includes('safeMediaUrl(post.media[cidx])') && app.includes('safeMediaUrl(profile.cover)')],
+  ['Dynamic profile and post identifiers are escaped before HTML insertion', app.includes('data-pid="${esc(post.id)}"') && app.includes('href="${esc(authorHref)}"') && app.includes('data-fuser="${esc(post.authorId)}"') && app.includes('id="coms-${esc(postId)}"') && app.includes('data-favorite="${esc(c.id)}"')],
   ['Directory profile copy is escaped before innerHTML', app.includes('esc(c.short)') && app.includes('esc(c.location)') && app.includes('esc(c.category)')],
   ['Mundo sanitizes live Cultural Agent fields', mundo.includes('function _esc(value)') && mundo.includes('function _safeMediaUrl(value)') && mundo.includes('_esc(c.name)')],
   ['Globe tooltips escape external/profile labels', mundo.includes('_esc(n)') && mundo.includes('_esc(d.label)')],
