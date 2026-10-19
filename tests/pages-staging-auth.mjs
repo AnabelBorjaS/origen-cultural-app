@@ -26,7 +26,7 @@ function makeContext(request, secret = password) {
   let nextCalls = 0;
   return {
     request,
-    env: secret === undefined ? {} : { ORIGEN_STAGING_PASSWORD: secret },
+    env: secret === null ? {} : { ORIGEN_STAGING_PASSWORD: secret },
     async next() {
       nextCalls += 1;
       return new Response("preview content", {
@@ -43,7 +43,7 @@ function basic(user, pass) {
   return `Basic ${Buffer.from(`${user}:${pass}`, "utf8").toString("base64")}`;
 }
 
-let context = makeContext(makeRequest(), undefined);
+let context = makeContext(makeRequest(), null);
 let result = await onRequest(context);
 assert.equal(result.status, 503, "missing secret blocks the site");
 assert.equal(context.nextCalls, 0, "missing secret never serves assets");
