@@ -9,6 +9,7 @@ const visualPreviewOnly = process.env.ORIGEN_VISUAL_PREVIEW_ONLY === '1';
 const runtimeEntries = [
   'index.html',
   'runtime-config.js',
+  'locations.js',
   'app.js',
   'data.js',
   'trust.js',
@@ -217,6 +218,7 @@ if (forbidden.length) {
 const textRuntime = [
   'index.html',
   'runtime-config.js',
+  'locations.js',
   'app.js',
   'data.js',
   'trust.js',
