@@ -207,11 +207,24 @@ async function mobileChecks() {
   // signing up or making authenticated Supabase write requests.
   await page.locator('[data-atype="creator"]').click();
   await page.locator('#reg-next').click();
+  await page.waitForFunction(() => window.ORIGEN_LOCATIONS?.ready === true, null, { timeout: 20000 });
+  const country = page.locator('#reg-basic [name="country"]');
+  const city = page.locator('#reg-basic [name="cityGeonameId"]');
+  const countryOptions = await country.locator('option').evaluateAll(options => options.map(option => option.value));
+  check(countryOptions.includes('Australia'), 'Country selector should include Australia');
+  await country.selectOption('Australia');
+  const brisbaneValue = await city.locator('option').evaluateAll(options =>
+    options.find(option => option.textContent.trim().startsWith('Brisbane'))?.value || '');
+  check(Boolean(brisbaneValue), 'City selector should include Brisbane after selecting Australia');
+  if (!brisbaneValue) throw new Error('Brisbane is missing from the Australia city options');
+  await city.selectOption(brisbaneValue);
+  check(await city.inputValue() === brisbaneValue, 'City selector should retain the selected Brisbane option');
+
   await page.locator('#reg-basic [name="name"]').fill('Artisana Yaruquí');
   await page.locator('#reg-basic [name="email"]').fill('piloto@qa.invalid');
-  await page.locator('#reg-basic [name="password"]').fill('ExampleSecure2026!');
-  await page.locator('#reg-basic [name="location"]').fill('Yaruquí, Ecuador');
-  await page.locator('#reg-basic [name="location"]').press('Enter');
+  const password = page.locator('#reg-basic [name="password"]');
+  await password.fill('ExampleSecure2026!');
+  await password.press('Enter');
   await page.locator('#reg-avatar-input').waitFor({ state: 'attached', timeout: 8000 });
   const currentSignupStep = await page.locator('.wizard-label').innerText();
   check(/(?:paso|step)\s+3\b/i.test(currentSignupStep),
