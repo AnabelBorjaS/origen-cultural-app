@@ -62,7 +62,12 @@
       role: p.role || 'explorer',
       avatar: p.avatar_url || '',
       cover: p.cover_url || '',
-      location: p.location || [p.city, p.country].filter(Boolean).join(', '),
+      location: p.location || [p.city, p.city_subcountry, p.country].filter(Boolean).join(', '),
+      country: p.country || '',
+      city: p.city || '',
+      cityGeonameId: p.city_geoname_id || '',
+      citySubcountry: p.city_subcountry || '',
+      culturalIdentity: p.cultural_identity || '',
       story: p.story || p.bio || '',
       categories: p.categories || [],
       links: p.links || {},
@@ -130,6 +135,11 @@
       display_name: payload.name || '',
       account_type: payload.accountType === 'creator' ? 'creator' : 'explorer',
       location: payload.location || '',
+      country: payload.country || '',
+      city: payload.city || '',
+      city_geoname_id: payload.cityGeonameId || null,
+      city_subcountry: payload.citySubcountry || '',
+      cultural_identity: payload.culturalIdentity || '',
       story: payload.story || '',
       categories: payload.categories || [],
       links: {
@@ -194,6 +204,11 @@
       avatar_url: changes.avatar,
       cover_url: changes.cover,
       location: changes.location,
+      country: changes.country,
+      city: changes.city,
+      city_geoname_id: changes.cityGeonameId,
+      city_subcountry: changes.citySubcountry,
+      cultural_identity: changes.culturalIdentity,
       story: changes.story,
       categories: changes.categories || [],
       links: {
@@ -217,7 +232,7 @@
 
   async function listPublicProfiles() {
     const { data, error } = await client.from('profiles')
-      .select('id,role,display_name,avatar_url,cover_url,country,city,bio,location,story,categories,links,created_at')
+      .select('id,role,display_name,avatar_url,cover_url,country,city,city_geoname_id,city_subcountry,cultural_identity,bio,location,story,categories,links,created_at')
       .eq('role', 'creator')
       .order('created_at', { ascending: false });
     if (error) throw error;

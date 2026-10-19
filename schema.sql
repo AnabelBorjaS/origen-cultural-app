@@ -17,6 +17,9 @@ create table public.profiles (
   avatar_url text,
   country text,
   city text,
+  city_geoname_id bigint,
+  city_subcountry text,
+  cultural_identity text,
   bio text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
