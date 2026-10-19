@@ -235,8 +235,10 @@ async function mobileChecks() {
     'Returning from photo step must retain the mobile creator name');
   check(await page.locator('#reg-basic [name="password"]').inputValue() === 'ExampleSecure2026!',
     'Returning to basic step should not force retyping the password mid-wizard');
-  check(await page.locator('#reg-basic [name="location"]').inputValue() === 'Yaruquí, Ecuador',
-    'Returning from photo step must retain the creator territory');
+  check(await country.inputValue() === 'Australia',
+    'Returning from photo step must retain the creator country');
+  check((await city.locator('option:checked').innerText()).startsWith('Brisbane'),
+    'Returning from photo step must retain the creator city');
   await page.locator('#reg-next').click();
 
   await page.locator('#reg-avatar-input').setInputFiles({
