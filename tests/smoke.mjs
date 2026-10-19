@@ -4,6 +4,7 @@ const read = p => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const index = read('index.html');
 const app = read('app.js');
 const locations = read('locations.js');
+const buildScript = read('scripts/build-static.mjs');
 const supabase = read('supabase-client.js');
 const styles = read('styles.css');
 const manifest = read('manifest.webmanifest');
@@ -23,6 +24,7 @@ const checks = [
   ['Signup separates cultural identity from current city and country', app.includes('Cultura, comunidad o tradición que compartes') && app.includes('locationFieldsMarkup(d, L, true)') && app.includes('cityGeonameId')],
   ['Explorer directory can search by shared culture and display location', app.includes('c.culturalIdentity, c.short') && app.includes('Cultura que comparte') && app.includes('Dónde se encuentra')],
   ['City choices come from an attributed, pinned global reference dataset', locations.includes('datasets/world-cities@73c9f54ab9f305168c76d0802db151e30a157b28') && locations.includes('CC BY 4.0')],
+  ['Location data ships in the runtime bundle and is scanned for forbidden secrets', buildScript.includes("'locations.js'") && buildScript.match(/'locations\.js'/g)?.length === 2],
   ['Public permalink offers consent-neutral optional sign-in and return', app.includes('data-story-login href="#login"') && app.includes("state.authReturnRoute = 'publicacion/' + id") && app.includes("go(returnRoute || 'feed')")],
   ['Shared-story return is consumed only after successful login', app.includes('const returnRoute = state.authReturnRoute;') && app.includes('await doLogin(email, password, captchaToken);\n        state.authReturnRoute = null;') && app.includes("go(returnRoute || 'feed')")],
   ['Registration legal documents open in a separate tab, preserving the wizard', app.includes('href="#confianza" target="_blank" rel="noopener noreferrer"') && app.includes('id="reg-accepted-legal"') && app.includes('new tab') && app.includes('nueva pestaña')],
