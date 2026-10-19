@@ -1615,11 +1615,11 @@
     const countries = window.ORIGEN_LOCATIONS?.countries?.() || [];
     const req = required ? ' required' : '';
     return '<div class="form-field"><label>' + L('País donde vives o realizas actividades','Country where you live or run activities') +
-      (required ? ' *' : '') + '</label><select name="country"' + req + '>' +
+      (required ? ' *' : '') + '</label><select name="country" data-initial-country="' + esc(data.country || '') + '"' + req + '>' +
       '<option value="">' + L('Selecciona un país','Choose a country') + '</option>' +
       countries.map(country => '<option value="' + esc(country) + '"' + (country === data.country ? ' selected' : '') + '>' + esc(country) + '</option>').join('') +
       '</select></div><div class="form-field"><label>' + L('Ciudad','City') + (required ? ' *' : '') +
-      '</label><select name="cityGeonameId"' + req + (data.country ? '' : ' disabled') + '>' +
+      '</label><select name="cityGeonameId" data-initial-city="' + esc(data.cityGeonameId || '') + '"' + req + (data.country ? '' : ' disabled') + '>' +
       cityOptionsMarkup(data.country, data.cityGeonameId, L) + '</select><small class="form-note">' +
       L('Elige dónde vive el Agente Cultural o dónde puedes encontrar sus actividades.','Choose where the Cultural Agent is based or where you can attend their activities.') + '</small></div>';
   }
@@ -1627,18 +1627,42 @@
   function selectedLocation(form) {
     const country = form?.elements?.country?.value || '';
     const city = window.ORIGEN_LOCATIONS?.findCity(form?.elements?.cityGeonameId?.value);
-    if (!country || !city || city.country !== country) return {};
+    if (!country || !city || city.country !== country) {
+      return { country: '', city: '', cityGeonameId: null, citySubcountry: '', location: '' };
+    }
     return { country, city: city.name, cityGeonameId: Number(city.id), citySubcountry: city.region,
       location: [city.name, city.region, country].filter(Boolean).join(', ') };
   }
 
   function bindLocationSelects(form) {
     const country = form?.elements?.country, city = form?.elements?.cityGeonameId;
-    if (!country || !city) return;
-    country.addEventListener('change', () => {
+    const directory = window.ORIGEN_LOCATIONS;
+    if (!country || !city || !directory) return;
+    const L = (esText, enText) => state.lang === 'es' ? esText : enText;
+    const refresh = () => {
+      if (!directory.ready) return;
+      const wantedCountry = country.value || country.dataset.initialCountry || '';
+      const wantedCity = city.value || city.dataset.initialCity || '';
+      const availableCountries = directory.countries();
+      country.innerHTML = '<option value="">' + L('Selecciona un país','Choose a country') + '</option>' +
+        availableCountries.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+      country.value = availableCountries.includes(wantedCountry) ? wantedCountry : '';
       city.disabled = !country.value;
-      city.innerHTML = cityOptionsMarkup(country.value, '', (s, e) => state.lang === 'es' ? s : e);
-      city.value = '';
+      city.innerHTML = cityOptionsMarkup(country.value, wantedCity, L);
+      country.dataset.initialCountry = '';
+      city.dataset.initialCity = '';
+    };
+    country.addEventListener('change', () => {
+      city.dataset.initialCity = '';
+      city.disabled = !country.value;
+      city.innerHTML = cityOptionsMarkup(country.value, '', L);
+    });
+    void directory.load().then(loaded => {
+      if (loaded && form.isConnected) refresh();
+      else if (!loaded && form.isConnected) {
+        city.disabled = false;
+        city.innerHTML = '<option value="">' + L('No se pudo cargar la lista de ciudades. Recarga la página.','Could not load the city list. Reload the page.') + '</option>';
+      }
     });
   }
 
@@ -2773,7 +2797,6 @@
     if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
     if (state.regStep === 2) {
       bindLocationSelects(document.getElementById('reg-basic'));
-      void window.ORIGEN_LOCATIONS?.load?.();
     }
     if (state.regStep === 5) void mountTurnstile('signup');
     /* account type selection */
@@ -3157,7 +3180,6 @@
   /* Edit profile */
   function bindEditProfile() {
     bindLocationSelects(document.getElementById('edit-form'));
-    void window.ORIGEN_LOCATIONS?.load?.();
     /* category chips */
     const userCats = { list: me() ? (me().categories || []) : [] };
     document.querySelectorAll('[data-cat]').forEach(chip => {
