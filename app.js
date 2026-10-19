@@ -371,6 +371,11 @@
             state.user = await window.ORIGEN_API.updateMyProfile({
               name: state.user?.name || data.name,
               location: data.location || state.user?.location,
+              country: data.country || state.user?.country,
+              city: data.city || state.user?.city,
+              cityGeonameId: data.cityGeonameId || state.user?.cityGeonameId,
+              citySubcountry: data.citySubcountry || state.user?.citySubcountry,
+              culturalIdentity: data.culturalIdentity || state.user?.culturalIdentity,
               story: data.story || state.user?.story,
               categories: data.categories || state.user?.categories || [],
               links: data.links || state.user?.links || {},
@@ -1569,7 +1574,7 @@
       </div>
       <form class="form-grid" id="edit-form">
         <div class="form-field"><label>${L('Nombre','Name')}</label><input name="name" value="${esc(user.name || '')}"></div>
-        <div class="form-field"><label>${L('Ubicación','Location')}</label><input name="location" value="${esc(user.location || '')}" placeholder="${L('Ciudad, País','City, Country')}"></div>
+        ${locationFieldsMarkup(user, L, false)}
         <div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir?','Who are you, what do you represent, and what would you like to share?')}">${esc(user.story || '')}</textarea></div>
         <div class="form-field full">
           <label>${L('Categorías culturales','Cultural categories')}</label>
@@ -1588,6 +1593,48 @@
   }
 
   /* ── REGISTER WIZARD ─────────────────────────────────────── */
+
+  function cityOptionsMarkup(country, selectedId, L) {
+    const directory = window.ORIGEN_LOCATIONS;
+    if (!directory?.ready) return '<option value="">' + L('Cargando ciudades…','Loading cities…') + '</option>';
+    if (!country) return '<option value="">' + L('Selecciona primero un país','Choose a country first') + '</option>';
+    return '<option value="">' + L('Selecciona una ciudad','Choose a city') + '</option>' +
+      directory.cities(country).map(city => '<option value="' + esc(city.id) + '"' +
+        (String(city.id) === String(selectedId || '') ? ' selected' : '') + '>' +
+        esc(city.name) + (city.region ? ' — ' + esc(city.region) : '') + '</option>').join('');
+  }
+
+  function locationFieldsMarkup(data, L, required) {
+    const countries = window.ORIGEN_LOCATIONS?.countries?.() || [];
+    const req = required ? ' required' : '';
+    return '<div class="form-field"><label>' + L('País donde vives o realizas actividades','Country where you live or run activities') +
+      (required ? ' *' : '') + '</label><select name="country"' + req + '>' +
+      '<option value="">' + L('Selecciona un país','Choose a country') + '</option>' +
+      countries.map(country => '<option value="' + esc(country) + '"' + (country === data.country ? ' selected' : '') + '>' + esc(country) + '</option>').join('') +
+      '</select></div><div class="form-field"><label>' + L('Ciudad','City') + (required ? ' *' : '') +
+      '</label><select name="cityGeonameId"' + req + (data.country ? '' : ' disabled') + '>' +
+      cityOptionsMarkup(data.country, data.cityGeonameId, L) + '</select><small class="form-note">' +
+      L('Elige dónde vive el Agente Cultural o dónde puedes encontrar sus actividades.','Choose where the Cultural Agent is based or where you can attend their activities.') + '</small></div>';
+  }
+
+  function selectedLocation(form) {
+    const country = form?.elements?.country?.value || '';
+    const city = window.ORIGEN_LOCATIONS?.findCity(form?.elements?.cityGeonameId?.value);
+    if (!country || !city || city.country !== country) return {};
+    return { country, city: city.name, cityGeonameId: Number(city.id), citySubcountry: city.region,
+      location: [city.name, city.region, country].filter(Boolean).join(', ') };
+  }
+
+  function bindLocationSelects(form) {
+    const country = form?.elements?.country, city = form?.elements?.cityGeonameId;
+    if (!country || !city) return;
+    country.addEventListener('change', () => {
+      city.disabled = !country.value;
+      city.innerHTML = cityOptionsMarkup(country.value, '', (s, e) => state.lang === 'es' ? s : e);
+      city.value = '';
+    });
+  }
+
   function registerView() {
     const step  = state.regStep;
     const d     = state.regData;
@@ -1643,7 +1690,7 @@
         <div class="form-field"><label>${L('Nombre completo *','Full name *')}</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
         <div class="form-field"><label>${L('Correo electrónico *','Email address *')}</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
         <div class="form-field"><label>${L('Contraseña *','Password *')}</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
-        <div class="form-field"><label>${L('País y ciudad *','Country and city *')}</label><input name="location" required placeholder="${L('Quito, Ecuador','Brisbane, Australia')}" value="${esc(d.location || '')}"></div>
+        ${locationFieldsMarkup(d, L, true)}
       </form>`;
     } else if (step === 3) {
       body = `<div class="upload-section">
@@ -2692,9 +2739,10 @@
     if (!form) return;
     const fields = Object.fromEntries(new FormData(form));
     if (step === 2) {
-      for (const key of ['name', 'email', 'password', 'location']) {
+      for (const key of ['name', 'email', 'password', 'country', 'cityGeonameId']) {
         if (key in fields) state.regData[key] = fields[key];
       }
+      Object.assign(state.regData, selectedLocation(form));
     } else if (step === 4) {
       Object.assign(state.regData, fields);
       state.regData.services = fields.services
@@ -2716,6 +2764,7 @@
     // template, URL or persistent browser storage.
     const previousPassword = document.querySelector('#reg-basic [name="password"]');
     if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
+    if (state.regStep === 2) bindLocationSelects(document.getElementById('reg-basic'));
     if (state.regStep === 5) void mountTurnstile('signup');
     /* account type selection */
     document.querySelectorAll('[data-atype]').forEach(card => {
@@ -3097,6 +3146,7 @@
 
   /* Edit profile */
   function bindEditProfile() {
+    bindLocationSelects(document.getElementById('edit-form'));
     /* category chips */
     const userCats = { list: me() ? (me().categories || []) : [] };
     document.querySelectorAll('[data-cat]').forEach(chip => {
@@ -3161,7 +3211,8 @@
         const previousCover = user.cover;
         const updated = await window.ORIGEN_API.updateMyProfile({
           name: fd.name || user.name,
-          location: fd.location,
+          ...selectedLocation(form),
+          culturalIdentity: fd.culturalIdentity || '',
           story: fd.story,
           categories: userCats.list,
           links,
