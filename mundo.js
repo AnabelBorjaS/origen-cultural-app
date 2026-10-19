@@ -480,6 +480,7 @@ window.MundoCultural = (() => {
   function renderCard(countryKey) {
     if (!_panel) return;
     const data     = CULTURAL_DB[countryKey];
+    const english  = isEnglish();
     const creators = getCreatorsForKey(countryKey);
     const stories  = data.microhistorias || [];
 
@@ -494,14 +495,14 @@ window.MundoCultural = (() => {
 
     const creatorHtml = creators.length
       ? `<div class="card-section card-section-creators">
-          <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">${english ? 'CULTURAL AGENTS IN THIS TERRITORY' : 'AGENTES CULTURALES EN ESTE TERRITORIO'}</p>
           <div class="card-creators">${creators.slice(0, 6).map(renderCreatorMini).join('')}</div>
         </div>`
       : `<div class="card-section card-section-creators">
-          <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">${english ? 'CULTURAL AGENTS IN THIS TERRITORY' : 'AGENTES CULTURALES EN ESTE TERRITORIO'}</p>
           <div class="card-empty-creators">
-            <p>Sé el primero en registrarte desde ${_esc(data.name)}.</p>
-            <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
+            <p>${english ? 'Be the first to create a profile from' : 'Sé el primero en registrarte desde'} ${_esc(localizedCountryName(data))}.</p>
+            <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">${english ? 'Create a profile' : 'Crear perfil'}</a>
           </div>
         </div>`;
 
@@ -512,16 +513,16 @@ window.MundoCultural = (() => {
         <div class="card-header">
           <div class="card-flag">${_esc(data.flag)}</div>
           <div class="card-header-info">
-            <p class="eyebrow">${_esc(data.continent)}</p>
-            <h2 class="card-country-name">${_esc(data.name)}</h2>
+            <p class="eyebrow">${_esc(localizedContinent(data))}</p>
+            <h2 class="card-country-name">${_esc(localizedCountryName(data))}</h2>
           </div>
-          <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
+          <button class="card-close" id="card-close" aria-label="${english ? 'Close' : 'Cerrar'}">×</button>
         </div>
 
         <!-- DISCLAIMER: múltiples identidades -->
         <p class="territory-disclaimer">
           <span class="td-icon">◈</span>
-          ${_esc(data.name)} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
+          ${_esc(localizedCountryName(data))} ${english ? 'is home to many communities, identities and cultural expressions. Each story represents one voice, not every voice.' : 'alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.'}
         </p>
 
         <!-- MICRO-STORY CAROUSEL -->
@@ -529,27 +530,27 @@ window.MundoCultural = (() => {
           <div class="micro-card" id="mc-card">
             <!-- Injected by setMicroStory() -->
           </div>
-          <div class="mc-nav" id="mc-nav" aria-label="Navegar historias">
+          <div class="mc-nav" id="mc-nav" aria-label="${english ? 'Browse stories' : 'Navegar historias'}">
             ${stories.map((_, i) =>
-              `<button class="mc-dot${i === 0 ? ' active' : ''}" data-mcdot="${i}" aria-label="Historia ${i + 1}"></button>`
+              `<button class="mc-dot${i === 0 ? ' active' : ''}" data-mcdot="${i}" aria-label="${english ? 'Story' : 'Historia'} ${i + 1}"></button>`
             ).join('')}
           </div>
         </div>
 
         <!-- ACTIONS ROW -->
         <div class="micro-actions">
-          <button class="mc-action-btn" id="mc-save" data-mckey="${countryKey}" data-mcidx="0" title="Guardar en Pasaporte Cultural">
-            <span class="mca-icon">💾</span><span class="mca-label">Guardar</span>
+          <button class="mc-action-btn" id="mc-save" data-mckey="${countryKey}" data-mcidx="0" title="${english ? 'Save to Cultural Passport' : 'Guardar en Pasaporte Cultural'}">
+            <span class="mca-icon">💾</span><span class="mca-label">${english ? 'Save' : 'Guardar'}</span>
           </button>
-          <button class="mc-action-btn" id="mc-share" data-mckey="${countryKey}" title="Compartir esta historia">
-            <span class="mca-icon">↗</span><span class="mca-label">Compartir</span>
+          <button class="mc-action-btn" id="mc-share" data-mckey="${countryKey}" title="${english ? 'Share this story' : 'Compartir esta historia'}">
+            <span class="mca-icon">↗</span><span class="mca-label">${english ? 'Share' : 'Compartir'}</span>
           </button>
           <button class="mc-action-btn${isFollowing ? ' on' : ''}" id="mc-follow" data-mcfollow="${countryKey}">
             <span class="mca-icon">${isFollowing ? '✓' : '+'}</span>
-            <span class="mca-label">${isFollowing ? 'Siguiendo' : 'Seguir'}</span>
+            <span class="mca-label">${isFollowing ? (english ? 'Following' : 'Siguiendo') : (english ? 'Follow' : 'Seguir')}</span>
           </button>
-          <a href="#explorar" class="mc-action-btn" title="Explorar perfiles culturales">
-            <span class="mca-icon">👥</span><span class="mca-label">Perfiles</span>
+          <a href="#explorar" class="mc-action-btn" title="${english ? 'Explore cultural profiles' : 'Explorar perfiles culturales'}">
+            <span class="mca-icon">👥</span><span class="mca-label">${english ? 'Profiles' : 'Perfiles'}</span>
           </a>
         </div>
 
@@ -558,14 +559,14 @@ window.MundoCultural = (() => {
 
         <!-- LENGUAS -->
         <div class="card-section">
-          <p class="card-section-label">LENGUAS DE ESTE TERRITORIO</p>
-          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${_esc(l)}</span>`).join('')}</div>
+          <p class="card-section-label">${english ? 'LANGUAGES OF THIS TERRITORY' : 'LENGUAS DE ESTE TERRITORIO'}</p>
+          <div class="card-pills">${(data.languages||[]).map(l => { const names = { Español: 'Spanish', 'Inglés (oficial)': 'English (official)', Japonés: 'Japanese', Aimara: 'Aymara', Náhuatl: 'Nahuatl', Zapoteco: 'Zapotec', 'Maya yucateco': 'Yucatec Maya', 'Ainu (lengua indígena en Hokkaido)': 'Ainu (Indigenous language in Hokkaido)', '+250 lenguas aborígenes': '250+ Indigenous languages', '+33 lenguas indígenas (todas co-oficiales)': '33+ Indigenous languages (all co-official)' }; return `<span class="card-pill">${_esc(english ? (names[l] || l) : l)}</span>`; }).join('')}</div>
         </div>
 
         <!-- SUGGEST / CORRECTION -->
         <div class="card-suggest">
           <a href="#" class="suggest-link" id="mc-suggest" data-mcsuggest="${countryKey}">
-            ¿Tienes datos o encuentras un error? Sugiere o solicita corrección →
+            ${english ? 'Have information or spotted an error? Suggest an edit or request a correction' : '¿Tienes datos o encuentras un error? Sugiere o solicita corrección'} →
           </a>
         </div>
 
@@ -676,13 +677,13 @@ window.MundoCultural = (() => {
         localStorage.setItem('oc-passport', JSON.stringify(passport));
         btn.querySelector('.mca-icon').textContent = '✓';
         btn.classList.add('on');
-        _toast(`Historia guardada en tu Pasaporte Cultural ✓`);
+        _toast(isEnglish() ? 'Story saved to your Cultural Passport ✓' : 'Historia guardada en tu Pasaporte Cultural ✓');
         setTimeout(() => {
           btn.querySelector('.mca-icon').textContent = '💾';
           btn.classList.remove('on');
         }, 2800);
       } else {
-        _toast('Ya guardaste esta historia en tu Pasaporte Cultural.');
+        _toast(isEnglish() ? 'You have already saved this story to your Cultural Passport.' : 'Ya guardaste esta historia en tu Pasaporte Cultural.');
       }
     });
 
@@ -695,8 +696,8 @@ window.MundoCultural = (() => {
         navigator.share({ title: `ORIGEN Cultural — ${localizedCountryName(data)}`, text, url }).catch(() => {});
       } else {
         navigator.clipboard.writeText(`${text}\n${url}`).then(() =>
-          _toast('Historia copiada al portapapeles ↗')
-        ).catch(() => _toast('Comparte este enlace: ' + url));
+          _toast(isEnglish() ? 'Story copied to clipboard ↗' : 'Historia copiada al portapapeles ↗')
+        ).catch(() => _toast((isEnglish() ? 'Share this link: ' : 'Comparte este enlace: ') + url));
       }
     });
 
@@ -711,13 +712,13 @@ window.MundoCultural = (() => {
       if (idx === -1) {
         terrs.push(key);
         icon.textContent  = '✓';
-        label.textContent = 'Siguiendo';
+        label.textContent = isEnglish() ? 'Following' : 'Siguiendo';
         btn.classList.add('on');
-        _toast(`Ahora sigues ${data.name} 🌍`);
+        _toast(`${isEnglish() ? 'You are now following' : 'Ahora sigues'} ${localizedCountryName(data)} 🌍`);
       } else {
         terrs.splice(idx, 1);
         icon.textContent  = '+';
-        label.textContent = 'Seguir';
+        label.textContent = isEnglish() ? 'Follow' : 'Seguir';
         btn.classList.remove('on');
       }
       localStorage.setItem('oc-follows-territories', JSON.stringify(terrs));
@@ -728,15 +729,16 @@ window.MundoCultural = (() => {
       e.preventDefault();
       const session = window.ORIGEN_API?.cache?.session || null;
       if (!session) {
-        _toast('Inicia sesión para sugerir datos o solicitar correcciones.');
+        _toast(isEnglish() ? 'Sign in to suggest information or request a correction.' : 'Inicia sesión para sugerir datos o solicitar correcciones.');
         setTimeout(() => { window.location.hash = '#login'; }, 1400);
         return;
       }
-      _toast('Gracias. Tu sugerencia llegará al equipo de ORIGEN Cultural para revisión.');
+      _toast(isEnglish() ? 'Thank you. Your suggestion will be reviewed by the ORIGEN Cultural team.' : 'Gracias. Tu sugerencia llegará al equipo de ORIGEN Cultural para revisión.');
     });
   }
 
   function renderCreatorMini(c) {
+    const english = isEnglish();
     const init = (c.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const src  = _safeMediaUrl(c.avatar || c.image);
     const safeId = encodeURIComponent(String(c.id || ''));
@@ -758,19 +760,19 @@ window.MundoCultural = (() => {
         <a href="${href}"><strong>${_esc(c.name)}</strong></a>
         <span>${_esc(c.type || c.accountType || '')}</span>
       </div>
-      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${_esc(c.id)}" data-kind="${_esc(c._kind)}">${isFollowing ? 'Siguiendo' : '+ Seguir'}</button>
+      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${_esc(c.id)}" data-kind="${_esc(c._kind)}">${isFollowing ? (english ? 'Following' : 'Siguiendo') : (english ? '+ Follow' : '+ Seguir')}</button>
     </div>`;
   }
 
   function welcomeHtml() {
-    const highlighted = ['Ecuador', 'Australia', 'Perú', 'Bolivia', 'México', 'Japón'];
+    const highlighted = ['Ecuador', 'Australia', isEnglish() ? 'Peru' : 'Perú', 'Bolivia', isEnglish() ? 'Mexico' : 'México', isEnglish() ? 'Japan' : 'Japón'];
     const keys        = ['ecuador', 'australia', 'peru', 'bolivia', 'mexico', 'japan'];
     const flags       = ['🇪🇨','🇦🇺','🇵🇪','🇧🇴','🇲🇽','🇯🇵'];
     return `<div class="panel-welcome">
       <div class="panel-welcome-icon">◎</div>
-      <h3>Selecciona un territorio</h3>
-      <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.</p>
-      <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
+      <h3>${isEnglish() ? 'Select a territory' : 'Selecciona un territorio'}</h3>
+      <p>${isEnglish() ? 'Select a country on the globe to discover its cultural identity and the cultural agents registered with Origen Cultural.' : 'Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.'}</p>
+      <p class="eyebrow" style="margin-top:28px">${isEnglish() ? 'AVAILABLE TERRITORIES' : 'TERRITORIOS DISPONIBLES'}</p>
       <div class="featured-countries">
         ${highlighted.map((n, i) => `
           <button class="featured-country" data-fc="${keys[i]}">
@@ -807,16 +809,16 @@ window.MundoCultural = (() => {
           }
 
           if (!culturalProfile) {
-            _toast('Este seguimiento todavía no está disponible para este perfil.');
+            _toast(isEnglish() ? 'Following is not available for this profile yet.' : 'Este seguimiento todavía no está disponible para este perfil.');
             return;
           }
 
           const wasFollowing = (api.cache.follows || []).includes(culturalProfile.id);
           await api.toggleFollow(culturalProfile.id);
-          btn.textContent = wasFollowing ? '+ Seguir' : 'Siguiendo';
+          btn.textContent = wasFollowing ? (isEnglish() ? '+ Follow' : '+ Seguir') : (isEnglish() ? 'Following' : 'Siguiendo');
           btn.classList.toggle('on', !wasFollowing);
         } catch (error) {
-          _toast(error?.message || 'No pudimos actualizar el seguimiento.');
+          _toast(error?.message || (isEnglish() ? 'We could not update the follow.' : 'No pudimos actualizar el seguimiento.'));
         }
       });
     });
@@ -827,12 +829,12 @@ window.MundoCultural = (() => {
     _panel.innerHTML = `<div class="cultural-card">
       <div class="card-header">
         <div class="card-flag">🌍</div>
-        <div><h2 class="card-country-name">${_esc(name)}</h2><p class="card-meta">Territorio sin datos culturales registrados aún.</p></div>
-        <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
+        <div><h2 class="card-country-name">${_esc(name)}</h2><p class="card-meta">${isEnglish() ? 'No cultural information is registered for this territory yet.' : 'Territorio sin datos culturales registrados aún.'}</p></div>
+        <button class="card-close" id="card-close" aria-label="${isEnglish() ? 'Close' : 'Cerrar'}">×</button>
       </div>
       <div class="card-section">
-        <p>Este territorio todavía no tiene una ficha cultural en Origen Cultural. Puedes ser el primero en registrar un perfil desde aquí.</p>
-        <a href="#registro" class="btn" style="min-height:44px;padding:0 18px;font-size:11px;margin-top:16px;display:inline-flex">Registrar perfil cultural</a>
+        <p>${isEnglish() ? 'This territory does not have a cultural profile yet. You can be the first to create one here.' : 'Este territorio todavía no tiene una ficha cultural en Origen Cultural. Puedes ser el primero en registrar un perfil desde aquí.'}</p>
+        <a href="#registro" class="btn" style="min-height:44px;padding:0 18px;font-size:11px;margin-top:16px;display:inline-flex">${isEnglish() ? 'Create a cultural profile' : 'Registrar perfil cultural'}</a>
       </div>
     </div>`;
     document.getElementById('card-close')?.addEventListener('click', () => {
@@ -880,7 +882,7 @@ window.MundoCultural = (() => {
         _globe.polygonCapColor(capColor);
         const key = matchKey(poly);
         if (key) renderCard(key);
-        else     unknownCountryCard(poly.properties?.ADMIN || poly.properties?.name || 'País');
+        else     unknownCountryCard(poly.properties?.ADMIN || poly.properties?.name || (isEnglish() ? 'Country' : 'País'));
         _globe.controls().autoRotate = false;
         _rotating = false;
         updatePauseBtn();
@@ -923,17 +925,18 @@ window.MundoCultural = (() => {
 
   /* ── FALLBACK: SIMPLE CARD GRID ─────────────────────────────── */
   function initFallback(el) {
+    const english = isEnglish();
     el.innerHTML = `<div class="fallback-globe">
       <div class="fallback-banner">
         <span class="globe-icon">🌍</span>
-        <p>Vista simplificada · Tu dispositivo no soporta el globo 3D o la conexión es limitada</p>
+        <p>${isEnglish() ? 'Simplified view · Your device does not support the 3D globe or your connection is limited' : 'Vista simplificada · Tu dispositivo no soporta el globo 3D o la conexión es limitada'}</p>
       </div>
       <div class="fallback-grid">
         ${Object.values(CULTURAL_DB).map(c => `
           <button class="fallback-country-btn" data-fc="${c.key}">
             <span class="fallback-flag">${c.flag}</span>
-            <strong>${c.name}</strong>
-            <span>${c.continent}</span>
+            <strong>${_esc(localizedCountryName(c))}</strong>
+            <span>${_esc(localizedContinent(c))}</span>
           </button>`).join('')}
       </div>
     </div>`;
@@ -1102,7 +1105,7 @@ window.HeroGlobe = (() => {
       </div>
       ${story ? `<p class="hpop-kicker">${english ? 'Did you know…?' : '¿Sabías que…?'} · ${hEsc(story.cat)}</p>
         <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">${english ? 'Source:' : 'Fuente:'} ${hEsc(story.src)}</p>`
-        : '<p class="hpop-fact">Estamos preparando una historia cultural para este territorio.</p>'}
+        : `<p class="hpop-fact">${english ? 'A cultural story for this territory is being prepared.' : 'Estamos preparando una historia cultural para este territorio.'}</p>`}
       <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">${english ? 'Explore its culture' : 'Explorar cultura'} →</a>`;
     _popup.hidden = false;
     document.getElementById('hpop-close')?.addEventListener('click', () => {
@@ -1119,12 +1122,13 @@ window.HeroGlobe = (() => {
 
   /* low-perf fallback */
   function initFallback(el) {
+    const english = MC()._isEnglish();
     el.innerHTML = `<div class="hero-globe-fallback">
       <div class="hgf-emoji">🌍</div>
-      <p>Explora el mundo cultural</p>
+      <p>${english ? 'Explore the Cultural World' : 'Explora el mundo cultural'}</p>
       <div class="hgf-countries">
-        ${['🇪🇨 Ecuador','🇦🇺 Australia','🇵🇪 Perú','🇧🇴 Bolivia','🇲🇽 México','🇯🇵 Japón']
-          .map(c => `<span class="hgf-tag">${c}</span>`).join('')}
+        ${Object.values(getDB()).map(c => `${c.flag} ${MC()._countryName(c)}`)
+          .map(c => `<span class="hgf-tag">${hEsc(c)}</span>`).join('')}
       </div>
     </div>`;
   }
