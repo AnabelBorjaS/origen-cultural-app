@@ -479,8 +479,12 @@
       accountType: 'creator',
       category: (row.categories || [])[0] || 'Cultura',
       categories: row.categories || [],
-      location: row.location || [row.city, row.country].filter(Boolean).join(', '),
+      location: row.location || [row.city, row.city_subcountry, row.country].filter(Boolean).join(', '),
       country: row.country || '',
+      city: row.city || '',
+      cityGeonameId: row.city_geoname_id || '',
+      citySubcountry: row.city_subcountry || '',
+      culturalIdentity: row.cultural_identity || '',
       verified: false,
       profileStatus: 'pending',
       image: row.avatar_url || '',
@@ -780,6 +784,7 @@
       </div>
       <div class="creator-card-body">
         <div class="creator-meta"><span>${esc(c.type)}</span><span>${verBadge(c)} ${esc(c.location)}</span></div>
+        ${c.culturalIdentity ? `<p class="form-note">${state.lang === 'es' ? 'Comparte:' : 'Shares:'} ${esc(c.culturalIdentity)}</p>` : ''}
         <h3><a href="${href}">${esc(c.name)}</a></h3>
         <div class="creator-trust-label">${profileTrustChip(c)}</div>
         <p>${esc(c.short)}</p>
@@ -1260,7 +1265,7 @@
     const q = state.query.toLowerCase().trim();
     const filtered = directoryProfiles().filter(c => {
       const catOk = state.activeCategory === 'Todos' || c.category.toLowerCase().includes(state.activeCategory.toLowerCase()) || c.tags.some(tg => tg.toLowerCase().includes(state.activeCategory.toLowerCase()));
-      const qOk   = !q || [c.name, c.type, c.category, c.location, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
+      const qOk   = !q || [c.name, c.type, c.category, c.location, c.culturalIdentity, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
       return catOk && qOk;
     });
     grid.innerHTML = filtered.length
@@ -1385,7 +1390,8 @@
         <p class="eyebrow">${es ? 'PERFIL CULTURAL' : 'CULTURAL PROFILE'}</p>
         <dl>
           <div><dt>${es ? 'Tipo' : 'Type'}</dt><dd>${profile.accountType === 'creator' ? (es ? 'Agente Cultural' : 'Cultural Agent') : (es ? 'Explorador Cultural' : 'Cultural Explorer')}</dd></div>
-          ${profile.location ? `<div><dt>${es ? 'Ubicación' : 'Location'}</dt><dd>${esc(profile.location)}</dd></div>` : ''}
+          ${profile.culturalIdentity ? `<div><dt>${es ? 'Cultura que comparte' : 'Culture shared'}</dt><dd>${esc(profile.culturalIdentity)}</dd></div>` : ''}
+          ${profile.location ? `<div><dt>${es ? 'Dónde se encuentra' : 'Based in'}</dt><dd>${esc(profile.location)}</dd></div>` : ''}
           ${profile.categories && profile.categories.length ? `<div><dt>${es ? 'Categorías' : 'Categories'}</dt><dd>${profile.categories.map(esc).join(', ')}</dd></div>` : ''}
         </dl>
         ${socialLinksHtml(profile)}
@@ -1575,6 +1581,7 @@
       <form class="form-grid" id="edit-form">
         <div class="form-field"><label>${L('Nombre','Name')}</label><input name="name" value="${esc(user.name || '')}"></div>
         ${locationFieldsMarkup(user, L, false)}
+        ${user.accountType === 'creator' ? `<div class="form-field full"><label>${L('Cultura, comunidad o tradición que compartes','Culture, community or tradition you share')}</label><input name="culturalIdentity" maxlength="180" value="${esc(user.culturalIdentity || '')}" placeholder="${L('Ej. danza andina ecuatoriana','e.g. Ecuadorian Andean dance')}"><small class="form-note">${L('Describe tu actividad; no implica representar oficialmente a toda una comunidad.','Describe your activity; this does not imply official representation of an entire community.')}</small></div>` : ''}
         <div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir?','Who are you, what do you represent, and what would you like to share?')}">${esc(user.story || '')}</textarea></div>
         <div class="form-field full">
           <label>${L('Categorías culturales','Cultural categories')}</label>
@@ -1711,7 +1718,7 @@
       </div>`;
     } else if (step === 4) {
       body = `<form class="form-grid" id="reg-story">
-        <div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir con el mundo?','Who are you, what do you represent, and what would you like to share with the world?')}">${esc(d.story || '')}</textarea></div>
+        ${d.accountType === 'creator' ? `<div class="form-field full"><label>${L('Cultura, comunidad o tradición que compartes *','Culture, community or tradition you share *')}</label><input name="culturalIdentity" required maxlength="180" value="${esc(d.culturalIdentity || '')}" placeholder="${L('Ej. danza andina ecuatoriana','e.g. Ecuadorian Andean dance')}"><small class="form-note">${L('Describe lo que compartes; esto no implica representar oficialmente a toda una comunidad.','Describe what you share; this does not mean you officially represent an entire community.')}</small></div>` : ''}<div class="form-field full"><label>${L('Tu historia cultural','Your cultural story')}</label><textarea name="story" rows="4" placeholder="${L('¿Quién eres, qué representas y qué deseas compartir con el mundo?','Who are you, what do you represent, and what would you like to share with the world?')}">${esc(d.story || '')}</textarea></div>
         <div class="form-field full">
           <label>${L('Categorías culturales','Cultural categories')}</label>
           <div class="cat-chips">${CATS.map(([value,enLabel]) => `<button type="button" class="chip${(d.categories || []).includes(value) ? ' active' : ''}" data-cat="${value}" aria-pressed="${(d.categories || []).includes(value)}">${es ? value : enLabel}</button>`).join('')}</div>
