@@ -208,8 +208,8 @@ window.MundoCultural = (() => {
       microhistorias: [
         {
           id: 'mx-1', cat: 'Gastronomía · Origen',
-          txt: 'El chocolate no llegó a Europa desde América: fue al revés. Los mayas preparaban «xocolātl» siglos antes de la conquista —amargo, espumoso, con chile— en rituales, no como postre.',
-          src: 'INAH — Instituto Nacional de Antropología e Historia',
+          txt: 'Mucho antes de que el chocolate se convirtiera en un postre dulce en Europa, los mayas preparaban cacao como una bebida espumosa. En escenas arqueológicas de vasijas mayas se representa el cacao vertido entre recipientes para crear esa espuma.',
+          src: 'INAH / The Metropolitan Museum of Art',
           href: '#explorar'
         },
         {
@@ -279,6 +279,14 @@ window.MundoCultural = (() => {
       ]
     }
   };
+
+  const STORY_TRANSLATIONS_EN = Object.freeze({"ec-1":["Craft · Identity","The so-called Panama hat originated in Montecristi, Ecuador. Weavers often work before dawn, when humidity softens toquilla straw and makes finer weaving possible."],"ec-2":["Food · Ritual","Colada morada is prepared in November to honour the dead. Each family adds its own flowers and fruit, making the recipe a map of family memory and affection."],"ec-3":["Language · Worldview","In Kichwa, “Pachamama” means more than “Mother Earth”: “pacha” can hold both time and space, while “mama” means mother. The word reflects a worldview in which the whole universe is alive."],"ec-4":["Craft · Community","Shigras are bags woven from cabuya fibre by Kichwa women in Cotopaxi. Every knot and colour can carry a family story passed from one generation to the next."],"ec-5":["Tradition · Territory","Inti Raymi is not simply a tourist reenactment. It is a living solstice celebration practised by Kichwa communities in the Highlands, with roots that predate the Spanish conquest."],"au-1":["Territory · Sacred Law","Anangu people avoid photographing certain areas of Uluru because doing so can violate a living spiritual law, rather than just a visitor rule. For Anangu, Uluru is a living presence, not merely a landmark."],"au-2":["Music · Ceremony","The yidaki, often called the didgeridoo, is played using continuous circular breathing. For Yolŋu people it belongs to cultural and ceremonial contexts; it is not simply an entertainment instrument."],"au-3":["Art · Cosmology","In some Aboriginal art traditions, dot patterns do more than decorate: they can connect places and ancestral narratives within the living cosmologies of specific communities."],"au-4":["Language · Time","Australia is home to more than 250 Indigenous languages. Each carries distinct ways of understanding and inhabiting the world; some languages also use different systems for time and direction."],"au-5":["Tradition · Transmission","In some communities, corroboree is a ceremonial gathering where song, dance and body painting help pass laws and knowledge between generations. Its meaning and practice vary between communities."],"pe-1":["Food · Biodiversity","Peru is home to more than 3,000 potato varieties, domesticated in the Andes thousands of years ago. Many have their own Quechua names and grow best at different elevations."],"pe-2":["Music · Dance","The northern marinera represents courtship through the movement of two dancers and a white handkerchief. Its choreography traditionally avoids direct contact; the dance was declared a National Cultural Heritage of Peru in 1986."],"pe-3":["Craft · Living History","Ayacucho retablos began as portable altarpieces used in evangelisation. Today, artisans also use them to tell stories about social conflict, harvests, celebrations and recent community history."],"pe-4":["Tradition · Cultural Encounter","In Cusco, Corpus Christi brings Catholic processions into conversation with Andean relationships to ancestors. Over time, Indigenous communities incorporated their own meanings into the celebration."],"pe-5":["Language · Emotion","The Quechua word “llaki” can express profound sadness and grief. Like many words rooted in a particular language and worldview, it carries shades of meaning that a single English word cannot fully capture."],"bo-1":["Tradition · Wishes","At Alasitas, people buy miniature versions of things they hope for, such as a home, good health or a degree. In La Paz, many bring them to be blessed by the Ekeko, an Aymara figure associated with abundance."],"bo-2":["Craft · Cosmology","Jalq’a textiles from the Sucre region depict the ukhu pacha, an inner world populated by beings that resist clear definition. Their designs form a visual cosmology, not merely decoration."],"bo-3":["Food · Social Ritual","A Bolivian salteña is known for its sweet pastry and juicy filling. Eating one neatly, without spilling the broth inside, is a small but much-loved local skill."],"bo-4":["Music · Resistance","Saya Afro-Boliviana grew in the Yungas as a form of expression, resistance and celebration. Its rhythm, lyrics and dance keep Afro-Bolivian community memory present."],"bo-5":["Territory · Sacred Place","For some Quechua and Aymara communities, the Salar de Uyuni is more than a tourist landscape: it is a meaningful place where sky and earth seem to meet."],"mx-1":["Food · Origins","Long before chocolate became a sweet dessert in Europe, the Maya prepared cacao as a foamy drink. Archaeological scenes on Maya vessels depict cacao being poured between containers to create the froth."],"mx-2":["Craft · Dream","Alebrijes took shape in 1936, when Mexican artisan Pedro Linares said that, while ill with a fever, he dreamed of fantastical creatures combining different animals. After waking, he began making them from papier-mâché and painting them in vivid colours."],"mx-3":["Tradition · Cultural Encounter","Today’s Día de Muertos traditions bring Indigenous practices and Catholic influences together in different ways. An ofrenda can become a map of affection: who someone was, what they loved and how they are remembered."],"mx-4":["Music · Body","In son jarocho, the wooden tarima is also a musical instrument: dancers’ footwork turns it into shared percussion. The floor itself becomes part of the community’s sound."],"mx-5":["Language · Thought","The Nahuatl verb “tlahtoa” means “to speak.” For many Nahua speakers, language does more than describe the world: words also help shape shared meanings and ways of seeing."],"jp-1":["Craft · Philosophy","Kintsugi does not hide a broken ceramic piece’s cracks; it joins them with lacquer and powdered gold. The object’s history, including its repairs, becomes part of its beauty."],"jp-2":["Tradition · Ancestors","During Obon, many families welcome the spirits of their ancestors and later see them off. They may light lanterns and dance Bon Odori; customs vary by region and family."],"jp-3":["Food · Ritual","Matcha is more than powdered tea. In the Japanese way of tea, or chadō, the bowl, water, movements and shared attention all matter."],"jp-4":["Language · Pause","In Japanese, “ma” (間) can describe the meaningful space or pause between things. It is not simply emptiness; the idea appears in music, architecture and everyday relationships."],"jp-5":["Knowledge · Territory","Satoyama describes landscapes where villages and mountains meet. In many places, people have shaped these areas through a mix of farming, forests and community care."]});
+  const ENGLISH_COUNTRY_NAMES=Object.freeze({ecuador:'Ecuador',australia:'Australia',peru:'Peru',bolivia:'Bolivia',mexico:'Mexico',japan:'Japan'});
+  const ENGLISH_CONTINENTS=Object.freeze({'América del Sur':'South America',Oceanía:'Oceania','América del Norte':'North America',Asia:'Asia'});
+  function isEnglish(){try{const saved=localStorage.getItem('origen-lang');return String(saved||document.documentElement.lang||'es').toLowerCase().startsWith('en')}catch{return String(document.documentElement.lang||'es').toLowerCase().startsWith('en')}}
+  function localizedStory(story){if(!story||!isEnglish())return story;const translation=STORY_TRANSLATIONS_EN[story.id];return translation?{...story,cat:translation[0],txt:translation[1]}:story}
+  function localizedCountryName(data){return isEnglish()?(ENGLISH_COUNTRY_NAMES[data.key]||data.name):data.name}
+  function localizedContinent(data){return isEnglish()?(ENGLISH_CONTINENTS[data.continent]||data.continent):data.continent}
 
   // Coordenadas de países para puntos de creadores
   const COUNTRY_COORDS = {
@@ -589,18 +597,20 @@ window.MundoCultural = (() => {
     if (!card || !data) return;
     const h = data.microhistorias?.[idx];
     if (!h) return;
+    const story = localizedStory(h);
+    const english = isEnglish();
 
     card.innerHTML = `
       <div class="mc-inner">
-        <p class="mc-category">${_esc(h.cat)}</p>
-        <h3 class="mc-sabias">¿Sabías que…?</h3>
-        <blockquote class="mc-text">${_esc(h.txt)}</blockquote>
-        <a href="${_esc(_safeHref(h.href))}" class="mc-discover-btn">
-          Descubre su origen <span aria-hidden="true">→</span>
+        <p class="mc-category">${_esc(story.cat)}</p>
+        <h3 class="mc-sabias">${english ? 'Did you know…?' : '¿Sabías que…?'}</h3>
+        <blockquote class="mc-text">${_esc(story.txt)}</blockquote>
+        <a href="${_esc(_safeHref(story.href))}" class="mc-discover-btn">
+          ${english ? 'Explore its origins' : 'Descubre su origen'} <span aria-hidden="true">→</span>
         </a>
       </div>
       <footer class="mc-footer">
-        <p class="mc-source">Fuente: <em>${_esc(h.src)}</em></p>
+        <p class="mc-source"${english ? '>'+'Source:' : '>'+'Fuente:'} <em>${_esc(story.src)}</em></p>
       </footer>`;
 
     // Update dots
@@ -651,6 +661,7 @@ window.MundoCultural = (() => {
       const d    = CULTURAL_DB[key];
       const h    = d?.microhistorias?.[idx];
       if (!h) return;
+      const story = localizedStory(h);
 
       const passport = (() => { try { return JSON.parse(localStorage.getItem('oc-passport') || '[]'); } catch { return []; } })();
       const entryId  = `${key}-${h.id}`;
@@ -658,8 +669,8 @@ window.MundoCultural = (() => {
       if (!passport.find(p => p.id === entryId)) {
         passport.push({
           id: entryId, type: 'microhistoria',
-          country: d.name, flag: d.flag, continent: d.continent,
-          category: h.cat, text: h.txt, source: h.src,
+          country: localizedCountryName(d), flag: d.flag, continent: localizedContinent(d),
+          category: story.cat, text: story.txt, source: story.src,
           savedAt: Date.now()
         });
         localStorage.setItem('oc-passport', JSON.stringify(passport));
@@ -677,11 +688,11 @@ window.MundoCultural = (() => {
 
     /* ─ share ─ */
     document.getElementById('mc-share')?.addEventListener('click', () => {
-      const h    = stories[_mcIdx];
-      const text = `¿Sabías que…? ${h?.txt || ''}\n\nDescúbrelo en ORIGEN Cultural`;
+      const h    = localizedStory(stories[_mcIdx]);
+      const text = isEnglish() ? `Did you know…? ${h?.txt || ''}\n\nDiscover it on ORIGEN Cultural` : `¿Sabías que…? ${h?.txt || ''}\n\nDescúbrelo en ORIGEN Cultural`;
       const url  = `${location.origin}${location.pathname}#mundo`;
       if (navigator.share) {
-        navigator.share({ title: `ORIGEN Cultural — ${data.name}`, text, url }).catch(() => {});
+        navigator.share({ title: `ORIGEN Cultural — ${localizedCountryName(data)}`, text, url }).catch(() => {});
       } else {
         navigator.clipboard.writeText(`${text}\n${url}`).then(() =>
           _toast('Historia copiada al portapapeles ↗')
@@ -1032,7 +1043,7 @@ window.MundoCultural = (() => {
     init, destroy, toggleRotation, resetView, zoom, focusContinent, selectCountry,
     /* shared primitives for HeroGlobe */
     _db: CULTURAL_DB, _matchKey: matchKey,
-    _loadGeo: loadGeo, _loadGlobeGL: loadGlobeGL, _hasWebGL: hasWebGL
+    _loadGeo: loadGeo, _loadGlobeGL: loadGlobeGL, _hasWebGL: hasWebGL, _localizeStory: localizedStory, _countryName: localizedCountryName, _continentName: localizedContinent, _isEnglish: isEnglish
   };
 })();
 
@@ -1080,16 +1091,19 @@ window.HeroGlobe = (() => {
     if (!_popup) return;
     const db = getDB()[key];
     if (!db) { hidePopup(); return; }
-    const story = db.microhistorias?.[0];
+    const story = MC()._localizeStory(db.microhistorias?.[0]);
+    const english = MC()._isEnglish();
+    const countryName = MC()._countryName(db);
+    const continentName = MC()._continentName(db);
     _popup.innerHTML = `
-      <button class="hpop-close" id="hpop-close" aria-label="Cerrar historia">×</button>
+      <button class="hpop-close" id="hpop-close" aria-label="${english ? 'Close story' : 'Cerrar historia'}">×</button>
       <div class="hpop-heading"><span class="hpop-flag" aria-hidden="true">${hEsc(db.flag)}</span>
-        <div><p class="hpop-cont">${hEsc(db.continent)}</p><h3 class="hpop-name">${hEsc(db.name)}</h3></div>
+        <div><p class="hpop-cont">${hEsc(continentName)}</p><h3 class="hpop-name">${hEsc(countryName)}</h3></div>
       </div>
-      ${story ? `<p class="hpop-kicker">¿Sabías que…? · ${hEsc(story.cat)}</p>
-        <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">Fuente: ${hEsc(story.src)}</p>`
+      ${story ? `<p class="hpop-kicker">${english ? 'Did you know…?' : '¿Sabías que…?'} · ${hEsc(story.cat)}</p>
+        <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">${english ? 'Source:' : 'Fuente:'} ${hEsc(story.src)}</p>`
         : '<p class="hpop-fact">Estamos preparando una historia cultural para este territorio.</p>'}
-      <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">Explorar cultura →</a>`;
+      <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">${english ? 'Explore its culture' : 'Explorar cultura'} →</a>`;
     _popup.hidden = false;
     document.getElementById('hpop-close')?.addEventListener('click', () => {
       hidePopup(); _selected = null;
