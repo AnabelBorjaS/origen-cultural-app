@@ -451,8 +451,11 @@ async function roleChecks(role) {
     // Publishing declarations must be explicit, per draft, before any upload.
     const rights = page.locator('#create-form [name="rightsAcknowledged"]');
     const cultural = page.locator('#create-form [name="culturalAcknowledged"]');
-    check(await rights.count() === 1 && await cultural.count() === 1,
-      'Creator needs two independent pre-publication rights declarations');
+    const audioRights = page.locator('#create-form [name="audioRightsAcknowledged"]');
+    const audioSource = page.locator('#create-form [name="audioRightsSource"]');
+    const audioCredit = page.locator('#create-form [name="audioAttribution"]');
+    check(await rights.count() === 1 && await cultural.count() === 1 && await audioRights.count() === 1,
+      'Creator needs independent content, cultural and video-audio declarations');
     await page.locator('#create-form button[type="submit"]').click();
     check(await page.evaluate(() => window.__postSafetyQA.uploads) === 0,
       'Native required validation prevents upload without consent');
@@ -461,6 +464,9 @@ async function roleChecks(role) {
     check(await page.evaluate(() => window.__postSafetyQA.uploads) === 0,
       'One declaration cannot authorize media upload');
     await cultural.check();
+    await page.locator('#create-form button[type="submit"]').click();
+    check(await page.evaluate(() => window.__postSafetyQA.uploads) === 0,
+      'Video upload remains blocked until audio rights are declared');
 
     // Replacing any part of the content must invalidate prior declarations.
     await story.fill('Una historia ampliada y revisada.');
@@ -475,8 +481,16 @@ async function roleChecks(role) {
     check(!await rights.isChecked() && !await cultural.isChecked(),
       'Replacing attached video invalidates both prior declarations');
 
+    await audioSource.selectOption('licensed');
+    await audioCredit.fill('Andean Cultural Ensemble — Traditional Song');
+    check(!await rights.isChecked() && !await cultural.isChecked() && !await audioRights.isChecked(),
+      'Changing the audio declaration invalidates previous acknowledgements');
+    await page.locator('#create-form button[type="submit"]').click();
+    check(await page.evaluate(() => window.__postSafetyQA.uploads) === 0,
+      'Licensed video remains blocked until the separate audio acknowledgement is checked');
     await rights.check();
     await cultural.check();
+    await audioRights.check();
     await page.locator('#create-form button[type="submit"]').click();
     await page.waitForFunction(() => window.__postSafetyQA.writes === 1, null, { timeout: 12000 });
     const safety = await page.evaluate(() => window.__postSafetyQA);
@@ -484,6 +498,10 @@ async function roleChecks(role) {
       'Completed declarations permit exactly one media upload and post');
     check(safety.payload?.rightsAcknowledged === true && safety.payload?.culturalAcknowledged === true,
       'The client API receives explicit permissions declarations');
+    check(safety.payload?.audioRightsAcknowledged === true &&
+      safety.payload?.audioRightsSource === 'licensed' &&
+      safety.payload?.audioAttribution === 'Andean Cultural Ensemble — Traditional Song',
+      'The client API receives the declared audio source and authorised public credit');
 
     // Real beta defaults to NO-GO while media approval is unavailable.
     // Simulate that configuration after the synthetic legacy UI exercise.
