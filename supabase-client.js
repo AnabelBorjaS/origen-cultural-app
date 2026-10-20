@@ -358,7 +358,8 @@
       commentsCount: p.comment_count || 0,
       isEditorial: !!p.is_editorial,
       sourceLabel: p.source_label || '',
-      sourceUrl: p.source_url || ''
+      sourceUrl: p.source_url || '',
+      audioAttribution: p.audio_attribution || ''
     };
   }
 
@@ -410,6 +411,16 @@
     if (payload?.rightsAcknowledged !== true || payload?.culturalAcknowledged !== true) {
       throw new Error('Confirma derechos de contenido y autorizaciones culturales antes de publicar.');
     }
+    const isVideoPost = payload?.type === 'video';
+    const audioRightsSource = payload?.audioRightsSource || null;
+    const audioNeedsCredit = ['licensed','community_permission'].includes(audioRightsSource);
+    const audioAttribution = typeof payload?.audioAttribution === 'string' ? payload.audioAttribution.trim() : '';
+    if (isVideoPost && (payload?.audioRightsAcknowledged !== true || !['no_music','original','licensed','community_permission'].includes(audioRightsSource) || (audioNeedsCredit && !audioAttribution))) {
+      throw new Error('Confirma los derechos y el crédito del audio del video antes de publicar.');
+    }
+    if (!isVideoPost && (payload?.audioRightsAcknowledged === true || audioRightsSource || audioAttribution)) {
+      throw new Error('Los datos de audio solo se aceptan para publicaciones de video.');
+    }
     const row = {
       cultural_profile_id: payload.cultural_profile_id || null,
       author_id: uid,
@@ -428,6 +439,9 @@
       // before the approved, separately tested backend migration.
       rights_acknowledged: true,
       cultural_acknowledged: true,
+      audio_rights_acknowledged: isVideoPost,
+      audio_rights_source: isVideoPost ? audioRightsSource : null,
+      audio_attribution: isVideoPost ? audioAttribution || null : null,
       is_published: true
     };
     const { data, error } = await client.from('cultural_posts').insert(row).select('*').single();

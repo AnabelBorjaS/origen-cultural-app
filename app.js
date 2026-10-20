@@ -700,6 +700,7 @@
         </div>
         <h3 class="post-title">${shareable ? `<a href="#publicacion/${encodeURIComponent(post.id)}" aria-label="${state.lang === 'es' ? 'Abrir historia cultural' : 'Open cultural story'}: ${esc(post.title)}">${esc(post.title)}</a>` : esc(post.title)}</h3>
         <p class="post-desc">${esc(post.description)}</p>
+        ${post.type === 'video' && post.audioAttribution ? `<p class="post-audio-credit"><strong>${L('Crédito de audio','Audio credit')}:</strong> ${esc(post.audioAttribution)}</p>` : ''}
         ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(tg => `<span>#${esc(tg)}</span>`).join('')}</div>` : ''}
       </div>
       <div class="post-actions">
@@ -1506,8 +1507,8 @@
           <fieldset class="post-cultural-safety form-field full" aria-describedby="post-safety-intro">
             <legend>${state.lang === 'es' ? 'Responsabilidad cultural antes de publicar' : 'Cultural responsibility before publishing'}</legend>
             <p id="post-safety-intro">${state.lang === 'es'
-              ? 'Confirma ambos puntos para cada publicación. Tu declaración no equivale a una verificación oficial de ORIGEN.'
-              : 'Confirm both statements for each post. Your declaration is not an official verification by ORIGEN.'}</p>
+              ? (d.type === 'video' ? 'Confirma los derechos de contenido y culturales, además de los derechos de audio del video. Tu declaración no equivale a una verificación oficial de ORIGEN.' : 'Confirma ambos puntos para cada publicación. Tu declaración no equivale a una verificación oficial de ORIGEN.')
+              : (d.type === 'video' ? 'Confirm content and cultural rights, plus the video audio rights. Your declaration is not an official verification by ORIGEN.' : 'Confirm both statements for each post. Your declaration is not an official verification by ORIGEN.')}</p>
             <label class="post-safety-check">
               <input type="checkbox" name="rightsAcknowledged" data-post-attestation="rightsAcknowledged" required ${d.rightsAcknowledged ? 'checked' : ''}>
               <span>${state.lang === 'es'
@@ -1520,6 +1521,32 @@
                 ? 'He comprobado que tengo autorización para divulgar cualquier conocimiento cultural que requiera consentimiento comunitario y que no revelo información sagrada, restringida o privada sin permiso.'
                 : 'I have confirmed permission to share any cultural knowledge requiring community consent, and I am not disclosing sacred, restricted or private information without permission.'}</span>
             </label>
+            ${d.type === 'video' ? `
+              <div class="form-field full audio-rights-fields">
+                <label>${state.lang === 'es' ? 'Derechos del audio del video *' : 'Video audio rights *'}
+                  <select name="audioRightsSource" required>
+                    <option value="">${state.lang === 'es' ? 'Selecciona una opción' : 'Select an option'}</option>
+                    <option value="no_music"${d.audioRightsSource === 'no_music' ? ' selected' : ''}>${state.lang === 'es' ? 'No incluye música ni una grabación musical de terceros' : 'No music or third-party music recording'}</option>
+                    <option value="original"${d.audioRightsSource === 'original' ? ' selected' : ''}>${state.lang === 'es' ? 'Música original propia, con permisos de intérpretes si corresponde' : 'My original music, with performer permissions where needed'}</option>
+                    <option value="licensed"${d.audioRightsSource === 'licensed' ? ' selected' : ''}>${state.lang === 'es' ? 'Tengo permiso para la composición y la grabación' : 'I have permission for both the composition and recording'}</option>
+                    <option value="community_permission"${d.audioRightsSource === 'community_permission' ? ' selected' : ''}>${state.lang === 'es' ? 'Música tradicional/comunitaria con permisos y consentimiento cultural pertinentes' : 'Traditional/community music with relevant rights and cultural consent'}</option>
+                  </select>
+                </label>
+                <label>${state.lang === 'es' ? 'Crédito de audio (artista/grupo y canción o fuente)' : 'Audio credit (artist/group and song or source)'}
+                  <input name="audioAttribution" maxlength="240" value="${esc(d.audioAttribution || '')}" placeholder="${state.lang === 'es' ? 'Ej.: Grupo Andino — título de la canción' : 'e.g. Andean Group — song title'}">
+                </label>
+                <p class="form-note">${state.lang === 'es'
+                  ? 'Para música con permiso o tradicional/comunitaria, indica el crédito autorizado. Conserva una autorización verificable: ORIGEN puede solicitarla. Dar crédito no reemplaza los permisos. Un tema tradicional o de dominio público no libera automáticamente su arreglo ni su grabación; las bibliotecas de Spotify o Instagram tampoco autorizan su uso en ORIGEN.'
+                  : 'For licensed or traditional/community music, enter the authorised credit. Keep verifiable permission; ORIGEN may request it. Credit does not replace permission. A traditional or public-domain song does not automatically clear its arrangement or recording; Spotify or Instagram libraries do not authorise use on ORIGEN.'}</p>
+                <label class="post-safety-check">
+                  <input type="checkbox" name="audioRightsAcknowledged" data-post-attestation="audioRightsAcknowledged" required ${d.audioRightsAcknowledged ? 'checked' : ''}>
+                  <span>${state.lang === 'es'
+                    ? 'Confirmo que tengo autorización para publicar en ORIGEN la composición y la grabación que incluya este video en los territorios donde se muestre. Si corresponde, también tengo el consentimiento de intérpretes y custodios culturales. Conservaré la evidencia del permiso.'
+                    : 'I confirm I am authorised to publish the composition and recording in this video on ORIGEN in the territories where it is shown. Where relevant, I also have performer and cultural custodian consent. I will keep evidence of permission.'}</span>
+                </label>
+                <p class="form-note">${state.lang === 'es' ? 'Esta declaración no es una licencia de ORIGEN ni una verificación independiente. Si no tienes permisos, elimina o silencia la música antes de publicar.' : 'This declaration is not an ORIGEN licence or independent verification. If you do not have permission, remove or mute the music before publishing.'}</p>
+              </div>
+            ` : ''}
             <p class="post-safety-help">${state.lang === 'es'
               ? 'Si no puedes confirmar ambos puntos, no publiques todavía. Solicita permiso o retira ese contenido.'
               : 'If you cannot confirm both statements, do not publish yet. Request permission or remove that content.'}
@@ -2991,6 +3018,9 @@
         state.createData.type = btn.dataset.ctype;
         state.createData.rightsAcknowledged = false;
         state.createData.culturalAcknowledged = false;
+        state.createData.audioRightsAcknowledged = false;
+        state.createData.audioRightsSource = '';
+        state.createData.audioAttribution = '';
         state.createData.media = [];
         state.createData.files = [];
         render('crear', false);
@@ -3010,6 +3040,9 @@
         if (!files.length) return;
         state.createData.rightsAcknowledged = false;
         state.createData.culturalAcknowledged = false;
+        state.createData.audioRightsAcknowledged = false;
+        state.createData.audioRightsSource = '';
+        state.createData.audioAttribution = '';
         if (state.createData.type === 'video') {
           for (const url of state.createData.media || []) releasePreview(url);
           state.createData.files = [files[0]];
@@ -3038,6 +3071,9 @@
         const [preview] = state.createData.media.splice(idx, 1);
         state.createData.rightsAcknowledged = false;
         state.createData.culturalAcknowledged = false;
+        state.createData.audioRightsAcknowledged = false;
+        state.createData.audioRightsSource = '';
+        state.createData.audioAttribution = '';
         releasePreview(preview);
         if (state.createData.files) state.createData.files.splice(idx, 1);
         render('crear', false);
@@ -3050,6 +3086,7 @@
     const resetPostAttestations = () => {
       state.createData.rightsAcknowledged = false;
       state.createData.culturalAcknowledged = false;
+      state.createData.audioRightsAcknowledged = false;
       form.querySelectorAll('[data-post-attestation]').forEach(input => { input.checked = false; });
     };
     form.querySelectorAll('[data-post-attestation]').forEach(input => {
@@ -3059,6 +3096,21 @@
         if (error) { error.textContent = ''; error.hidden = true; }
       });
     });
+    const audioSourceInput = form.querySelector('[name="audioRightsSource"]');
+    const audioAttributionInput = form.querySelector('[name="audioAttribution"]');
+    const updateAudioAttributionRequirement = () => {
+      if (audioAttributionInput) audioAttributionInput.required = ['licensed','community_permission'].includes(audioSourceInput?.value || '');
+    };
+    audioSourceInput?.addEventListener('change', () => {
+      resetPostAttestations();
+      state.createData.audioRightsSource = audioSourceInput.value;
+      updateAudioAttributionRequirement();
+    });
+    audioAttributionInput?.addEventListener('input', () => {
+      resetPostAttestations();
+      state.createData.audioAttribution = audioAttributionInput.value;
+    });
+    updateAudioAttributionRequirement();
     ['title','description','category','contentPurpose','territory','tags'].forEach(field => {
       const el = form.querySelector(`[name="${field}"]`);
       if (el) el.addEventListener('input', () => {
@@ -3089,7 +3141,11 @@
         return;
       }
       const fd = Object.fromEntries(new FormData(form));
-      if (fd.rightsAcknowledged !== 'on' || fd.culturalAcknowledged !== 'on') {
+      const isVideoPost = state.createData.type === 'video';
+      const audioSource = String(fd.audioRightsSource || '');
+      const audioNeedsCredit = ['licensed','community_permission'].includes(audioSource);
+      const missingAudioCredit = audioNeedsCredit && !String(fd.audioAttribution || '').trim();
+      if (fd.rightsAcknowledged !== 'on' || fd.culturalAcknowledged !== 'on' || (isVideoPost && fd.audioRightsAcknowledged !== 'on')) {
         const error = document.getElementById('post-safety-error');
         if (error) {
           error.hidden = false;
@@ -3098,8 +3154,22 @@
             : 'Before publishing, confirm your content permissions and cultural responsibilities.';
         }
         const missing = form.querySelector('[name="rightsAcknowledged"]:not(:checked), [name="culturalAcknowledged"]:not(:checked)');
+        const missingAudio = isVideoPost ? form.querySelector('[name="audioRightsAcknowledged"]:not(:checked)') : null;
         if (missing) missing.focus();
+        else if (missingAudio) missingAudio.focus();
         return; // Must run before uploads or any database write.
+      }
+      if (isVideoPost && (!['no_music','original','licensed','community_permission'].includes(audioSource) || missingAudioCredit)) {
+        const error = document.getElementById('post-safety-error');
+        if (error) {
+          error.hidden = false;
+          error.textContent = state.lang === 'es'
+            ? 'Selecciona el origen del audio y añade el crédito autorizado para la música de terceros antes de subir el video.'
+            : 'Choose the audio source and add the authorised credit for third-party music before uploading the video.';
+        }
+        const field = !audioSource ? form.querySelector('[name="audioRightsSource"]') : form.querySelector('[name="audioAttribution"]');
+        if (field) field.focus();
+        return; // Validate rights metadata before uploading files.
       }
       if (user.accountType === 'creator' && state.createData.type === 'text') {
         showToast('El feed de Agentes Culturales requiere foto, carrusel o video.'); return;
@@ -3136,6 +3206,9 @@
           territory: fd.territory,
           rightsAcknowledged: true,
           culturalAcknowledged: true,
+          audioRightsAcknowledged: isVideoPost,
+          audioRightsSource: isVideoPost ? audioSource : null,
+          audioAttribution: isVideoPost ? String(fd.audioAttribution || '').trim() || null : null,
           tags: fd.tags ? fd.tags.split(',').map(s => s.trim()).filter(Boolean) : []
         }, user.id);
         if (me()?.id !== user.id) return; // Do not mutate another account's draft or UI.

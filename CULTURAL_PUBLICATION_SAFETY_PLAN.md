@@ -1,7 +1,7 @@
 # ORIGEN Cultural — Plan de autorización y trazabilidad de publicaciones
 
 **Fecha:** 9 de octubre de 2026  
-**Estado:** Implementación de control de catálogo **solo en Supabase Staging**; sin QA real con dos cuentas; **no implementado en Production.**  
+**Estado:** Controles de derechos culturales y audio implementados en Supabase Staging; pendiente QA end-to-end con cuentas sintéticas y revisión legal; **no implementado en Production.**  
 **Responsable de aprobación:** Fundadora y revisión técnica/legal correspondiente.  
 **Regla:** Public Beta **NO-GO** hasta verificar controles reales del backend.
 
@@ -13,26 +13,19 @@ No se debe interpretar la confirmación de una casilla como prueba independiente
 
 ## 2. Estado funcional del frontend
 
-- En el editor de Agente Cultural se solicitan **dos confirmaciones independientes**: derecho o permiso sobre material, fotografías, videos y testimonios; y autorización pertinente para conocimiento cultural restringido o sujeto a consentimiento comunitario.
+- En el editor de Agente Cultural se solicitan **dos confirmaciones independientes** para todo post: derechos del material y consentimiento cultural. Para videos, se solicita además una **tercera declaración específica de audio**, con origen del audio y crédito público cuando se use música de terceros.
 - Los cambios posteriores de contenido o archivo **invalidan las confirmaciones anteriores** en el borrador.
-- El cliente rechaza iniciar una publicación si falta alguna confirmación, antes de subir archivos.
-- La API de navegador también bloquea llamadas accidentales a `createPost` sin ambos valores y los prepara para el esquema de staging **todavía no instalado**.
+- El cliente rechaza iniciar una publicación si falta alguna confirmación requerida para su tipo de contenido, antes de subir archivos. En videos también exige una fuente de audio válida y crédito para música licenciada o comunitaria.
+- La API de navegador valida las declaraciones de derechos y audio y envía sus campos al esquema que ya está instalado en Staging. Las pruebas locales simuladas no sustituyen una verificación end-to-end contra Supabase.
 - **Limitación crítica:** estas son barreras de experiencia de usuario, no reglas ineludibles del servidor. No persisten por sí solas una prueba de autorización, no verifican a quien declara y no bloquean necesariamente una llamada directa a la base de datos.
 
-## 3. Backend propuesto (solo en un entorno de pruebas separado)
+## 3. Backend instalado en Staging (no en Production)
 
-Diseñar y someter a revisión una transacción controlada que **cree la publicación y registre su declaración al mismo tiempo**:
+La migración `20261020111314_staging_video_audio_rights_attestation_test_only` añade los campos de declaración, fuente del audio y crédito en `public.cultural_posts`; restricciones de base de datos exigen una declaración válida para cada video no editorial. La tabla privada `private.cultural_post_rights_events` conserva la versión de las declaraciones y los metadatos de audio dentro de la misma transacción que el post.
 
-1. Validar `auth.uid()` y la función de Agente Cultural en el servidor, no a partir de campos enviados por el navegador.
-2. Requerir ambas declaraciones booleanas explícitas en el contrato de publicación. No usar valores predeterminados positivos.
-3. Asociar el evento al `post_id`, `author_id`, fecha de recepción del servidor, versiones de las declaraciones, política vigente y contexto técnico mínimo necesario para auditoría.
-4. Crear simultáneamente la publicación y un registro de declaración. Si uno de los dos pasos falla, revertir ambos.
-5. Restringir INSERT directo a `cultural_posts` para que **no permita evitar el control obligatorio**. Revisar de forma conjunta RLS, permisos de tabla y cualquier función RPC o trigger.
-6. Impedir que el autor altere retroactivamente el registro de declaración; habilitar correcciones y revocaciones mediante eventos nuevos y procedimientos autorizados, no reemplazos silenciosos.
-7. Registrar **solo la información mínima necesaria**; no almacenar documentos de identidad, pruebas de menores, archivos de autorizaciones o testimonios sensibles en una tabla pública o repositorio.
-8. Documentar retención, derechos de acceso, mecanismo de retirada y el tratamiento de contenidos tras revocación, con asesoría legal para los países en que la plataforma opere.
+El trigger existente se actualizó para validar la identidad autenticada y las declaraciones, registrar la versión de audio `v1.0`, y rechazar alteraciones posteriores del contenido o de los metadatos de derechos. Se mantienen el esquema privado, RLS y la revocación de permisos de navegador.
 
-**Precaución técnica:** si se usa una función `SECURITY DEFINER`, revisarla contra elevación de privilegios, establecer `search_path` seguro y aplicar permisos de ejecución mínimos. Nunca exponer una clave `service_role` al cliente.
+La migración se aplicó solo al proyecto Supabase Staging. No se crearon usuarios ni publicaciones y Production no se modificó. La migración aún requiere pruebas reales de rechazo, atomicidad, permisos y acceso entre dos cuentas sintéticas. Los datos declarados sirven como registro de la manifestación del usuario; no verifican la licencia ni el consentimiento cultural por sí solos.
 
 ## 4. Revisión humana y protección de comunidades
 
@@ -96,3 +89,10 @@ Utilizar **cuentas y datos sintéticos** para todas las pruebas. No ejecutar mig
 La propuesta `ORIGEN_CULTURAL_POST_RIGHTS_STAGING_REVIEW_ONLY.sql` fue aplicada exclusivamente en `ORIGEN Cultural Staging`. El script **read-only** `supabase/proposals/ORIGEN_RIGHTS_STAGING_CONFIGURATION_AUDIT_READ_ONLY.sql` produjo **10/10 PASS** al inspeccionar las dos columnas booleanas, restricción de publicación no editorial, triggers, función y versiones internas, RLS de la bitácora privada y permisos revocados a cuentas de navegador.
 
 Esta evidencia **no demuestra** que una llamada REST firmada no pueda eludir RLS, que el trigger inserte el evento cuando corresponde, que un fallo produzca rollback o que retirada y retención cumplan políticas. El P0 #7 no se cierra hasta pruebas adversariales end-to-end con usuarios ficticios y revisión legal. No se modifica Production ni se habilita registro público.
+
+
+## 9. Cambio de audio para videos (20 octubre 2026)
+
+La migración de audio para video se aplicó a Supabase Staging. Se añadieron campos públicos de audio sujetos a restricciones y campos paralelos en la bitácora privada. El trigger crea el registro privado en la misma transacción que la publicación y los cambios de audio quedan protegidos por el bloqueo de edición existente. El crédito autorizado de terceros se muestra junto al video.
+
+Las pruebas automatizadas locales de API y de envío del formulario pasaron con mocks sin llamadas a usuarios o medios reales. **Aún no se ejecutaron pruebas end-to-end con dos cuentas autenticadas**, por lo que la puerta de beta pública continúa cerrada. No se habilitaron publicaciones ni se cambió Production.

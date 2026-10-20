@@ -12,7 +12,7 @@ assert.ok(begin > 0 && end > begin, 'Post submit handler must be extracted from 
 const handler = source.slice(begin, end + "\n    });".length);
 
 const A = { id: '11111111-1111-4111-8111-111111111111', accountType: 'creator' };
-function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
+function makeTest({ lang='es', files=1, consent=true, type='photo', audioConsent=true, audioSource='licensed', audioAttribution='Andean Group — Song title', uploadFailureAt=null,
   submitFailure=false, cleanupDeferred=false, postCreated=true, publishingEnabled=true } = {}) {
   const activity = [];
   const notifications = [];
@@ -22,7 +22,7 @@ function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
   let pendingCleanupResolve = null;
   const fileInputs = Array.from({length:files},(_,i)=>({name:'synthetic'+i}));
   const state = {
-    lang, createData: {type:'photo', files:fileInputs, media:[], tags:[], contentPurpose:'education'}
+    lang, createData: {type, files:fileInputs, media:[], tags:[], contentPurpose:'education'}
   };
   const form = {
     addEventListener(name,fn) { assert.equal(name,'submit'); onSubmit=fn; },
@@ -33,6 +33,11 @@ function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
       if(consent) {
         yield ['rightsAcknowledged','on'];
         yield ['culturalAcknowledged','on'];
+      }
+      if(type==='video' && audioConsent) yield ['audioRightsAcknowledged','on'];
+      if(type==='video') {
+        yield ['audioRightsSource',audioSource];
+        yield ['audioAttribution',audioAttribution];
       }
       yield ['title','The community story'];
       yield ['description','Synthetic description'];
@@ -57,6 +62,11 @@ function makeTest({ lang='es', files=1, consent=true, uploadFailureAt=null,
       assert.equal(uid,A.id);
       assert.equal(payload.rightsAcknowledged,true);
       assert.equal(payload.culturalAcknowledged,true);
+      if(type==='video') {
+        assert.equal(payload.audioRightsAcknowledged,true);
+        assert.equal(payload.audioRightsSource,audioSource);
+        assert.equal(payload.audioAttribution,audioAttribution);
+      }
       if(submitFailure) throw Error('Mock connection lost during INSERT');
       return postCreated ? { id:'post-confirmed' } : null;
     },
@@ -150,6 +160,28 @@ for (const lang of ['es','en']) {
   assert.equal(h.activity.includes('createPost'),false);
   assert.equal(h.activity.includes('remove'),false);
 }
+
+// A video with missing audio declaration or incomplete source/credit is rejected before upload.
+for (const options of [
+  {type:'video',audioConsent:false},
+  {type:'video',audioSource:''},
+  {type:'video',audioAttribution:''}
+]) {
+  const h=makeTest(options);
+  await h.invoke();
+  assert.equal(h.activity.some(x=>x.startsWith('upload:')),false);
+  assert.equal(h.activity.includes('createPost'),false);
+  assert.equal(h.activity.includes('remove'),false);
+  assert.equal(h.inline.hidden,false);
+}
+// Video audio rights declaration is included in the post only after validation.
+{
+  const h=makeTest({type:'video'});
+  await h.invoke();
+  assert.ok(h.activity.includes('createPost'));
+  assert.ok(h.activity.includes('go:feed'));
+}
+
 console.log('PASS Ambiguous cultural-post INSERT preserves uploaded media and disables unsafe retry.');
 console.log('PASS Pre-INSERT upload failure awaits orphan media cleanup before notifying.');
 console.log('PASS Real submit-handler test confirms successful posts and strict cultural attestations.');

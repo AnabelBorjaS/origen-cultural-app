@@ -11,7 +11,8 @@ const MEDIA = 'https://unconfigured-staging.invalid/storage/v1/object/public/pos
   USER_A + '/1234567890123-culture.webp';
 const complete = {
   type: 'photo', media: [MEDIA], title: 'Cultural knowledge', description: 'Story',
-  rightsAcknowledged: true, culturalAcknowledged: true
+  rightsAcknowledged: true, culturalAcknowledged: true,
+  audioRightsAcknowledged: false, audioRightsSource: null, audioAttribution: null
 };
 
 function harness({ insertError = false, feedError = false, feedReject = false, onSave = null } = {}) {
@@ -77,6 +78,9 @@ for (const scenario of [{feedError:true},{feedReject:true}]) {
   assert.equal(h.saved[0].media_urls[0], MEDIA);
   assert.equal(h.saved[0].rights_acknowledged, true);
   assert.equal(h.saved[0].cultural_acknowledged, true);
+  assert.equal(h.saved[0].audio_rights_acknowledged, false);
+  assert.equal(h.saved[0].audio_rights_source, null);
+  assert.equal(h.saved[0].audio_attribution, null);
   assert.equal(h.reads.length, 1);
   assert.equal(h.removals.length, 0);
   assert.equal(h.warnings.length, 1);
@@ -139,6 +143,32 @@ for (const patch of [
   assert.equal(h.reads.length, 0);
   assert.equal(h.api.cache.posts[0].id, 'B-post');
   assert.equal(h.warnings.length, 0);
+}
+
+
+// Video uploads must declare an audio source and hold the separate audio attestation.
+const licensedVideo = {...complete, type:'video', audioRightsAcknowledged:true, audioRightsSource:'licensed', audioAttribution:'Andean Group — Song title'};
+{
+  const h = harness();
+  await h.api.createPost(licensedVideo, USER_A);
+  assert.equal(h.saved[0].audio_rights_acknowledged, true);
+  assert.equal(h.saved[0].audio_rights_source, 'licensed');
+  assert.equal(h.saved[0].audio_attribution, 'Andean Group — Song title');
+}
+for (const patch of [
+  {audioRightsAcknowledged:false},
+  {audioRightsSource:'spotify'},
+  {audioAttribution:''}
+]) {
+  const h = harness();
+  await assert.rejects(h.api.createPost({...licensedVideo,...patch}, USER_A), /audio del video/);
+  assert.equal(h.saved.length, 0);
+}
+{
+  const h = harness();
+  await h.api.createPost({...complete,type:'video',audioRightsAcknowledged:true,audioRightsSource:'no_music'},USER_A);
+  assert.equal(h.saved[0].audio_rights_acknowledged,true);
+  assert.equal(h.saved[0].audio_rights_source,'no_music');
 }
 
 console.log('PASS Committed cultural posts remain successful and visible even if feed refresh fails.');
