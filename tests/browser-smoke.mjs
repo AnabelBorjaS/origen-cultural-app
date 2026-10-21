@@ -494,6 +494,12 @@ async function roleChecks(role) {
       name: 'updated-culture.webm', mimeType: 'video/webm',
       buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0xa0])
     });
+    await page.locator('#post-media-zone video').evaluate(video => {
+      Object.defineProperty(video, 'duration', { configurable:true, value:60 });
+      video.dispatchEvent(new Event('loadedmetadata'));
+    });
+    check(await page.locator('#post-video-duration-status').getAttribute('data-duration-valid') === 'true',
+      'Replacement video duration is re-verified before publication');
     check(!await rights.isChecked() && !await cultural.isChecked(),
       'Replacing attached video invalidates both prior declarations');
 
