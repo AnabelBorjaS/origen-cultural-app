@@ -225,9 +225,13 @@ Public beta remains NO-GO until:
 
 - [x] Comando de build desconectado, con fail-close si existen claves de Supabase/Turnstile y con CSP del bundle de preview que bloquea Supabase.
 - [x] Suite de pruebas para el build visual: casos mal configurados y modo seguro sin base de datos.
-- [ ] Validación de GitHub CI en esta rama tras el commit.
-- [ ] Alta Cloudflare Pages/Access en modalidad Free autorizada; **no publicar ni comunicar la URL antes de verificar que main hostname, alias y preview están protegidos**.
-- [ ] QA del globo real desde tablet, sin usuarios ni credenciales de Supabase.
+- [x] GitHub CI del commit `bfa1e75af9d5ad3b4f2578e7b44f3af2f0801a04`: Quality Gate, CodeQL y Browser QA **3/3 success**.
+- [x] Cloudflare Pages visual-only preview deployed; founder completed Cloudflare Access email login and reached the preview. The page clearly states there is no test database and that registration, real posts and uploads are disabled.
+- [x] Revisión visual desde tablet: globo y datos culturales de país visibles en la preview.
+- [ ] Configurar Turnstile y URLs exactas de callback en el Supabase Staging separado antes de cualquier prueba Auth real.
+- [ ] Completar la prueba Auth del hook y las pruebas A/B con dos cuentas ficticias desechables y datos sintéticos. La visual-only preview no valida Auth, consentimiento, RLS ni Storage.
+
+**Estado verificado al 21 Oct 2026:** Cloudflare Access protege la vista visual. No se conectó Supabase, no se crearon cuentas de prueba, no se cargó contenido real y Production no se modificó.
 
 ## Replit no-Agent visual review — 12 Oct 2026
 
