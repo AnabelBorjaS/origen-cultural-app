@@ -31,3 +31,8 @@
 - Pasaporte Cultural robusto
 - IA de traducción y presentación
 - Aplicación móvil nativa o PWA avanzada
+# Explorer cultural discovery posts — 21 Oct 2026
+
+- Product behavior: both Cultural Agents and Cultural Explorers should be able to create cultural photo, carousel and video posts. Explorers choose between discovering/recommending a Cultural Agent and sharing a personal cultural-exploration experience.
+- Composer previews now expose those Explorer purposes in Spanish and English and explain the 90-second video limit. The browser blocks missing/unreadable duration metadata and videos longer than 90 seconds before upload.
+- This is a preview-only capability in the current beta. Real publishing stays disabled for all accounts until private media intake, trusted server-side role and duration checks, cultural/audio rights records, moderation, and two-account Staging tests are complete. No RLS, grants or production data were changed by this feature work.

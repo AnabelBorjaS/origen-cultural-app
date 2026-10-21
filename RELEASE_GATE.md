@@ -78,9 +78,11 @@ Public beta remains NO-GO until:
 
 
 ## Publishing scope — Public Beta
-- Cultural Agents may publish cultural/educational feed content subject to current media, purpose and moderation rules.
-- Cultural Explorers do not publish feed posts in this beta; they discover, follow, save, comment, learn and connect.
-- Any future Explorer publishing capability requires an explicit privacy/identity design and separate QA before activation.
+- Cultural Agents can prepare cultural/educational posts in the composer, but actual publication remains paused while protected intake and rights handling are unavailable.
+- Cultural Explorers can prepare photo, carousel and short-video discovery/experience previews in the composer. Real Explorer publication remains disabled until the trusted private-intake flow, role-specific authorization, media-duration inspection, moderation and two-account Staging QA pass.
+- Publishing remains paused for every account while protected intake and rights handling are unavailable. The composer is not evidence that a post was submitted or saved.
+- Explorer post purposes are limited to `agent_discovery` and `explorer_experience`; this vocabulary change does not change table grants or RLS.
+- Actual Explorer publishing requires an explicit privacy/identity design and separate QA before activation.
 
 
 ## Recovery evidence before Public Beta

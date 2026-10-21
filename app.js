@@ -27,7 +27,7 @@
     query: '',
     regStep: 1,
     regData: {},
-    createData: { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' },
+    createData: { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education', videoDurationSeconds: null },
     openComments: new Set(),
     carIdx: {},
     editAvatar: null,
@@ -621,15 +621,17 @@
 
   function contentPurposeLabel(value) {
     return ({
-      education: 'Educación cultural',
-      history: 'Historia y memoria',
-      technique: 'Técnica / proceso',
-      territory: 'Territorio',
-      language: 'Lengua',
-      gastronomy: 'Gastronomía',
-      arts: 'Artes / expresión',
-      heritage: 'Patrimonio',
-      community: 'Comunidad'
+      education: state.lang === 'es' ? 'Educación cultural' : 'Cultural education',
+      history: state.lang === 'es' ? 'Historia y memoria' : 'History and memory',
+      technique: state.lang === 'es' ? 'Técnica / proceso' : 'Technique / process',
+      territory: state.lang === 'es' ? 'Territorio' : 'Territory',
+      language: state.lang === 'es' ? 'Lengua' : 'Language',
+      gastronomy: state.lang === 'es' ? 'Gastronomía' : 'Gastronomy',
+      arts: state.lang === 'es' ? 'Artes / expresión' : 'Arts / expression',
+      heritage: state.lang === 'es' ? 'Patrimonio' : 'Heritage',
+      community: state.lang === 'es' ? 'Comunidad' : 'Community',
+      agent_discovery: state.lang === 'es' ? 'Descubrimiento de Agente Cultural' : 'Cultural Agent discovery',
+      explorer_experience: state.lang === 'es' ? 'Experiencia de Explorador Cultural' : 'Cultural Explorer experience'
     })[value] || '';
   }
 
@@ -948,24 +950,18 @@
         <a href="#feed"      data-route-link="feed">Feed</a>
         <a href="#explorar"  data-route-link="explorar">${es ? 'Explorar' : 'Explore'}</a>
         <a href="#mundo"     data-route-link="mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
-        ${user.accountType === 'creator' ? `<a href="#crear" data-route-link="crear">${es ? 'Crear' : 'Create'}</a>` : ''}
+        <a href="#crear" data-route-link="crear">${es ? 'Crear' : 'Create'}</a>
         <a href="#guardados" data-route-link="guardados">${es ? 'Guardados' : 'Saved'}</a>
         ${user.role === 'admin' ? `<a href="#moderacion" data-route-link="moderacion">${es ? 'Moderación' : 'Moderation'}</a>` : ''}`;
       if (dDrawer) dDrawer.innerHTML = `
         <a href="#feed">Feed</a><a href="#explorar">${es ? 'Explorar' : 'Explore'}</a>
         <a href="#mundo">${es ? 'Mundo Cultural' : 'Cultural World'}</a>
-        ${user.accountType === 'creator' ? `<a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>` : ''}
+        <a href="#crear">${es ? 'Crear publicación' : 'Create post'}</a>
         <a href="#guardados">${es ? 'Guardados' : 'Saved'}</a><a href="#mi-perfil">${es ? 'Mi perfil' : 'My profile'}</a>
         ${user.role === 'admin' ? `<a href="#moderacion">${es ? 'Moderación' : 'Moderation'}</a>` : ''}`;
-      if (dBottom) dBottom.innerHTML = user.accountType === 'creator'
-        ? `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
+      if (dBottom) dBottom.innerHTML = `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
             <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
             <a class="create-action" href="#crear" data-route-link="crear"><span aria-hidden="true">＋</span><small>${es ? 'Crear' : 'Create'}</small></a>
-            <a href="#mundo" data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
-            <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`
-        : `<a href="#feed" data-route-link="feed"><span aria-hidden="true">⌂</span><small>Feed</small></a>
-            <a href="#explorar" data-route-link="explorar"><span aria-hidden="true">⌕</span><small>${es ? 'Explorar' : 'Explore'}</small></a>
-            <a class="create-action" href="#pasaporte" data-route-link="pasaporte"><span aria-hidden="true">◇</span><small>${es ? 'Pasaporte' : 'Passport'}</small></a>
             <a href="#mundo" data-route-link="mundo"><span aria-hidden="true">🌍</span><small>${es ? 'Mundo' : 'World'}</small></a>
             <a href="#mi-perfil" data-route-link="mi-perfil"><span aria-hidden="true">○</span><small>${es ? 'Perfil' : 'Profile'}</small></a>`;
       if (profileBtn) {
@@ -1439,30 +1435,18 @@
     const es = state.lang === 'es';
     const L = (s, e) => es ? s : e;
     if (!user) { go('login'); return ''; }
-    if (user.accountType !== 'creator') {
-      const es = state.lang === 'es';
-      return `<section class="page-hero"><div class="section-inner">
-        <p class="eyebrow">${es ? 'BETA ORIGEN' : 'ORIGEN BETA'}</p>
-        <h1>${es ? 'El feed cultural es para Agentes Culturales' : 'The cultural feed is for Cultural Agents'}</h1>
-        <p class="lead">${es
-          ? 'Como Explorador Cultural puedes descubrir, seguir, guardar, aprender y conectar con Agentes Culturales. La publicación de contenido para Exploradores no forma parte de esta beta.'
-          : 'As a Cultural Explorer you can discover, follow, save, learn and connect with Cultural Agents. Publishing content as an Explorer is not part of this beta.'}</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px">
-          <a class="btn" href="#explorar">${es ? 'Explorar cultura' : 'Explore culture'}</a>
-          <a class="btn secondary" href="#pasaporte">${es ? 'Mi Pasaporte Cultural' : 'My Cultural Passport'}</a>
-        </div>
-      </div></section>${footer()}`;
-    }
+    if (!['creator','explorer'].includes(user.accountType)) { go('feed'); return ''; }
     const d = state.createData;
     // Purely a display/UX gate: Supabase Storage + Postgres RLS remain the
     // authoritative security boundary. Never show a false "published" state.
     const culturalPublishingReady = window.ORIGEN_API?.culturalPublishingReady === true;
-    const isProvider = true;
-    const types = isProvider
-      ? [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')]]
-      : [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')],['text',L('Ⅱ Texto','Ⅱ Text')]];
+    const explorerPublishingReady = window.ORIGEN_API?.explorerPublishingReady === true;
+    const isProvider = user.accountType === 'creator';
+    const isExplorer = user.accountType === 'explorer';
+    const accountPublishingReady = isExplorer ? explorerPublishingReady : culturalPublishingReady;
+    const types = [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')]];
     const CATS  = [['Artesanía y tradición','Crafts and tradition'],['Gastronomía ancestral','Ancestral gastronomy'],['Música y danza','Music and dance'],['Territorio y patrimonio','Territory and heritage'],['Arte y cultura','Art and culture'],['Educación cultural','Cultural education'],['Comunidad','Community']];
-    const PURPOSES = [
+    const CREATOR_PURPOSES = [
       ['education',L('Educación cultural','Cultural education')],
       ['history',L('Historia y memoria','History and memory')],
       ['technique',L('Técnica / proceso','Technique / process')],
@@ -1473,12 +1457,19 @@
       ['heritage',L('Patrimonio','Heritage')],
       ['community',L('Comunidad','Community')]
     ];
+    const EXPLORER_PURPOSES = [
+      ['agent_discovery',L('Descubrir o recomendar un Agente Cultural','Discover or recommend a Cultural Agent')],
+      ['explorer_experience',L('Compartir mi experiencia como Explorador Cultural','Share my experience as a Cultural Explorer')]
+    ];
+    const PURPOSES = isExplorer ? EXPLORER_PURPOSES : CREATOR_PURPOSES;
+    if (!PURPOSES.some(([value]) => value === d.contentPurpose)) d.contentPurpose = PURPOSES[0][0];
     const hasMedia = d.media && d.media.length > 0;
 
     return `<section class="page-hero" style="min-height:220px">
       <div class="section-inner">
         <p class="eyebrow">${L('NUEVA PUBLICACIÓN','NEW POST')}</p>
-        <h1>${L('Compartir cultura','Share culture')}</h1>
+        <h1>${isExplorer ? L('Compartir un descubrimiento cultural','Share a cultural discovery') : L('Compartir cultura','Share culture')}</h1>
+        ${isExplorer ? `<p class="lead">${L('Comparte una experiencia que ayude a descubrir Agentes Culturales o cuenta lo que aprendiste como Explorador. Puedes usar una foto, un carrusel o un video de hasta 90 segundos.','Share an experience that helps people discover Cultural Agents, or tell what you learned as an Explorer. Use a photo, carousel or video up to 90 seconds.')}</p>` : ''}
       </div>
     </section>
     <div class="create-layout">
@@ -1495,13 +1486,14 @@
                 <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? L('Selecciona un video','Select a video') : d.type === 'carousel' ? L('Selecciona fotos (puedes elegir varias)','Select photos (you can choose multiple)') : L('Selecciona una foto','Select a photo')}</p><small>${L('Haz clic para subir','Click to upload')}</small></div>`}
             <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
-          </div>` : ''}
+          </div>${d.type === 'video' ? `<p id="post-video-duration-status" class="form-note" role="status" aria-live="polite">${state.createData.videoDurationSeconds ? L(`Duración: ${Math.round(state.createData.videoDurationSeconds)} s (máximo 90 s).`, `Duration: ${Math.round(state.createData.videoDurationSeconds)} s (90 s maximum).`) : L('Máximo 90 segundos. Verificaremos la duración antes de publicar.','Maximum 90 seconds. Duration will be checked before publishing.')}</p>` : ''}` : ''}
         <form class="form-grid" id="create-form">
           ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">${L('FEED CULTURAL Y EDUCATIVO','CULTURAL AND EDUCATIONAL FEED')}</p><p>${L('Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.','Share knowledge, context, techniques, stories or territory through a photo, carousel or video. Present services on your professional profile; avoid generic advertising in the feed.')}</p></div>` : ''}
+          ${isExplorer ? `<div class="form-field full explorer-post-note"><p>${L('Las publicaciones de Exploradores se centran en descubrir Agentes Culturales y compartir experiencias culturales propias. No sustituyen ni verifican el perfil del Agente.','Explorer posts focus on discovering Cultural Agents and sharing personal cultural experiences. They do not replace or verify an Agent’s profile.')}</p></div>` : ''}
           <div class="form-field full"><label>${L('Título *','Title *')}</label><input name="title" required placeholder="${L('Un título que invite a descubrir','A title that invites discovery')}" value="${esc(d.title || '')}"></div>
           <div class="form-field full"><label>${L('Descripción *','Description *')}</label><textarea name="description" rows="4" required placeholder="${L('Comparte el contexto, la historia o el significado cultural...','Share the context, story or cultural meaning...')}">${esc(d.description || '')}</textarea></div>
           <div class="form-field"><label>${L('Categoría cultural','Cultural category')}</label><select name="category">${CATS.map(([v,label]) => `<option value="${v}"${d.category === v ? ' selected' : ''}>${es ? v : label}</option>`).join('')}</select></div>
-          <div class="form-field"><label>${L('Propósito cultural *','Cultural purpose *')}</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || 'education') === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
+          <div class="form-field"><label>${isExplorer ? L('Propósito de la publicación *','Post purpose *') : L('Propósito cultural *','Cultural purpose *')}</label><select name="contentPurpose" required>${PURPOSES.map(([value,label]) => `<option value="${value}"${(d.contentPurpose || PURPOSES[0][0]) === value ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
           <div class="form-field"><label>${L('Territorio','Territory')}</label><input name="territory" placeholder="${L('Ciudad, región o país','City, region or country')}" value="${esc(d.territory || '')}"></div>
           <div class="form-field full"><label>${L('Etiquetas','Tags')} <small style="color:#888;font-weight:400">${L('(separadas por coma)','(comma-separated)')}</small></label><input name="tags" placeholder="${L('Bordado, Ecuador, Memoria','Embroidery, Ecuador, Memory')}" value="${esc((d.tags || []).join(', '))}"></div>
           <fieldset class="post-cultural-safety form-field full" aria-describedby="post-safety-intro">
@@ -1555,13 +1547,13 @@
             <p id="post-safety-error" class="post-safety-error" role="alert" aria-live="assertive" hidden></p>
           </fieldset>
           <div class="form-field full">
-            ${!culturalPublishingReady ? `<p id="post-publication-paused" class="form-note" role="status" aria-live="polite">${state.lang === 'es'
-              ? 'La publicación está temporalmente pausada mientras verificamos la recepción privada y los derechos culturales. Puedes preparar una vista previa en este dispositivo, pero tus archivos y textos NO se enviarán ni guardarán en ORIGEN.'
-              : 'Publishing is temporarily paused while private intake and cultural rights are verified. You can prepare a preview on this device, but your files and text will NOT be submitted or saved to ORIGEN.'}</p>` : ''}
-            <button class="btn" type="submit" style="width:100%" ${culturalPublishingReady ? '' : 'disabled aria-disabled="true"'}>${culturalPublishingReady
+            ${!accountPublishingReady ? `<p id="post-publication-paused" class="form-note" role="status" aria-live="polite">${state.lang === 'es'
+              ? 'La publicación está temporalmente pausada para todos los perfiles mientras verificamos la recepción privada y los derechos culturales. Puedes preparar una vista previa en este dispositivo, pero tus archivos y textos NO se enviarán ni guardarán en ORIGEN.'
+              : 'Publishing is temporarily paused for all account types while private intake and cultural rights are verified. You can prepare a preview on this device, but your files and text will NOT be submitted or saved to ORIGEN.'}</p>` : ''}
+            <button class="btn" type="submit" style="width:100%" ${accountPublishingReady ? '' : 'disabled aria-disabled="true"'}>${accountPublishingReady
               ? (state.lang === 'es' ? 'Publicar →' : 'Publish →')
               : (state.lang === 'es' ? 'Publicación en preparación' : 'Publishing not available yet')}</button>
-            ${culturalPublishingReady ? `<p class="form-note" style="margin-top:12px">${L('Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.','Your post will be saved to ORIGEN and linked to your account.')}</p>` : ''}
+            ${accountPublishingReady ? `<p class="form-note" style="margin-top:12px">${L('Tu publicación se guardará en ORIGEN y quedará vinculada a tu cuenta.','Your post will be saved to ORIGEN and linked to your account.')}</p>` : ''}
           </div>
         </form>
       </div>
@@ -2992,7 +2984,7 @@
   function updateCreatePostPreview() {
     const preview = document.getElementById('create-live-preview');
     const user = me();
-    if (!preview || !user || user.accountType !== 'creator') return;
+    if (!preview || !user || !['creator','explorer'].includes(user.accountType)) return;
     const d = state.createData;
     const hasMedia = (d.media || []).length > 0;
     preview.innerHTML = d.title || hasMedia
@@ -3010,7 +3002,7 @@
   /* Create post */
   function bindCreatePost() {
     const currentUser = me();
-    if (!currentUser || currentUser.accountType !== 'creator') return;
+    if (!currentUser || !['creator','explorer'].includes(currentUser.accountType)) return;
     /* type buttons */
     document.querySelectorAll('[data-ctype]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3021,6 +3013,7 @@
         state.createData.audioRightsAcknowledged = false;
         state.createData.audioRightsSource = '';
         state.createData.audioAttribution = '';
+        state.createData.videoDurationSeconds = null;
         state.createData.media = [];
         state.createData.files = [];
         render('crear', false);
@@ -3043,6 +3036,7 @@
         state.createData.audioRightsAcknowledged = false;
         state.createData.audioRightsSource = '';
         state.createData.audioAttribution = '';
+        state.createData.videoDurationSeconds = null;
         if (state.createData.type === 'video') {
           for (const url of state.createData.media || []) releasePreview(url);
           state.createData.files = [files[0]];
@@ -3059,6 +3053,31 @@
       });
     }
 
+    // The browser checks metadata for an early user-facing limit. A trusted
+    // publication service must independently inspect the media before publish.
+    const videoPreview = mediaZone?.querySelector('video');
+    const durationStatus = document.getElementById('post-video-duration-status');
+    if (videoPreview && durationStatus) {
+      const checkVideoDuration = () => {
+        const seconds = Number(videoPreview.duration);
+        if (Number.isFinite(seconds) && seconds > 0) {
+          state.createData.videoDurationSeconds = seconds;
+          durationStatus.textContent = seconds <= 90
+            ? (state.lang === 'es' ? `Duración: ${Math.round(seconds)} s (máximo 90 s).` : `Duration: ${Math.round(seconds)} s (90 s maximum).`)
+            : (state.lang === 'es' ? `El video dura ${Math.round(seconds)} s. El máximo es 90 s.` : `This video is ${Math.round(seconds)} s long. The maximum is 90 s.`);
+          durationStatus.setAttribute('data-duration-valid', String(seconds <= 90));
+        } else {
+          state.createData.videoDurationSeconds = null;
+          durationStatus.textContent = state.lang === 'es'
+            ? 'No pudimos verificar la duración. Selecciona un video compatible de máximo 90 segundos.'
+            : 'We could not verify the duration. Select a supported video no longer than 90 seconds.';
+          durationStatus.setAttribute('data-duration-valid', 'false');
+        }
+      };
+      videoPreview.addEventListener('loadedmetadata', checkVideoDuration);
+      if (videoPreview.readyState >= 1) checkVideoDuration();
+    }
+
     /* add more media (carousel) */
     const addMore = document.getElementById('add-more-media');
     if (addMore) addMore.addEventListener('click', e => { e.stopPropagation(); mediaInput && mediaInput.click(); });
@@ -3069,6 +3088,7 @@
         e.stopPropagation();
         const idx = parseInt(btn.dataset.rmidx, 10);
         const [preview] = state.createData.media.splice(idx, 1);
+        state.createData.videoDurationSeconds = null;
         state.createData.rightsAcknowledged = false;
         state.createData.culturalAcknowledged = false;
         state.createData.audioRightsAcknowledged = false;
@@ -3131,7 +3151,10 @@
       const user = me(); if (!user) return;
       // Programmatic form submission and stale DOM must fail closed too.
       // This UX switch cannot authorize real Storage or DB writes.
-      if (window.ORIGEN_API?.culturalPublishingReady !== true) {
+      const publishingReady = user.accountType === 'explorer'
+        ? window.ORIGEN_API?.explorerPublishingReady === true
+        : window.ORIGEN_API?.culturalPublishingReady === true;
+      if (!publishingReady) {
         const message = state.lang === 'es'
           ? 'La publicación aún no está disponible. Tu vista previa permanece solo en este dispositivo; ningún contenido se ha enviado a ORIGEN.'
           : 'Publishing is not available yet. Your preview remains only on this device; no content has been sent to ORIGEN.';
@@ -3180,6 +3203,15 @@
       if (state.createData.type !== 'text' && (!state.createData.files || !state.createData.files.length)) {
         showToast('Por favor sube al menos una imagen o video.'); return;
       }
+      if (isVideoPost && (!Number.isFinite(state.createData.videoDurationSeconds) || state.createData.videoDurationSeconds <= 0 || state.createData.videoDurationSeconds > 90)) {
+        const message = state.lang === 'es'
+          ? 'El video debe tener una duración verificable de máximo 90 segundos.'
+          : 'The video must have a verifiable duration of 90 seconds or less.';
+        const status = document.getElementById('post-video-duration-status');
+        if (status) status.textContent = message;
+        showToast(message);
+        return; // Duration must be known before any upload begins.
+      }
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = 'Publicando…'; }
       const uploaded = [];
@@ -3213,7 +3245,7 @@
         }, user.id);
         if (me()?.id !== user.id) return; // Do not mutate another account's draft or UI.
         for (const url of state.createData.media || []) releasePreview(url);
-        state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education' };
+        state.createData = { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education', videoDurationSeconds: null };
         showToast('¡Publicación creada!');
         go('feed');
       } catch (error) {

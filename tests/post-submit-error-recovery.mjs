@@ -12,7 +12,7 @@ assert.ok(begin > 0 && end > begin, 'Post submit handler must be extracted from 
 const handler = source.slice(begin, end + "\n    });".length);
 
 const A = { id: '11111111-1111-4111-8111-111111111111', accountType: 'creator' };
-function makeTest({ lang='es', files=1, consent=true, type='photo', audioConsent=true, audioSource='licensed', audioAttribution='Andean Group — Song title', uploadFailureAt=null,
+function makeTest({ lang='es', files=1, consent=true, type='photo', videoDurationSeconds=type==='video'?60:null, audioConsent=true, audioSource='licensed', audioAttribution='Andean Group — Song title', uploadFailureAt=null,
   submitFailure=false, cleanupDeferred=false, postCreated=true, publishingEnabled=true } = {}) {
   const activity = [];
   const notifications = [];
@@ -22,7 +22,7 @@ function makeTest({ lang='es', files=1, consent=true, type='photo', audioConsent
   let pendingCleanupResolve = null;
   const fileInputs = Array.from({length:files},(_,i)=>({name:'synthetic'+i}));
   const state = {
-    lang, createData: {type, files:fileInputs, media:[], tags:[], contentPurpose:'education'}
+    lang, createData: {type, files:fileInputs, media:[], tags:[], contentPurpose:'education', videoDurationSeconds}
   };
   const form = {
     addEventListener(name,fn) { assert.equal(name,'submit'); onSubmit=fn; },
@@ -92,6 +92,15 @@ function makeTest({ lang='es', files=1, consent=true, type='photo', audioConsent
   assert.equal(typeof onSubmit,'function');
   const invoke=()=>onSubmit({preventDefault() {activity.push('preventDefault');}});
   return {invoke,activity,notifications,submitButton,inline,state,getCleanupResolver:()=>pendingCleanupResolve};
+}
+
+// Videos must have readable duration metadata and stay within the 90-second cap.
+for (const videoDurationSeconds of [91, null]) {
+  const h=makeTest({type:'video',videoDurationSeconds});
+  await h.invoke();
+  assert.equal(h.activity.some(x=>x.startsWith('upload:')),false);
+  assert.equal(h.activity.includes('createPost'),false);
+  assert.ok(h.notifications.some(message=>/90 seconds|90 segundos/i.test(message)));
 }
 
 // In actual Staging the publication service is unavailable. Even a forced

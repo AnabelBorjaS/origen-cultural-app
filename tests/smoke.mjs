@@ -13,6 +13,7 @@ const trust = read('trust.js');
 const headers = read('_headers');
 const runtimeConfig = read('runtime-config.js');
 const serviceWorker = read('service-worker.js');
+const explorerPurposeMigration = read('supabase/migrations/20261021190000_add_explorer_post_purposes.sql');
 
 const checks = [
   ['Supabase SDK version is pinned', index.includes('@supabase/supabase-js@2.117.2')],
@@ -64,7 +65,10 @@ const checks = [
   ['Cultural world reads live providers', mundo.includes('ORIGEN_API?.cache?.publicProfiles')],
   ['Provider feed requires cultural purpose', app.includes('name="contentPurpose" required') && supabase.includes('content_purpose')],
   ['Cultural Agent feed excludes text-only posts', app.includes("state.createData.type === 'text'") && app.includes('Agentes Culturales requiere foto, carrusel o video')],
-  ['Explorer beta does not expose post creation', app.includes("user.accountType !== 'creator'") && app.includes('La publicación de contenido para Exploradores no forma parte de esta beta.')],
+  ['Explorer composer is focused on agent discovery and personal cultural experience', app.includes("['agent_discovery'") && app.includes("['explorer_experience'") && app.includes('Compartir un descubrimiento cultural')],
+  ['Explorer and Cultural Agent navigation exposes the composer while publication stays paused', app.includes('<a href="#crear" data-route-link="crear">') && app.includes('La publicación está temporalmente pausada para todos los perfiles')],
+  ['Video preview enforces a verified duration of 90 seconds or less before upload', app.includes('videoPreview.duration') && app.includes('videoDurationSeconds > 90') && app.includes('Maximum 90 seconds')],
+  ['Explorer purposes are permitted by the prepared schema without granting write access', explorerPurposeMigration.includes("'agent_discovery'") && explorerPurposeMigration.includes("'explorer_experience'") && !/^\s*(?:create\s+policy|grant\s+)/im.test(explorerPurposeMigration)],
   ['Post client rejects non-Cultural-Agent authors', supabase.includes("cache.profile?.role !== 'creator'")],
   ['Upload type/size preflight exists', supabase.includes('UPLOAD_RULES') && supabase.includes('validateUpload(bucket, file)')],
   ['Managed media cleanup enforces current-user folder ownership', supabase.includes('function parseManagedMediaUrl(publicUrl)') && supabase.includes('function removeOwnMedia(publicUrl)') && supabase.includes("parsed.path.startsWith(uid + '/')")],

@@ -353,7 +353,7 @@ async function roleChecks(role) {
         currentApi = api;
         // Isolated synthetic legacy submission: runtime defaults to NO-GO,
         // but this mock keeps rights/declaration UI tests deterministic.
-        api.culturalPublishingReady = true;
+        api.culturalPublishingReady = role === 'creator';
         api.upload = async () => {
           window.__postSafetyQA.uploads++;
           return 'https://xwkjvoyicrrwjybjolld.supabase.co/storage/v1/object/public/post-media/qa/preview.webm';
@@ -396,9 +396,13 @@ async function roleChecks(role) {
   await page.waitForFunction(() => (document.querySelector('#main-content')?.innerText || '').trim().length > 20, null, { timeout: 20000 });
 
   if (role === 'explorer') {
-    check(await page.locator('#create-form').count() === 0, 'Explorer should not receive the create-post form during Beta');
-    check(await page.locator('#main-content').innerText().then(t => t.includes('El feed cultural es para Agentes Culturales')), 'Explorer create route should explain Beta publishing scope');
-    check(await page.locator('.desktop-nav a[href="#crear"]').count() === 0, 'Explorer desktop navigation should not expose Create');
+    check(await page.locator('#create-form').count() === 1, 'Explorer should receive the cultural discovery post composer');
+    check(await page.locator('.desktop-nav a[href="#crear"]').count() === 1, 'Explorer desktop navigation should expose Create');
+    check(await page.locator('.mobile-drawer a[href="#crear"]').count() === 1, 'Explorer mobile navigation should expose Create');
+    check(await page.locator('[data-ctype="photo"]').count() === 1 && await page.locator('[data-ctype="carousel"]').count() === 1 && await page.locator('[data-ctype="video"]').count() === 1, 'Explorer can prepare photo, carousel and short-video posts');
+    check(await page.locator('[data-ctype="text"]').count() === 0, 'Explorer composer stays focused on photo and video discovery posts');
+    check(await page.locator('#create-form [name="contentPurpose"] option').evaluateAll(options => options.map(o => o.value).join(',')) === 'agent_discovery,explorer_experience', 'Explorer purpose is limited to agent discovery or personal cultural experience');
+    check(await page.locator('#post-publication-paused').innerText().then(t => t.includes('todos los perfiles')), 'Explorer composer clearly says real publishing is paused for every account type');
   } else {
     await page.waitForSelector('#create-form');
     check(await page.locator('#create-form').count() === 1, 'Cultural Agent should receive the create-post form');
@@ -435,6 +439,18 @@ async function roleChecks(role) {
       'Video upload should display a video in live post preview');
     check(await page.locator('#post-media-zone img').count() === 0,
       'Video upload must not render a broken image thumbnail');
+    await page.locator('#post-media-zone video').evaluate(video => {
+      Object.defineProperty(video, 'duration', { configurable:true, value:91 });
+      video.dispatchEvent(new Event('loadedmetadata'));
+    });
+    check(await page.locator('#post-video-duration-status').getAttribute('data-duration-valid') === 'false',
+      'Video duration above 90 seconds is rejected in the local preview');
+    await page.locator('#post-media-zone video').evaluate(video => {
+      Object.defineProperty(video, 'duration', { configurable:true, value:60 });
+      video.dispatchEvent(new Event('loadedmetadata'));
+    });
+    check(await page.locator('#post-video-duration-status').getAttribute('data-duration-valid') === 'true',
+      'Video duration at or below 90 seconds passes the local preview check');
     check(await page.locator('#create-form [name="title"]').inputValue() === 'Memoria del tejido en Ecuador',
       'Switching media type must preserve the unsaved cultural story title');
 

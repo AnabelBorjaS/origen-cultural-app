@@ -16,8 +16,8 @@ assert.match(client,/culturalPublishingReady:\s*false/,
 assert.match(client,/if\s*\(bucket\s*===\s*'post-media'\)\s*\{\s*throw new Error/,
   'Frontend must refuse direct uploads to publicly readable cultural media');
 assert.match(client,/bucket\s*===\s*'post-media-intake'/);
-assert.match(app,/culturalPublishingReady\s*!==\s*true/,
-  'Forced DOM form submission must remain blocked during NO-GO');
+assert.match(app,/user\.accountType === 'explorer'[\s\S]*explorerPublishingReady === true[\s\S]*culturalPublishingReady === true/,
+  'Forced DOM form submission must remain blocked by a separate role-specific publishing flag');
 assert.match(app,/post-publication-paused/);
 assert.match(blocker,/ALTER POLICY "creator posts own insert"/);
 assert.match(blocker,/WITH CHECK \(false\)/,
