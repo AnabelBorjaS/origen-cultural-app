@@ -3008,6 +3008,18 @@
           form.elements.passwordConfirm.reportValidity(); return;
         }
         form.elements.passwordConfirm.setCustomValidity('');
+        const countrySearch = form.querySelector('[data-location-search="country"]');
+        const citySearch = form.querySelector('[data-location-search="city"]');
+        if (!form.elements.country.value) {
+          countrySearch.setCustomValidity(state.lang === 'es' ? 'Elige un país de la lista de resultados.' : 'Choose a country from the results list.');
+          countrySearch.reportValidity(); return;
+        }
+        countrySearch.setCustomValidity('');
+        if (!form.elements.cityGeonameId.value) {
+          citySearch.setCustomValidity(state.lang === 'es' ? 'Elige una ciudad de la lista de resultados.' : 'Choose a city from the results list.');
+          citySearch.reportValidity(); return;
+        }
+        citySearch.setCustomValidity('');
         saveRegisterStepDraft(2);
         state.regStep++; render('registro');
       } else if (step === 3) {
