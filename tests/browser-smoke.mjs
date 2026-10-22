@@ -210,20 +210,23 @@ async function mobileChecks() {
   await page.waitForFunction(() => window.ORIGEN_LOCATIONS?.ready === true, null, { timeout: 20000 });
   const country = page.locator('#reg-basic [name="country"]');
   const city = page.locator('#reg-basic [name="cityGeonameId"]');
-  const countryOptions = await country.locator('option').evaluateAll(options => options.map(option => option.value));
-  check(countryOptions.includes('Australia'), 'Country selector should include Australia');
-  await country.selectOption('Australia');
-  const brisbaneValue = await city.locator('option').evaluateAll(options =>
-    options.find(option => option.textContent.trim().startsWith('Brisbane'))?.value || '');
-  check(Boolean(brisbaneValue), 'City selector should include Brisbane after selecting Australia');
-  if (!brisbaneValue) throw new Error('Brisbane is missing from the Australia city options');
-  await city.selectOption(brisbaneValue);
-  check(await city.inputValue() === brisbaneValue, 'City selector should retain the selected Brisbane option');
+  const countrySearch = page.locator('#location-country-search');
+  const citySearch = page.locator('#location-city-search');
+  await countrySearch.fill('Australia');
+  await page.getByRole('option', { name: 'Australia', exact: true }).click();
+  check(await country.inputValue() === 'Australia', 'Country search should select Australia');
+  await citySearch.fill('Brisbane');
+  const brisbaneOption = page.locator('#location-city-options [role="option"]').filter({ hasText: /^Brisbane/ }).first();
+  check(await brisbaneOption.count() > 0, 'City search should find Brisbane after selecting Australia');
+  await brisbaneOption.click();
+  check(Boolean(await city.inputValue()), 'City search should retain the selected Brisbane geoname ID');
+  check((await citySearch.inputValue()).startsWith('Brisbane'), 'City search should show the selected Brisbane city');
 
   await page.locator('#reg-basic [name="name"]').fill('Artisana Yaruquí');
   await page.locator('#reg-basic [name="email"]').fill('piloto@qa.invalid');
   const password = page.locator('#reg-basic [name="password"]');
   await password.fill('ExampleSecure2026!');
+  await page.locator('#reg-basic [name="passwordConfirm"]').fill('ExampleSecure2026!');
   await password.press('Enter');
   await page.locator('#reg-avatar-input').waitFor({ state: 'attached', timeout: 8000 });
   const currentSignupStep = await page.locator('.wizard-label').innerText();
@@ -237,8 +240,9 @@ async function mobileChecks() {
     'Returning to basic step should not force retyping the password mid-wizard');
   check(await country.inputValue() === 'Australia',
     'Returning from photo step must retain the creator country');
-  check((await city.locator('option:checked').innerText()).startsWith('Brisbane'),
+  check((await citySearch.inputValue()).startsWith('Brisbane'),
     'Returning from photo step must retain the creator city');
+  await page.locator('#reg-basic [name="passwordConfirm"]').fill('ExampleSecure2026!');
   await page.locator('#reg-next').click();
 
   await page.locator('#reg-avatar-input').setInputFiles({
@@ -1238,14 +1242,18 @@ async function registrationUploadFailureChecks() {
     await page.locator('#reg-basic [name="name"]').fill('QA Cultural Agent');
     await page.locator('#reg-basic [name="email"]').fill('pilot-qa@example.invalid');
     await page.locator('#reg-basic [name="password"]').fill('TestPassword2026!');
+    await page.locator('#reg-basic [name="passwordConfirm"]').fill('TestPassword2026!');
     await page.waitForFunction(() => window.ORIGEN_LOCATIONS?.ready === true, null, { timeout: 20000 });
     const country = page.locator('#reg-basic [name="country"]');
     const city = page.locator('#reg-basic [name="cityGeonameId"]');
-    await country.selectOption('Australia');
-    const brisbaneValue = await city.locator('option').evaluateAll(options =>
-      options.find(option => option.textContent.trim().startsWith('Brisbane'))?.value || '');
-    if (!brisbaneValue) throw new Error('Brisbane is missing from the Australia city options');
-    await city.selectOption(brisbaneValue);
+    await page.locator('#location-country-search').fill('Australia');
+    await page.getByRole('option', { name: 'Australia', exact: true }).click();
+    await page.locator('#location-city-search').fill('Brisbane');
+    const brisbaneOption = page.locator('#location-city-options [role="option"]').filter({ hasText: /^Brisbane/ }).first();
+    if (!(await brisbaneOption.count())) throw new Error('Brisbane is missing from Australia city search results');
+    await brisbaneOption.click();
+    check(await country.inputValue() === 'Australia' && Boolean(await city.inputValue()),
+      'Searchable location fields should set country and city values');
     await page.locator('#reg-next').click();
 
     await page.locator('#reg-avatar-input').setInputFiles({
