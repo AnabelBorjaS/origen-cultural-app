@@ -3036,11 +3036,12 @@
         if (result.ok) {
           resetTurnstile('signup');
           const requiresConfirmation = result.requiresEmailConfirmation;
+          const registrationEmail = state.regData.email || '';
           releasePreview(state.regData.avatar);
           releasePreview(state.regData.cover);
           state.regStep = 1; state.regData = {};
           if (requiresConfirmation) {
-            state.registrationNotice = state.regData.email || '';
+            state.registrationNotice = registrationEmail;
             showToast(state.lang === 'es' ? 'Cuenta creada. Revisa tu correo y confirma la cuenta antes de iniciar sesión.' : 'Account created. Check your email and confirm your account before signing in.', 9000);
             go('login');
           } else if (!result.profileReady) {
