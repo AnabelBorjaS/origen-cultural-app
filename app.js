@@ -27,6 +27,7 @@
     query: '',
     regStep: 1,
     regData: {},
+    registrationNotice: '',
     createData: { type: 'photo', media: [], files: [], tags: [], contentPurpose: 'education', videoDurationSeconds: null },
     openComments: new Set(),
     carIdx: {},
@@ -1620,26 +1621,21 @@
 
   /* ── REGISTER WIZARD ─────────────────────────────────────── */
 
-  function cityOptionsMarkup(country, selectedId, L) {
-    const directory = window.ORIGEN_LOCATIONS;
-    if (!directory?.ready) return '<option value="">' + L('Cargando ciudades…','Loading cities…') + '</option>';
-    if (!country) return '<option value="">' + L('Selecciona primero un país','Choose a country first') + '</option>';
-    return '<option value="">' + L('Selecciona una ciudad','Choose a city') + '</option>' +
-      directory.cities(country).map(city => '<option value="' + esc(city.id) + '"' +
-        (String(city.id) === String(selectedId || '') ? ' selected' : '') + '>' +
-        esc(city.name) + (city.region ? ' — ' + esc(city.region) : '') + '</option>').join('');
-  }
-
   function locationFieldsMarkup(data, L, required) {
-    const countries = window.ORIGEN_LOCATIONS?.countries?.() || [];
     const req = required ? ' required' : '';
-    return '<div class="form-field"><label>' + L('País donde vives o realizas actividades','Country where you live or run activities') +
-      (required ? ' *' : '') + '</label><select name="country" data-initial-country="' + esc(data.country || '') + '"' + req + '>' +
-      '<option value="">' + L('Selecciona un país','Choose a country') + '</option>' +
-      countries.map(country => '<option value="' + esc(country) + '"' + (country === data.country ? ' selected' : '') + '>' + esc(country) + '</option>').join('') +
-      '</select></div><div class="form-field"><label>' + L('Ciudad','City') + (required ? ' *' : '') +
-      '</label><select name="cityGeonameId" data-initial-city="' + esc(data.cityGeonameId || '') + '"' + req + (data.country ? '' : ' disabled') + '>' +
-      cityOptionsMarkup(data.country, data.cityGeonameId, L) + '</select><small class="form-note">' +
+    const country = data.country || '';
+    const city = window.ORIGEN_LOCATIONS?.findCity(data.cityGeonameId);
+    const cityLabel = city ? city.name + (city.region ? ' — ' + city.region : '') : '';
+    return '<div class="form-field location-field"><label for="location-country-search">' + L('País donde vives o realizas actividades','Country where you live or run activities') +
+      (required ? ' *' : '') + '</label><div class="location-combobox">' +
+      '<input id="location-country-search" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="location-country-options" data-location-search="country" placeholder="' + L('Escribe para buscar un país','Type to search countries') + '" value="' + esc(country) + '"' + req + '>' +
+      '<input type="hidden" name="country" value="' + esc(country) + '">' +
+      '<div id="location-country-options" class="location-options" role="listbox" hidden></div></div></div>' +
+      '<div class="form-field location-field"><label for="location-city-search">' + L('Ciudad','City') + (required ? ' *' : '') +
+      '</label><div class="location-combobox">' +
+      '<input id="location-city-search" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="location-city-options" data-location-search="city" placeholder="' + L('Escribe para buscar una ciudad','Type to search cities') + '" value="' + esc(cityLabel) + '"' + req + (country ? '' : ' disabled') + '>' +
+      '<input type="hidden" name="cityGeonameId" value="' + esc(data.cityGeonameId || '') + '">' +
+      '<div id="location-city-options" class="location-options" role="listbox" hidden></div></div><small class="form-note">' +
       L('Elige dónde vive el Agente Cultural o dónde puedes encontrar sus actividades.','Choose where the Cultural Agent is based or where you can attend their activities.') + '</small></div>';
   }
 
@@ -1654,34 +1650,105 @@
   }
 
   function bindLocationSelects(form) {
-    const country = form?.elements?.country, city = form?.elements?.cityGeonameId;
+    const countryInput = form?.querySelector('[data-location-search="country"]');
+    const cityInput = form?.querySelector('[data-location-search="city"]');
+    const countryValue = form?.elements?.country;
+    const cityValue = form?.elements?.cityGeonameId;
     const directory = window.ORIGEN_LOCATIONS;
-    if (!country || !city || !directory) return;
+    if (!countryInput || !cityInput || !countryValue || !cityValue || !directory) return;
     const L = (esText, enText) => state.lang === 'es' ? esText : enText;
-    const refresh = () => {
-      if (!directory.ready) return;
-      const wantedCountry = country.value || country.dataset.initialCountry || '';
-      const wantedCity = city.value || city.dataset.initialCity || '';
-      const availableCountries = directory.countries();
-      country.innerHTML = '<option value="">' + L('Selecciona un país','Choose a country') + '</option>' +
-        availableCountries.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
-      country.value = availableCountries.includes(wantedCountry) ? wantedCountry : '';
-      city.disabled = !country.value;
-      city.innerHTML = cityOptionsMarkup(country.value, wantedCity, L);
-      country.dataset.initialCountry = '';
-      city.dataset.initialCity = '';
-    };
-    country.addEventListener('change', () => {
-      city.dataset.initialCity = '';
-      city.disabled = !country.value;
-      city.innerHTML = cityOptionsMarkup(country.value, '', L);
-    });
-    void directory.load().then(loaded => {
-      if (loaded && form.isConnected) refresh();
-      else if (!loaded && form.isConnected) {
-        city.disabled = false;
-        city.innerHTML = '<option value="">' + L('No se pudo cargar la lista de ciudades. Recarga la página.','Could not load the city list. Reload the page.') + '</option>';
+    const countryList = form.querySelector('#location-country-options');
+    const cityList = form.querySelector('#location-city-options');
+    const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+    const closeList = (input, list) => { list.hidden = true; input.setAttribute('aria-expanded','false'); input.removeAttribute('aria-activedescendant'); };
+    const renderOptions = (input, list, options, select) => {
+      list.replaceChildren();
+      if (!options.length) {
+        const empty = document.createElement('div');
+        empty.className = 'location-option-empty';
+        empty.textContent = L('No se encontraron resultados. Sigue escribiendo para buscar.','No results found. Keep typing to search.');
+        list.appendChild(empty);
+      } else {
+        options.forEach((item, index) => {
+          const option = document.createElement('button');
+          option.type = 'button';
+          option.id = list.id + '-option-' + index;
+          option.className = 'location-option';
+          option.setAttribute('role','option');
+          option.setAttribute('aria-selected','false');
+          option.textContent = item.label;
+          option.addEventListener('mousedown', event => event.preventDefault());
+          option.addEventListener('click', () => select(item));
+          list.appendChild(option);
+        });
       }
+      list.hidden = false;
+      input.setAttribute('aria-expanded','true');
+      input.dataset.activeIndex = '-1';
+    };
+    const countries = () => directory.countries().map(name => ({ value:name, label:name }));
+    const cities = () => directory.cities(countryValue.value).map(city => ({ value:city.id, label:city.name + (city.region ? ' — ' + city.region : ''), city }));
+    const bindKeyboard = (input, list) => input.addEventListener('keydown', event => {
+      if (list.hidden) return;
+      const options = [...list.querySelectorAll('[role="option"]')];
+      let index = Number(input.dataset.activeIndex || -1);
+      if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
+        event.preventDefault();
+        index = (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+        input.dataset.activeIndex = String(index);
+        options.forEach((option, i) => {
+          option.setAttribute('aria-selected', i === index ? 'true' : 'false');
+          if (i === index) input.setAttribute('aria-activedescendant', option.id);
+        });
+      } else if (event.key === 'Enter' && options.length) {
+        event.preventDefault();
+        options[Number(input.dataset.activeIndex || 0)]?.click();
+      } else if (event.key === 'Escape') closeList(input, list);
+    });
+    const showCountries = () => {
+      const query = normalise(countryInput.value.trim());
+      const matches = countries().filter(item => normalise(item.label).includes(query)).slice(0,30);
+      renderOptions(countryInput,countryList,matches,item => {
+        countryInput.value=item.label; countryValue.value=item.value;
+        cityInput.value=''; cityValue.value=''; cityInput.disabled=false;
+        closeList(countryInput,countryList); closeList(cityInput,cityList);
+      });
+    };
+    const showCities = () => {
+      const query = normalise(cityInput.value.trim());
+      if (!countryValue.value || query.length < 2) { renderOptions(cityInput,cityList,[],()=>{}); return; }
+      const matches = cities().filter(item => normalise(item.city.name + ' ' + item.city.region).includes(query)).slice(0,30);
+      renderOptions(cityInput,cityList,matches,item => {
+        cityInput.value=item.label; cityValue.value=String(item.value); closeList(cityInput,cityList);
+      });
+    };
+    countryInput.addEventListener('focus',showCountries);
+    countryInput.addEventListener('input',()=>{countryValue.value='';cityInput.value='';cityValue.value='';cityInput.disabled=true;showCountries();});
+    cityInput.addEventListener('focus',()=>{if(!cityInput.disabled)showCities();});
+    cityInput.addEventListener('input',()=>{cityValue.value='';showCities();});
+    countryInput.addEventListener('blur',()=>setTimeout(()=>closeList(countryInput,countryList),120));
+    cityInput.addEventListener('blur',()=>setTimeout(()=>closeList(cityInput,cityList),120));
+    bindKeyboard(countryInput,countryList); bindKeyboard(cityInput,cityList);
+    const validateSelection=(input,hidden)=> {
+      input.addEventListener('change',()=>input.setCustomValidity(input.value&&!hidden.value?L('Elige una opción de la lista de resultados.','Choose an option from the results list.'):'')); 
+      input.addEventListener('input',()=>input.setCustomValidity(''));
+    };
+    validateSelection(countryInput,countryValue); validateSelection(cityInput,cityValue);
+    const refresh=()=>{
+      if(!directory.ready)return;
+      const wantedCountry=countryValue.value||countryInput.dataset.initialCountry||'';
+      const wantedCity=cityValue.value||cityInput.dataset.initialCity||'';
+      countryValue.value=directory.countries().includes(wantedCountry)?wantedCountry:'';
+      countryInput.value=countryValue.value; cityInput.disabled=!countryValue.value;
+      const found=directory.findCity(wantedCity);
+      if(found&&found.country===countryValue.value){cityValue.value=String(found.id);cityInput.value=found.name+(found.region?' — '+found.region:'');}
+      else {cityValue.value='';cityInput.value='';}
+      countryInput.dataset.initialCountry='';cityInput.dataset.initialCity='';
+    };
+    countryInput.dataset.initialCountry=countryValue.value;cityInput.dataset.initialCity=cityValue.value;
+    void directory.load().then(loaded=>{
+      if(loaded&&form.isConnected)refresh();
+      else if(!loaded&&form.isConnected){countryInput.disabled=true;cityInput.disabled=true;countryInput.placeholder=L('No se pudo cargar la lista de países','Could not load countries');cityInput.placeholder=L('No se pudo cargar la lista de ciudades','Could not load cities');}
     });
   }
 
@@ -1740,6 +1807,7 @@
         <div class="form-field"><label>${L('Nombre completo *','Full name *')}</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
         <div class="form-field"><label>${L('Correo electrónico *','Email address *')}</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
         <div class="form-field"><label>${L('Contraseña *','Password *')}</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
+        <div class="form-field"><label>${L('Confirma tu contraseña *','Confirm password *')}</label><input type="password" name="passwordConfirm" required minlength="8" autocomplete="new-password"></div>
         ${locationFieldsMarkup(d, L, true)}
       </form>`;
     } else if (step === 3) {
@@ -1775,6 +1843,10 @@
           'Añade tus redes sociales para que las personas puedan contactarte directamente. Todo es opcional.',
           'Add social links so people can contact you directly. Everything here is optional.'
         )}</p>
+        <div class="form-note full registration-email-notice" role="status" style="grid-column:1/-1">${L(
+          'Al crear tu perfil enviaremos un correo de confirmación a ' + esc(d.email || 'tu correo') + '. Si no lo ves, revisa también la carpeta de spam o correo no deseado.',
+          'When you create your profile, we will send a confirmation email to ' + esc(d.email || 'your email') + '. If it does not arrive, check your spam or junk folder too.'
+        )}</div>
         ${socialLabels.map(([k, label]) => `<div class="form-field"><label>${label}</label><input name="${k}" value="${esc(d.links && d.links[k] ? d.links[k] : '')}" placeholder="${L('URL o usuario','URL or username')}"></div>`).join('')}
         ${captchaSlot('signup')}
         <div class="form-field full legal-consent">
@@ -1810,6 +1882,9 @@
         <a href="#inicio" class="auth-brand"><img src="assets/logo-lockup.svg" alt="Origen Cultural"></a>
         <h2>${es ? 'Bienvenida de vuelta' : 'Welcome back'}</h2>
         <p class="auth-sub">${es ? 'Inicia sesión en tu cuenta de Origen Cultural' : 'Sign in to your Origen Cultural account'}</p>
+        ${state.registrationNotice ? '<div class="registration-email-notice" role="status">' + (es
+          ? 'Cuenta creada. Enviamos un correo de confirmación a <strong>' + esc(state.registrationNotice) + '</strong>. Confirma tu correo antes de iniciar sesión y revisa spam o correo no deseado.'
+          : 'Account created. We sent a confirmation email to <strong>' + esc(state.registrationNotice) + '</strong>. Confirm your email before signing in; check spam or junk too.') + '</div>' : ''}
         <form class="form-grid" id="login-form">
           <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
           <div class="form-field full"><label>${es ? 'Contraseña' : 'Password'}</label><input type="password" name="password" required autocomplete="current-password"></div>
@@ -2726,6 +2801,7 @@
         // Capture before doLogin clears account drafts on account switch.
         const returnRoute = state.authReturnRoute;
         await doLogin(email, password, captchaToken);
+        state.registrationNotice = '';
         state.authReturnRoute = null;
         updateShell();
         go(returnRoute || 'feed');
@@ -2814,6 +2890,11 @@
     // template, URL or persistent browser storage.
     const previousPassword = document.querySelector('#reg-basic [name="password"]');
     if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
+    const confirmationInput = document.querySelector('#reg-basic [name="passwordConfirm"]');
+    if (confirmationInput) confirmationInput.addEventListener('input', () => {
+      confirmationInput.setCustomValidity(confirmationInput.value && confirmationInput.value !== document.querySelector('#reg-basic [name="password"]')?.value
+        ? (state.lang === 'es' ? 'Las contraseñas no coinciden.' : 'Passwords do not match.') : '');
+    });
     if (state.regStep === 2) {
       bindLocationSelects(document.getElementById('reg-basic'));
     }
@@ -2922,6 +3003,23 @@
       } else if (step === 2) {
         const form = document.getElementById('reg-basic');
         if (!form || !form.reportValidity()) return;
+        if (form.elements.password.value !== form.elements.passwordConfirm.value) {
+          form.elements.passwordConfirm.setCustomValidity(state.lang === 'es' ? 'Las contraseñas no coinciden.' : 'Passwords do not match.');
+          form.elements.passwordConfirm.reportValidity(); return;
+        }
+        form.elements.passwordConfirm.setCustomValidity('');
+        const countrySearch = form.querySelector('[data-location-search="country"]');
+        const citySearch = form.querySelector('[data-location-search="city"]');
+        if (!form.elements.country.value) {
+          countrySearch.setCustomValidity(state.lang === 'es' ? 'Elige un país de la lista de resultados.' : 'Choose a country from the results list.');
+          countrySearch.reportValidity(); return;
+        }
+        countrySearch.setCustomValidity('');
+        if (!form.elements.cityGeonameId.value) {
+          citySearch.setCustomValidity(state.lang === 'es' ? 'Elige una ciudad de la lista de resultados.' : 'Choose a city from the results list.');
+          citySearch.reportValidity(); return;
+        }
+        citySearch.setCustomValidity('');
         saveRegisterStepDraft(2);
         state.regStep++; render('registro');
       } else if (step === 3) {
@@ -2950,11 +3048,13 @@
         if (result.ok) {
           resetTurnstile('signup');
           const requiresConfirmation = result.requiresEmailConfirmation;
+          const registrationEmail = state.regData.email || '';
           releasePreview(state.regData.avatar);
           releasePreview(state.regData.cover);
           state.regStep = 1; state.regData = {};
           if (requiresConfirmation) {
-            showToast(state.lang === 'es' ? 'Revisa tu correo para confirmar tu cuenta.' : 'Check your email to confirm your account.');
+            state.registrationNotice = registrationEmail;
+            showToast(state.lang === 'es' ? 'Cuenta creada. Revisa tu correo y confirma la cuenta antes de iniciar sesión.' : 'Account created. Check your email and confirm your account before signing in.', 9000);
             go('login');
           } else if (!result.profileReady) {
             showToast(state.lang === 'es'
