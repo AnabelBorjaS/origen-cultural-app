@@ -2801,8 +2801,8 @@
         // Capture before doLogin clears account drafts on account switch.
         const returnRoute = state.authReturnRoute;
         await doLogin(email, password, captchaToken);
-        state.registrationNotice = '';
         state.authReturnRoute = null;
+        state.registrationNotice = '';
         updateShell();
         go(returnRoute || 'feed');
       } catch (error) {
