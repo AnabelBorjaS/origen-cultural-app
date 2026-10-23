@@ -169,6 +169,38 @@ async function desktopChecks() {
   await page.close();
 }
 
+async function stagingAuthRedirectChecks() {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  // Simulate a local app build explicitly connected to the Staging backend.
+  // This must not make network calls or send test email.
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'ORIGEN_CONFIG', {
+      configurable: false,
+      writable: false,
+      value: Object.freeze({
+        stagingBackendConnected: true,
+        disableServiceWorker: true,
+        turnstileSiteKey: ''
+      })
+    });
+  });
+
+  try {
+    await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForFunction(() => typeof window.ORIGEN_API?.authRedirect === 'function', null, { timeout: 10000 });
+    const redirects = await page.evaluate(() => ({
+      confirmation: window.ORIGEN_API.authRedirect('#login'),
+      recovery: window.ORIGEN_API.authRedirect('#restablecer')
+    }));
+    check(redirects.confirmation === 'https://origen-cultural-staging.pages.dev/#login',
+      'Staging email confirmation from localhost must return to the deployed Staging login');
+    check(redirects.recovery === 'https://origen-cultural-staging.pages.dev/#restablecer',
+      'Staging password recovery from localhost must return to the deployed Staging reset form');
+  } finally {
+    await page.close();
+  }
+}
+
 async function mobileChecks() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
   const pageErrors = [];
@@ -1280,6 +1312,7 @@ async function registrationUploadFailureChecks() {
 
 try {
   await desktopChecks();
+  await stagingAuthRedirectChecks();
   await mobileChecks();
   await publicCulturalStoryChecks();
   await publicRightsReviewChecks();

@@ -108,9 +108,18 @@
   }
 
   function authRedirect(hashRoute) {
-    const url = new URL(window.location.href);
+    let url = new URL(window.location.href);
     const localHost = ['localhost', '127.0.0.1'].includes(url.hostname);
-    if (url.protocol !== 'https:' && !localHost) {
+
+    // When a local developer build is connected to the isolated Staging
+    // backend, never send confirmation or recovery emails back to localhost.
+    // The callback must open the deployed HTTPS Staging app.
+    if (window.ORIGEN_CONFIG?.stagingBackendConnected === true && localHost) {
+      url = new URL('https://origen-cultural-staging.pages.dev/');
+    }
+
+    const resolvedLocalHost = ['localhost', '127.0.0.1'].includes(url.hostname);
+    if (url.protocol !== 'https:' && !resolvedLocalHost) {
       throw new Error('ORIGEN Auth requires HTTPS outside local development.');
     }
     url.search = '';
