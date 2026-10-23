@@ -5,6 +5,37 @@
 window.MundoCultural = (() => {
   'use strict';
 
+  function _esc(value) {
+    const d = document.createElement('div');
+    d.textContent = String(value || '');
+    return d.innerHTML;
+  }
+
+  function _safeMediaUrl(value) {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^blob:/i.test(raw)) return raw;
+      if (/^data:image\/(?:png|jpe?g|webp);base64,/i.test(raw)) return raw;
+      const u = new URL(raw, window.location.href);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function _safeHref(value, fallback = '#explorar') {
+    try {
+      const raw = String(value || '').trim();
+      if (!raw) return fallback;
+      if (raw.startsWith('#')) return raw;
+      const u = new URL(raw, window.location.href);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   /* ── BASE DE DATOS CULTURAL ─────────────────────────────────── */
   const CULTURAL_DB = {
     ecuador: {
@@ -177,8 +208,8 @@ window.MundoCultural = (() => {
       microhistorias: [
         {
           id: 'mx-1', cat: 'Gastronomía · Origen',
-          txt: 'El chocolate no llegó a Europa desde América: fue al revés. Los mayas preparaban «xocolātl» siglos antes de la conquista —amargo, espumoso, con chile— en rituales, no como postre.',
-          src: 'INAH — Instituto Nacional de Antropología e Historia',
+          txt: 'Mucho antes de que el chocolate se convirtiera en un postre dulce en Europa, los mayas preparaban cacao como una bebida espumosa. En escenas arqueológicas de vasijas mayas se representa el cacao vertido entre recipientes para crear esa espuma.',
+          src: 'INAH / The Metropolitan Museum of Art',
           href: '#explorar'
         },
         {
@@ -249,7 +280,15 @@ window.MundoCultural = (() => {
     }
   };
 
-  // Coordenadas de países para puntos de agentes
+  const STORY_TRANSLATIONS_EN = Object.freeze({"ec-1":["Craft · Identity","The so-called Panama hat originated in Montecristi, Ecuador. Weavers often work before dawn, when humidity softens toquilla straw and makes finer weaving possible."],"ec-2":["Food · Ritual","Colada morada is prepared in November to honour the dead. Each family adds its own flowers and fruit, making the recipe a map of family memory and affection."],"ec-3":["Language · Worldview","In Kichwa, “Pachamama” means more than “Mother Earth”: “pacha” can hold both time and space, while “mama” means mother. The word reflects a worldview in which the whole universe is alive."],"ec-4":["Craft · Community","Shigras are bags woven from cabuya fibre by Kichwa women in Cotopaxi. Every knot and colour can carry a family story passed from one generation to the next."],"ec-5":["Tradition · Territory","Inti Raymi is not simply a tourist reenactment. It is a living solstice celebration practised by Kichwa communities in the Highlands, with roots that predate the Spanish conquest."],"au-1":["Territory · Sacred Law","Anangu people avoid photographing certain areas of Uluru because doing so can violate a living spiritual law, rather than just a visitor rule. For Anangu, Uluru is a living presence, not merely a landmark."],"au-2":["Music · Ceremony","The yidaki, often called the didgeridoo, is played using continuous circular breathing. For Yolŋu people it belongs to cultural and ceremonial contexts; it is not simply an entertainment instrument."],"au-3":["Art · Cosmology","In some Aboriginal art traditions, dot patterns do more than decorate: they can connect places and ancestral narratives within the living cosmologies of specific communities."],"au-4":["Language · Time","Australia is home to more than 250 Indigenous languages. Each carries distinct ways of understanding and inhabiting the world; some languages also use different systems for time and direction."],"au-5":["Tradition · Transmission","In some communities, corroboree is a ceremonial gathering where song, dance and body painting help pass laws and knowledge between generations. Its meaning and practice vary between communities."],"pe-1":["Food · Biodiversity","Peru is home to more than 3,000 potato varieties, domesticated in the Andes thousands of years ago. Many have their own Quechua names and grow best at different elevations."],"pe-2":["Music · Dance","The northern marinera represents courtship through the movement of two dancers and a white handkerchief. Its choreography traditionally avoids direct contact; the dance was declared a National Cultural Heritage of Peru in 1986."],"pe-3":["Craft · Living History","Ayacucho retablos began as portable altarpieces used in evangelisation. Today, artisans also use them to tell stories about social conflict, harvests, celebrations and recent community history."],"pe-4":["Tradition · Cultural Encounter","In Cusco, Corpus Christi brings Catholic processions into conversation with Andean relationships to ancestors. Over time, Indigenous communities incorporated their own meanings into the celebration."],"pe-5":["Language · Emotion","The Quechua word “llaki” can express profound sadness and grief. Like many words rooted in a particular language and worldview, it carries shades of meaning that a single English word cannot fully capture."],"bo-1":["Tradition · Wishes","At Alasitas, people buy miniature versions of things they hope for, such as a home, good health or a degree. In La Paz, many bring them to be blessed by the Ekeko, an Aymara figure associated with abundance."],"bo-2":["Craft · Cosmology","Jalq’a textiles from the Sucre region depict the ukhu pacha, an inner world populated by beings that resist clear definition. Their designs form a visual cosmology, not merely decoration."],"bo-3":["Food · Social Ritual","A Bolivian salteña is known for its sweet pastry and juicy filling. Eating one neatly, without spilling the broth inside, is a small but much-loved local skill."],"bo-4":["Music · Resistance","Saya Afro-Boliviana grew in the Yungas as a form of expression, resistance and celebration. Its rhythm, lyrics and dance keep Afro-Bolivian community memory present."],"bo-5":["Territory · Sacred Place","For some Quechua and Aymara communities, the Salar de Uyuni is more than a tourist landscape: it is a meaningful place where sky and earth seem to meet."],"mx-1":["Food · Origins","Long before chocolate became a sweet dessert in Europe, the Maya prepared cacao as a foamy drink. Archaeological scenes on Maya vessels depict cacao being poured between containers to create the froth."],"mx-2":["Craft · Dream","Alebrijes took shape in 1936, when Mexican artisan Pedro Linares said that, while ill with a fever, he dreamed of fantastical creatures combining different animals. After waking, he began making them from papier-mâché and painting them in vivid colours."],"mx-3":["Tradition · Cultural Encounter","Today’s Día de Muertos traditions bring Indigenous practices and Catholic influences together in different ways. An ofrenda can become a map of affection: who someone was, what they loved and how they are remembered."],"mx-4":["Music · Body","In son jarocho, the wooden tarima is also a musical instrument: dancers’ footwork turns it into shared percussion. The floor itself becomes part of the community’s sound."],"mx-5":["Language · Thought","The Nahuatl verb “tlahtoa” means “to speak.” For many Nahua speakers, language does more than describe the world: words also help shape shared meanings and ways of seeing."],"jp-1":["Craft · Philosophy","Kintsugi does not hide a broken ceramic piece’s cracks; it joins them with lacquer and powdered gold. The object’s history, including its repairs, becomes part of its beauty."],"jp-2":["Tradition · Ancestors","During Obon, many families welcome the spirits of their ancestors and later see them off. They may light lanterns and dance Bon Odori; customs vary by region and family."],"jp-3":["Food · Ritual","Matcha is more than powdered tea. In the Japanese way of tea, or chadō, the bowl, water, movements and shared attention all matter."],"jp-4":["Language · Pause","In Japanese, “ma” (間) can describe the meaningful space or pause between things. It is not simply emptiness; the idea appears in music, architecture and everyday relationships."],"jp-5":["Knowledge · Territory","Satoyama describes landscapes where villages and mountains meet. In many places, people have shaped these areas through a mix of farming, forests and community care."]});
+  const ENGLISH_COUNTRY_NAMES=Object.freeze({ecuador:'Ecuador',australia:'Australia',peru:'Peru',bolivia:'Bolivia',mexico:'Mexico',japan:'Japan'});
+  const ENGLISH_CONTINENTS=Object.freeze({'América del Sur':'South America',Oceanía:'Oceania','América del Norte':'North America',Asia:'Asia'});
+  function isEnglish(){try{const saved=localStorage.getItem('origen-lang');return String(saved||document.documentElement.lang||'es').toLowerCase().startsWith('en')}catch{return String(document.documentElement.lang||'es').toLowerCase().startsWith('en')}}
+  function localizedStory(story){if(!story||!isEnglish())return story;const translation=STORY_TRANSLATIONS_EN[story.id];return translation?{...story,cat:translation[0],txt:translation[1]}:story}
+  function localizedCountryName(data){return isEnglish()?(ENGLISH_COUNTRY_NAMES[data.key]||data.name):data.name}
+  function localizedContinent(data){return isEnglish()?(ENGLISH_CONTINENTS[data.continent]||data.continent):data.continent}
+
+  // Coordenadas de países para puntos de creadores
   const COUNTRY_COORDS = {
     ecuador:   { lat: -1.83,  lng: -78.18 },
     australia: { lat: -25.27, lng: 133.77 },
@@ -329,18 +368,12 @@ window.MundoCultural = (() => {
   function loadGeo() {
     if (_geoPromise) return _geoPromise;
     _geoPromise = fetch(
-      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+      'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json'
     ).then(async r => {
-      // world-atlas uses TopoJSON; we need topojson-client
+      if (!r.ok) throw new Error(`World atlas request failed: ${r.status}`);
       const topo = await r.json();
-      // Inline micro-converter (only the arc/geometry we need)
       return topoToGeo(topo);
-    }).catch(() =>
-      // Fallback: fetch GeoJSON directly
-      fetch('https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/DATA/world.geojson')
-        .then(r => r.json())
-        .then(g => g.features)
-    );
+    });
     return _geoPromise;
   }
 
@@ -392,10 +425,10 @@ window.MundoCultural = (() => {
   /* ── COLORS ─────────────────────────────────────────────────── */
   function capColor(feat) {
     const key = matchKey(feat);
-    if (feat === _selected) return 'rgba(200,169,126,0.92)';
-    if (feat === _hovered)  return 'rgba(200,169,126,0.58)';
-    if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(7,10,13,0.30)';
+    if (feat === _selected) return 'rgba(200,169,126,0.82)';
+    if (feat === _hovered)  return 'rgba(230,207,170,0.45)';
+    if (key)                return 'rgba(200,169,126,0.16)';
+    return 'rgba(18,18,18,0.04)';
   }
   function altitude(feat) {
     return feat === _hovered ? 0.016 : 0.006;
@@ -403,16 +436,26 @@ window.MundoCultural = (() => {
 
   /* ── CREATOR DATA ───────────────────────────────────────────── */
   function getCreatorsForKey(countryKey) {
-    const db   = CULTURAL_DB[countryKey];
+    const db = CULTURAL_DB[countryKey];
     if (!db) return [];
-    const all  = (window.ORIGEN_DATA?.creators || []);
-    const users = (() => { try { return JSON.parse(localStorage.getItem('oc-users') || '{}'); } catch { return {}; } })();
+    const all = (window.ORIGEN_DATA?.creators || []);
     const seed = all.filter(c => db.creatorIds.includes(c.id)).map(c => ({ ...c, _kind: 'creator' }));
-    const usr  = Object.values(users).filter(u => {
-      const loc = (u.location || '').toLowerCase();
-      return loc.includes(db.name.toLowerCase()) || loc.includes(countryKey);
-    }).map(u => ({ ...u, _kind: 'user' }));
-    return [...seed, ...usr];
+    const live = (window.ORIGEN_API?.cache?.publicProfiles || [])
+      .filter(u => {
+        const loc = (u.location || [u.city, u.country].filter(Boolean).join(', ')).toLowerCase();
+        return loc.includes(db.name.toLowerCase()) || loc.includes(countryKey);
+      })
+      .map(u => ({
+        id: u.id,
+        name: u.display_name || 'Agente Cultural',
+        type: 'Agente Cultural',
+        category: (u.categories || [])[0] || 'Cultura',
+        location: u.location || [u.city, u.country].filter(Boolean).join(', '),
+        image: u.avatar_url || '',
+        avatar: u.avatar_url || '',
+        _kind: 'user'
+      }));
+    return [...seed, ...live];
   }
 
   function getCreatorPoints() {
@@ -437,6 +480,7 @@ window.MundoCultural = (() => {
   function renderCard(countryKey) {
     if (!_panel) return;
     const data     = CULTURAL_DB[countryKey];
+    const english  = isEnglish();
     const creators = getCreatorsForKey(countryKey);
     const stories  = data.microhistorias || [];
 
@@ -451,14 +495,14 @@ window.MundoCultural = (() => {
 
     const creatorHtml = creators.length
       ? `<div class="card-section card-section-creators">
-          <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">${english ? 'CULTURAL AGENTS IN THIS TERRITORY' : 'AGENTES CULTURALES EN ESTE TERRITORIO'}</p>
           <div class="card-creators">${creators.slice(0, 6).map(renderCreatorMini).join('')}</div>
         </div>`
       : `<div class="card-section card-section-creators">
-          <p class="card-section-label">AGENTES CULTURALES EN ESTE TERRITORIO</p>
+          <p class="card-section-label">${english ? 'CULTURAL AGENTS IN THIS TERRITORY' : 'AGENTES CULTURALES EN ESTE TERRITORIO'}</p>
           <div class="card-empty-creators">
-            <p>Sé el primero en registrarte desde ${data.name}.</p>
-            <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">Crear perfil</a>
+            <p>${english ? 'Be the first to create a profile from' : 'Sé el primero en registrarte desde'} ${_esc(localizedCountryName(data))}.</p>
+            <a href="#registro" class="btn" style="min-height:40px;padding:0 16px;font-size:11px;margin-top:10px">${english ? 'Create a profile' : 'Crear perfil'}</a>
           </div>
         </div>`;
 
@@ -467,18 +511,18 @@ window.MundoCultural = (() => {
 
         <!-- HEADER -->
         <div class="card-header">
-          <div class="card-flag">${data.flag}</div>
+          <div class="card-flag">${_esc(data.flag)}</div>
           <div class="card-header-info">
-            <p class="eyebrow">${data.continent}</p>
-            <h2 class="card-country-name">${data.name}</h2>
+            <p class="eyebrow">${_esc(localizedContinent(data))}</p>
+            <h2 class="card-country-name">${_esc(localizedCountryName(data))}</h2>
           </div>
-          <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
+          <button class="card-close" id="card-close" aria-label="${english ? 'Close' : 'Cerrar'}">×</button>
         </div>
 
         <!-- DISCLAIMER: múltiples identidades -->
         <p class="territory-disclaimer">
           <span class="td-icon">◈</span>
-          ${data.name} alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.
+          ${_esc(localizedCountryName(data))} ${english ? 'is home to many communities, identities and cultural expressions. Each story represents one voice, not every voice.' : 'alberga múltiples comunidades, identidades y expresiones culturales. Cada historia representa una voz, no a todas.'}
         </p>
 
         <!-- MICRO-STORY CAROUSEL -->
@@ -486,27 +530,27 @@ window.MundoCultural = (() => {
           <div class="micro-card" id="mc-card">
             <!-- Injected by setMicroStory() -->
           </div>
-          <div class="mc-nav" id="mc-nav" aria-label="Navegar historias">
+          <div class="mc-nav" id="mc-nav" aria-label="${english ? 'Browse stories' : 'Navegar historias'}">
             ${stories.map((_, i) =>
-              `<button class="mc-dot${i === 0 ? ' active' : ''}" data-mcdot="${i}" aria-label="Historia ${i + 1}"></button>`
+              `<button class="mc-dot${i === 0 ? ' active' : ''}" data-mcdot="${i}" aria-label="${english ? 'Story' : 'Historia'} ${i + 1}"></button>`
             ).join('')}
           </div>
         </div>
 
         <!-- ACTIONS ROW -->
         <div class="micro-actions">
-          <button class="mc-action-btn" id="mc-save" data-mckey="${countryKey}" data-mcidx="0" title="Guardar en Pasaporte Cultural">
-            <span class="mca-icon">💾</span><span class="mca-label">Guardar</span>
+          <button class="mc-action-btn" id="mc-save" data-mckey="${countryKey}" data-mcidx="0" title="${english ? 'Save to Cultural Passport' : 'Guardar en Pasaporte Cultural'}">
+            <span class="mca-icon">💾</span><span class="mca-label">${english ? 'Save' : 'Guardar'}</span>
           </button>
-          <button class="mc-action-btn" id="mc-share" data-mckey="${countryKey}" title="Compartir esta historia">
-            <span class="mca-icon">↗</span><span class="mca-label">Compartir</span>
+          <button class="mc-action-btn" id="mc-share" data-mckey="${countryKey}" title="${english ? 'Share this story' : 'Compartir esta historia'}">
+            <span class="mca-icon">↗</span><span class="mca-label">${english ? 'Share' : 'Compartir'}</span>
           </button>
           <button class="mc-action-btn${isFollowing ? ' on' : ''}" id="mc-follow" data-mcfollow="${countryKey}">
             <span class="mca-icon">${isFollowing ? '✓' : '+'}</span>
-            <span class="mca-label">${isFollowing ? 'Siguiendo' : 'Seguir'}</span>
+            <span class="mca-label">${isFollowing ? (english ? 'Following' : 'Siguiendo') : (english ? 'Follow' : 'Seguir')}</span>
           </button>
-          <a href="#explorar" class="mc-action-btn" title="Explorar perfiles culturales">
-            <span class="mca-icon">👥</span><span class="mca-label">Perfiles</span>
+          <a href="#explorar" class="mc-action-btn" title="${english ? 'Explore cultural profiles' : 'Explorar perfiles culturales'}">
+            <span class="mca-icon">👥</span><span class="mca-label">${english ? 'Profiles' : 'Perfiles'}</span>
           </a>
         </div>
 
@@ -515,14 +559,14 @@ window.MundoCultural = (() => {
 
         <!-- LENGUAS -->
         <div class="card-section">
-          <p class="card-section-label">LENGUAS DE ESTE TERRITORIO</p>
-          <div class="card-pills">${(data.languages||[]).map(l => `<span class="card-pill">${l}</span>`).join('')}</div>
+          <p class="card-section-label">${english ? 'LANGUAGES OF THIS TERRITORY' : 'LENGUAS DE ESTE TERRITORIO'}</p>
+          <div class="card-pills">${(data.languages||[]).map(l => { const names = { Español: 'Spanish', 'Inglés (oficial)': 'English (official)', Japonés: 'Japanese', Aimara: 'Aymara', Náhuatl: 'Nahuatl', Zapoteco: 'Zapotec', 'Maya yucateco': 'Yucatec Maya', 'Ainu (lengua indígena en Hokkaido)': 'Ainu (Indigenous language in Hokkaido)', '+250 lenguas aborígenes': '250+ Indigenous languages', '+33 lenguas indígenas (todas co-oficiales)': '33+ Indigenous languages (all co-official)' }; return `<span class="card-pill">${_esc(english ? (names[l] || l) : l)}</span>`; }).join('')}</div>
         </div>
 
         <!-- SUGGEST / CORRECTION -->
         <div class="card-suggest">
           <a href="#" class="suggest-link" id="mc-suggest" data-mcsuggest="${countryKey}">
-            ¿Tienes datos o encuentras un error? Sugiere o solicita corrección →
+            ${english ? 'Have information or spotted an error? Suggest an edit or request a correction' : '¿Tienes datos o encuentras un error? Sugiere o solicita corrección'} →
           </a>
         </div>
 
@@ -554,18 +598,20 @@ window.MundoCultural = (() => {
     if (!card || !data) return;
     const h = data.microhistorias?.[idx];
     if (!h) return;
+    const story = localizedStory(h);
+    const english = isEnglish();
 
     card.innerHTML = `
       <div class="mc-inner">
-        <p class="mc-category">${h.cat}</p>
-        <h3 class="mc-sabias">¿Sabías que…?</h3>
-        <blockquote class="mc-text">${h.txt}</blockquote>
-        <a href="${h.href || '#explorar'}" class="mc-discover-btn">
-          Descubre su origen <span aria-hidden="true">→</span>
+        <p class="mc-category">${_esc(story.cat)}</p>
+        <h3 class="mc-sabias">${english ? 'Did you know…?' : '¿Sabías que…?'}</h3>
+        <blockquote class="mc-text">${_esc(story.txt)}</blockquote>
+        <a href="${_esc(_safeHref(story.href))}" class="mc-discover-btn">
+          ${english ? 'Explore its origins' : 'Descubre su origen'} <span aria-hidden="true">→</span>
         </a>
       </div>
       <footer class="mc-footer">
-        <p class="mc-source">Fuente: <em>${h.src}</em></p>
+        <p class="mc-source"${english ? '>'+'Source:' : '>'+'Fuente:'} <em>${_esc(story.src)}</em></p>
       </footer>`;
 
     // Update dots
@@ -616,6 +662,7 @@ window.MundoCultural = (() => {
       const d    = CULTURAL_DB[key];
       const h    = d?.microhistorias?.[idx];
       if (!h) return;
+      const story = localizedStory(h);
 
       const passport = (() => { try { return JSON.parse(localStorage.getItem('oc-passport') || '[]'); } catch { return []; } })();
       const entryId  = `${key}-${h.id}`;
@@ -623,34 +670,34 @@ window.MundoCultural = (() => {
       if (!passport.find(p => p.id === entryId)) {
         passport.push({
           id: entryId, type: 'microhistoria',
-          country: d.name, flag: d.flag, continent: d.continent,
-          category: h.cat, text: h.txt, source: h.src,
+          country: localizedCountryName(d), flag: d.flag, continent: localizedContinent(d),
+          category: story.cat, text: story.txt, source: story.src,
           savedAt: Date.now()
         });
         localStorage.setItem('oc-passport', JSON.stringify(passport));
         btn.querySelector('.mca-icon').textContent = '✓';
         btn.classList.add('on');
-        _toast(`Historia guardada en tu Pasaporte Cultural ✓`);
+        _toast(isEnglish() ? 'Story saved to your Cultural Passport ✓' : 'Historia guardada en tu Pasaporte Cultural ✓');
         setTimeout(() => {
           btn.querySelector('.mca-icon').textContent = '💾';
           btn.classList.remove('on');
         }, 2800);
       } else {
-        _toast('Ya guardaste esta historia en tu Pasaporte Cultural.');
+        _toast(isEnglish() ? 'You have already saved this story to your Cultural Passport.' : 'Ya guardaste esta historia en tu Pasaporte Cultural.');
       }
     });
 
     /* ─ share ─ */
     document.getElementById('mc-share')?.addEventListener('click', () => {
-      const h    = stories[_mcIdx];
-      const text = `¿Sabías que…? ${h?.txt || ''}\n\nDescúbrelo en ORIGEN Cultural`;
+      const h    = localizedStory(stories[_mcIdx]);
+      const text = isEnglish() ? `Did you know…? ${h?.txt || ''}\n\nDiscover it on ORIGEN Cultural` : `¿Sabías que…? ${h?.txt || ''}\n\nDescúbrelo en ORIGEN Cultural`;
       const url  = `${location.origin}${location.pathname}#mundo`;
       if (navigator.share) {
-        navigator.share({ title: `ORIGEN Cultural — ${data.name}`, text, url }).catch(() => {});
+        navigator.share({ title: `ORIGEN Cultural — ${localizedCountryName(data)}`, text, url }).catch(() => {});
       } else {
         navigator.clipboard.writeText(`${text}\n${url}`).then(() =>
-          _toast('Historia copiada al portapapeles ↗')
-        ).catch(() => _toast('Comparte este enlace: ' + url));
+          _toast(isEnglish() ? 'Story copied to clipboard ↗' : 'Historia copiada al portapapeles ↗')
+        ).catch(() => _toast((isEnglish() ? 'Share this link: ' : 'Comparte este enlace: ') + url));
       }
     });
 
@@ -665,13 +712,13 @@ window.MundoCultural = (() => {
       if (idx === -1) {
         terrs.push(key);
         icon.textContent  = '✓';
-        label.textContent = 'Siguiendo';
+        label.textContent = isEnglish() ? 'Following' : 'Siguiendo';
         btn.classList.add('on');
-        _toast(`Ahora sigues ${data.name} 🌍`);
+        _toast(`${isEnglish() ? 'You are now following' : 'Ahora sigues'} ${localizedCountryName(data)} 🌍`);
       } else {
         terrs.splice(idx, 1);
         icon.textContent  = '+';
-        label.textContent = 'Seguir';
+        label.textContent = isEnglish() ? 'Follow' : 'Seguir';
         btn.classList.remove('on');
       }
       localStorage.setItem('oc-follows-territories', JSON.stringify(terrs));
@@ -680,47 +727,52 @@ window.MundoCultural = (() => {
     /* ─ suggest / correction ─ */
     document.getElementById('mc-suggest')?.addEventListener('click', e => {
       e.preventDefault();
-      const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      const session = window.ORIGEN_API?.cache?.session || null;
       if (!session) {
-        _toast('Inicia sesión para sugerir datos o solicitar correcciones.');
+        _toast(isEnglish() ? 'Sign in to suggest information or request a correction.' : 'Inicia sesión para sugerir datos o solicitar correcciones.');
         setTimeout(() => { window.location.hash = '#login'; }, 1400);
         return;
       }
-      _toast('Gracias. Tu sugerencia llegará al equipo de ORIGEN Cultural para revisión.');
+      _toast(isEnglish() ? 'Thank you. Your suggestion will be reviewed by the ORIGEN Cultural team.' : 'Gracias. Tu sugerencia llegará al equipo de ORIGEN Cultural para revisión.');
     });
   }
 
   function renderCreatorMini(c) {
+    const english = isEnglish();
     const init = (c.name || 'OC').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const src  = c.avatar || c.image;
-    const href = c._kind === 'creator' ? `#perfil/${c.id}` : `#usuario/${c.id}`;
+    const src  = _safeMediaUrl(c.avatar || c.image);
+    const safeId = encodeURIComponent(String(c.id || ''));
+    const href = c._kind === 'creator' ? `#perfil/${safeId}` : `#usuario/${safeId}`;
     const avHtml = src
-      ? `<img src="${src}" alt="${c.name}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
-      : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${init}</div>`;
+      ? `<img src="${_esc(src)}" alt="${_esc(c.name)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
+      : `<div style="width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--sand);display:grid;place-items:center;font-size:13px;font-weight:700">${_esc(init)}</div>`;
 
-    const followsMap = (() => { try { return JSON.parse(localStorage.getItem('oc-follows') || '{}'); } catch { return {}; } })();
-    const session    = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
-    const isFollowing = session && (followsMap[session.id] || []).includes(c.id);
+    const api = window.ORIGEN_API;
+    const session = api?.cache?.session || null;
+    const culturalProfile = c._kind === 'user'
+      ? api?.cache?.culturalProfiles?.find(p => p.owner_id === c.id)
+      : api?.cache?.culturalProfiles?.find(p => p.id === c.id || p.slug === c.id);
+    const isFollowing = !!session && !!culturalProfile && (api?.cache?.follows || []).includes(culturalProfile.id);
 
     return `<div class="creator-mini">
       <a href="${href}">${avHtml}</a>
       <div class="creator-mini-info">
-        <a href="${href}"><strong>${c.name}</strong></a>
-        <span>${c.type || c.accountType || ''}</span>
+        <a href="${href}"><strong>${_esc(c.name)}</strong></a>
+        <span>${_esc(c.type || c.accountType || '')}</span>
       </div>
-      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${c.id}" data-kind="${c._kind}">${isFollowing ? 'Siguiendo' : '+ Seguir'}</button>
+      <button class="btn-follow-sm${isFollowing ? ' on' : ''}" data-mundo-follow="${_esc(c.id)}" data-kind="${_esc(c._kind)}">${isFollowing ? (english ? 'Following' : 'Siguiendo') : (english ? '+ Follow' : '+ Seguir')}</button>
     </div>`;
   }
 
   function welcomeHtml() {
-    const highlighted = ['Ecuador', 'Australia', 'Perú', 'Bolivia', 'México', 'Japón'];
+    const highlighted = ['Ecuador', 'Australia', isEnglish() ? 'Peru' : 'Perú', 'Bolivia', isEnglish() ? 'Mexico' : 'México', isEnglish() ? 'Japan' : 'Japón'];
     const keys        = ['ecuador', 'australia', 'peru', 'bolivia', 'mexico', 'japan'];
     const flags       = ['🇪🇨','🇦🇺','🇵🇪','🇧🇴','🇲🇽','🇯🇵'];
     return `<div class="panel-welcome">
       <div class="panel-welcome-icon">◎</div>
-      <h3>Selecciona un territorio</h3>
-      <p>Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes registrados en Origen Cultural.</p>
-      <p class="eyebrow" style="margin-top:28px">TERRITORIOS DISPONIBLES</p>
+      <h3>${isEnglish() ? 'Select a territory' : 'Selecciona un territorio'}</h3>
+      <p>${isEnglish() ? 'Select a country on the globe to discover its cultural identity and the cultural agents registered with Origen Cultural.' : 'Haz clic en cualquier país del globo para descubrir su identidad cultural y los agentes culturales registrados en Origen Cultural.'}</p>
+      <p class="eyebrow" style="margin-top:28px">${isEnglish() ? 'AVAILABLE TERRITORIES' : 'TERRITORIOS DISPONIBLES'}</p>
       <div class="featured-countries">
         ${highlighted.map((n, i) => `
           <button class="featured-country" data-fc="${keys[i]}">
@@ -735,16 +787,39 @@ window.MundoCultural = (() => {
       btn.addEventListener('click', () => selectCountry(btn.dataset.fc));
     });
     _panel.querySelectorAll('[data-mundo-follow]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const session = (() => { try { return JSON.parse(localStorage.getItem('oc-session') || 'null'); } catch { return null; } })();
+      btn.addEventListener('click', async () => {
+        const api = window.ORIGEN_API;
+        const session = api?.cache?.session || null;
         if (!session) { window.location.hash = '#login'; return; }
-        const tid = btn.dataset.mundoFollow;
-        const follows = (() => { try { return JSON.parse(localStorage.getItem('oc-follows') || '{}'); } catch { return {}; } })();
-        if (!follows[session.id]) follows[session.id] = [];
-        const idx = follows[session.id].indexOf(tid);
-        if (idx === -1) { follows[session.id].push(tid); btn.textContent = 'Siguiendo'; btn.classList.add('on'); }
-        else            { follows[session.id].splice(idx, 1); btn.textContent = '+ Seguir';  btn.classList.remove('on'); }
-        localStorage.setItem('oc-follows', JSON.stringify(follows));
+
+        const ref = btn.dataset.mundoFollow;
+        const kind = btn.dataset.kind;
+        let culturalProfile = kind === 'user'
+          ? api?.cache?.culturalProfiles?.find(p => p.owner_id === ref)
+          : api?.cache?.culturalProfiles?.find(p => p.id === ref || p.slug === ref);
+
+        try {
+          if (!culturalProfile && kind === 'creator') {
+            culturalProfile = await api.findCulturalProfile(ref);
+          } else if (!culturalProfile && kind === 'user') {
+            const { data, error } = await api.client.from('cultural_profiles')
+              .select('*').eq('owner_id', ref).maybeSingle();
+            if (error) throw error;
+            culturalProfile = data;
+          }
+
+          if (!culturalProfile) {
+            _toast(isEnglish() ? 'Following is not available for this profile yet.' : 'Este seguimiento todavía no está disponible para este perfil.');
+            return;
+          }
+
+          const wasFollowing = (api.cache.follows || []).includes(culturalProfile.id);
+          await api.toggleFollow(culturalProfile.id);
+          btn.textContent = wasFollowing ? (isEnglish() ? '+ Follow' : '+ Seguir') : (isEnglish() ? 'Following' : 'Siguiendo');
+          btn.classList.toggle('on', !wasFollowing);
+        } catch (error) {
+          _toast(error?.message || (isEnglish() ? 'We could not update the follow.' : 'No pudimos actualizar el seguimiento.'));
+        }
       });
     });
   }
@@ -754,12 +829,12 @@ window.MundoCultural = (() => {
     _panel.innerHTML = `<div class="cultural-card">
       <div class="card-header">
         <div class="card-flag">🌍</div>
-        <div><h2 class="card-country-name">${name}</h2><p class="card-meta">Territorio sin datos culturales registrados aún.</p></div>
-        <button class="card-close" id="card-close" aria-label="Cerrar">×</button>
+        <div><h2 class="card-country-name">${_esc(name)}</h2><p class="card-meta">${isEnglish() ? 'No cultural information is registered for this territory yet.' : 'Territorio sin datos culturales registrados aún.'}</p></div>
+        <button class="card-close" id="card-close" aria-label="${isEnglish() ? 'Close' : 'Cerrar'}">×</button>
       </div>
       <div class="card-section">
-        <p>Este territorio todavía no tiene una ficha cultural en Origen Cultural. Puedes ser el primero en registrar un perfil desde aquí.</p>
-        <a href="#registro" class="btn" style="min-height:44px;padding:0 18px;font-size:11px;margin-top:16px;display:inline-flex">Registrar perfil cultural</a>
+        <p>${isEnglish() ? 'This territory does not have a cultural profile yet. You can be the first to create one here.' : 'Este territorio todavía no tiene una ficha cultural en Origen Cultural. Puedes ser el primero en registrar un perfil desde aquí.'}</p>
+        <a href="#registro" class="btn" style="min-height:44px;padding:0 18px;font-size:11px;margin-top:16px;display:inline-flex">${isEnglish() ? 'Create a cultural profile' : 'Registrar perfil cultural'}</a>
       </div>
     </div>`;
     document.getElementById('card-close')?.addEventListener('click', () => {
@@ -776,27 +851,24 @@ window.MundoCultural = (() => {
     _geoData = geo;
 
     const points = getCreatorPoints();
-    const territoryLabels = Object.values(CULTURAL_DB).map(d => ({
-      lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
-    }));
 
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
-      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-blue-marble.jpg')
+      .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
       .lineHoverPrecision(0)
-      .atmosphereColor('rgba(200,169,126,0.58)')
-      .atmosphereAltitude(0.20)
+      .atmosphereColor('#d6b783')
+      .atmosphereAltitude(0.18)
       .polygonsData(_geoData)
       .polygonAltitude(altitude)
       .polygonCapColor(capColor)
       .polygonSideColor(() => 'rgba(200,169,126,0.08)')
-      .polygonStrokeColor(() => 'rgba(255,255,255,0.18)')
+      .polygonStrokeColor(feat => matchKey(feat) ? 'rgba(230,207,170,0.62)' : 'rgba(210,220,235,0.14)')
       .polygonLabel(feat => {
         const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
         const key = matchKey(feat);
-        return `<div class="globe-tooltip">${feat === _selected ? '◈ ' : key ? '⭐ ' : ''}${n}</div>`;
+        return `<div class="globe-tooltip">${feat === _selected ? '◈ ' : key ? '⭐ ' : ''}${_esc(n)}</div>`;
       })
       .onPolygonHover(poly => {
         if (_destroyed) return;
@@ -810,7 +882,7 @@ window.MundoCultural = (() => {
         _globe.polygonCapColor(capColor);
         const key = matchKey(poly);
         if (key) renderCard(key);
-        else     unknownCountryCard(poly.properties?.ADMIN || poly.properties?.name || 'País');
+        else     unknownCountryCard(poly.properties?.ADMIN || poly.properties?.name || (isEnglish() ? 'Country' : 'País'));
         _globe.controls().autoRotate = false;
         _rotating = false;
         updatePauseBtn();
@@ -822,20 +894,8 @@ window.MundoCultural = (() => {
       .pointAltitude('size')
       .pointRadius(0.35)
       .pointColor('color')
-      .pointLabel(d => `<div class="globe-tooltip">🏛 ${d.label}</div>`)
+      .pointLabel(d => `<div class="globe-tooltip">🏛 ${_esc(d.label)}</div>`)
       .onPointClick(d => {
-        if (d.countryKey) selectCountry(d.countryKey);
-      })
-      .labelsData(territoryLabels)
-      .labelLat('lat')
-      .labelLng('lng')
-      .labelText('text')
-      .labelColor(() => '#F3E4CF')
-      .labelSize(0.72)
-      .labelDotRadius(0.18)
-      .labelDotOrientation(() => 'bottom')
-      .labelAltitude(0.035)
-      .onLabelClick(d => {
         if (d.countryKey) selectCountry(d.countryKey);
       })
       (el);
@@ -865,17 +925,18 @@ window.MundoCultural = (() => {
 
   /* ── FALLBACK: SIMPLE CARD GRID ─────────────────────────────── */
   function initFallback(el) {
+    const english = isEnglish();
     el.innerHTML = `<div class="fallback-globe">
       <div class="fallback-banner">
         <span class="globe-icon">🌍</span>
-        <p>Vista simplificada · Tu dispositivo no soporta el globo 3D o la conexión es limitada</p>
+        <p>${isEnglish() ? 'Simplified view · Your device does not support the 3D globe or your connection is limited' : 'Vista simplificada · Tu dispositivo no soporta el globo 3D o la conexión es limitada'}</p>
       </div>
       <div class="fallback-grid">
         ${Object.values(CULTURAL_DB).map(c => `
           <button class="fallback-country-btn" data-fc="${c.key}">
             <span class="fallback-flag">${c.flag}</span>
-            <strong>${c.name}</strong>
-            <span>${c.continent}</span>
+            <strong>${_esc(localizedCountryName(c))}</strong>
+            <span>${_esc(localizedContinent(c))}</span>
           </button>`).join('')}
       </div>
     </div>`;
@@ -985,7 +1046,7 @@ window.MundoCultural = (() => {
     init, destroy, toggleRotation, resetView, zoom, focusContinent, selectCountry,
     /* shared primitives for HeroGlobe */
     _db: CULTURAL_DB, _matchKey: matchKey,
-    _loadGeo: loadGeo, _loadGlobeGL: loadGlobeGL, _hasWebGL: hasWebGL
+    _loadGeo: loadGeo, _loadGlobeGL: loadGlobeGL, _hasWebGL: hasWebGL, _localizeStory: localizedStory, _countryName: localizedCountryName, _continentName: localizedContinent, _isEnglish: isEnglish
   };
 })();
 
@@ -995,6 +1056,12 @@ window.MundoCultural = (() => {
 ═══════════════════════════════════════════════════════════════ */
 window.HeroGlobe = (() => {
   'use strict';
+
+  function hEsc(value) {
+    const node = document.createElement('div');
+    node.textContent = String(value ?? '');
+    return node.innerHTML;
+  }
 
   const MC         = () => window.MundoCultural;   // lazy ref para evitar orden de carga
   const matchKey   = feat => MC()._matchKey(feat);
@@ -1014,43 +1081,32 @@ window.HeroGlobe = (() => {
   /* colors */
   function hCap(feat) {
     const key = matchKey(feat);
-    if (feat === _selected) return 'rgba(200,169,126,0.95)';
-    if (feat === _hovered)  return 'rgba(200,169,126,0.55)';
-    if (key)                return 'rgba(200,169,126,0.22)';
-    return 'rgba(7,10,13,0.30)';
+    if (feat === _selected) return 'rgba(200,169,126,0.82)';
+    if (feat === _hovered)  return 'rgba(230,207,170,0.45)';
+    if (key)                return 'rgba(200,169,126,0.16)';
+    // Leave the land texture visible: opaque dark polygon caps were hiding it.
+    return 'rgba(18,18,18,0.04)';
   }
   function hAlt(feat) { return feat === _hovered ? 0.014 : 0.006; }
-
-  /* stats for popup */
-  function stats(key) {
-    const db = getDB()[key];
-    if (!db) return { creators: 0, posts: 0 };
-    const allC     = window.ORIGEN_DATA?.creators || [];
-    const seedC    = allC.filter(c => db.creatorIds.includes(c.id)).length;
-    const users    = (() => { try { return Object.values(JSON.parse(localStorage.getItem('oc-users') || '{}')); } catch { return []; } })();
-    const userC    = users.filter(u => (u.location || '').toLowerCase().includes(db.name.toLowerCase())).length;
-    const seedP    = (window.ORIGEN_DATA?.posts || []).filter(p => db.creatorIds.includes(p.authorId)).length;
-    const userP    = (() => { try { return JSON.parse(localStorage.getItem('oc-posts') || '[]'); } catch { return []; } })().filter(p => db.creatorIds.includes(p.authorId)).length;
-    return { creators: seedC + userC, posts: seedP + userP };
-  }
 
   /* popup */
   function showPopup(key) {
     if (!_popup) return;
     const db = getDB()[key];
     if (!db) { hidePopup(); return; }
-    const { creators, posts } = stats(key);
+    const story = MC()._localizeStory(db.microhistorias?.[0]);
+    const english = MC()._isEnglish();
+    const countryName = MC()._countryName(db);
+    const continentName = MC()._continentName(db);
     _popup.innerHTML = `
-      <button class="hpop-close" id="hpop-close">×</button>
-      <div class="hpop-flag">${db.flag}</div>
-      <h3 class="hpop-name">${db.name}</h3>
-      <p class="hpop-cont">${db.continent}</p>
-      <div class="hpop-stats">
-        <div class="hpop-stat"><strong>${creators || db.creatorIds.length}</strong><span>Agentes</span></div>
-        <div class="hpop-stat"><strong>${posts}</strong><span>Publicaciones</span></div>
-        <div class="hpop-stat"><strong>${db.microhistorias?.length || 0}</strong><span>Historias</span></div>
+      <button class="hpop-close" id="hpop-close" aria-label="${english ? 'Close story' : 'Cerrar historia'}">×</button>
+      <div class="hpop-heading"><span class="hpop-flag" aria-hidden="true">${hEsc(db.flag)}</span>
+        <div><p class="hpop-cont">${hEsc(continentName)}</p><h3 class="hpop-name">${hEsc(countryName)}</h3></div>
       </div>
-      <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">Explorar cultura →</a>`;
+      ${story ? `<p class="hpop-kicker">${english ? 'Did you know…?' : '¿Sabías que…?'} · ${hEsc(story.cat)}</p>
+        <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">${english ? 'Source:' : 'Fuente:'} ${hEsc(story.src)}</p>`
+        : `<p class="hpop-fact">${english ? 'A cultural story for this territory is being prepared.' : 'Estamos preparando una historia cultural para este territorio.'}</p>`}
+      <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">${english ? 'Explore its culture' : 'Explorar cultura'} →</a>`;
     _popup.hidden = false;
     document.getElementById('hpop-close')?.addEventListener('click', () => {
       hidePopup(); _selected = null;
@@ -1066,12 +1122,13 @@ window.HeroGlobe = (() => {
 
   /* low-perf fallback */
   function initFallback(el) {
+    const english = MC()._isEnglish();
     el.innerHTML = `<div class="hero-globe-fallback">
       <div class="hgf-emoji">🌍</div>
-      <p>Explora el mundo cultural</p>
+      <p>${english ? 'Explore the Cultural World' : 'Explora el mundo cultural'}</p>
       <div class="hgf-countries">
-        ${['🇪🇨 Ecuador','🇦🇺 Australia','🇵🇪 Perú','🇧🇴 Bolivia','🇲🇽 México','🇯🇵 Japón']
-          .map(c => `<span class="hgf-tag">${c}</span>`).join('')}
+        ${Object.values(getDB()).map(c => `${c.flag} ${MC()._countryName(c)}`)
+          .map(c => `<span class="hgf-tag">${hEsc(c)}</span>`).join('')}
       </div>
     </div>`;
   }
@@ -1092,27 +1149,24 @@ window.HeroGlobe = (() => {
       if (_destroyed) return;
       _geoData = geo;
       container.innerHTML = '';
-      const territoryLabels = Object.values(getDB()).map(d => ({
-        lat: d.lat, lng: d.lng, text: `${d.flag} ${d.name}`, countryKey: d.key
-      }));
 
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
-        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-blue-marble.jpg')
+        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/night-sky.png')
         .lineHoverPrecision(0)
-        .atmosphereColor('rgba(200,169,126,0.58)')
-        .atmosphereAltitude(0.20)
+        .atmosphereColor('#d6b783')
+        .atmosphereAltitude(0.18)
         .polygonsData(_geoData)
         .polygonAltitude(hAlt)
         .polygonCapColor(hCap)
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
-        .polygonStrokeColor(() => 'rgba(255,255,255,0.16)')
+        .polygonStrokeColor(feat => matchKey(feat) ? 'rgba(230,207,170,0.62)' : 'rgba(210,220,235,0.14)')
         .polygonLabel(feat => {
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
-          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${n}</div>`;
+          return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${hEsc(n)}</div>`;
         })
         .onPolygonHover(poly => {
           if (_destroyed) return;
@@ -1136,25 +1190,6 @@ window.HeroGlobe = (() => {
           _rotating = false;
           _updatePauseBtn();
         })
-        .labelsData(territoryLabels)
-        .labelLat('lat')
-        .labelLng('lng')
-        .labelText('text')
-        .labelColor(() => '#F3E4CF')
-        .labelSize(0.66)
-        .labelDotRadius(0.16)
-        .labelDotOrientation(() => 'bottom')
-        .labelAltitude(0.035)
-        .onLabelClick(d => {
-          const db = getDB();
-          if (!d.countryKey || !db[d.countryKey]) return;
-          _selected = null;
-          showPopup(d.countryKey);
-          _globe.pointOfView({ lat: db[d.countryKey].lat, lng: db[d.countryKey].lng, altitude: 2.0 }, 700);
-          _globe.controls().autoRotate = false;
-          _rotating = false;
-          _updatePauseBtn();
-        })
         (container);
 
       _globe.controls().autoRotate      = !prefersReduced;
@@ -1164,6 +1199,7 @@ window.HeroGlobe = (() => {
       _globe.controls().minDistance      = 130;
       _globe.controls().maxDistance      = 460;
       _rotating = !prefersReduced;
+      _updatePauseBtn();
 
       /* centered to show Americas + Europe nicely */
       _globe.pointOfView({ lat: 5, lng: -20, altitude: 2.1 }, 0);

@@ -2,9 +2,17 @@
   "name": "origen-cultural-mvp",
   "version": "1.0.0",
   "private": true,
-  "description": "MVP social cultural de Origen Cultural, listo para GitHub Pages.",
+  "description": "ORIGEN Cultural controlled-beta release candidate.",
   "scripts": {
     "start": "python3 -m http.server 4173",
-    "check": "node --check app.js && node --check data.js && node --check service-worker.js"
+    "check": "node --check app.js && node --check supabase-client.js && node --check data.js && node --check trust.js && node --check mundo.js && node --check service-worker.js && node tests/smoke.mjs && node tests/client-ownership.mjs && node tests/cultural-media-cache.mjs && node tests/media-upload-account-isolation.mjs && node tests/post-publication-commit.mjs && node tests/post-submit-error-recovery.mjs && node tests/auth-session.mjs && node tests/staging-access.mjs && node tests/staging-coverage.mjs && node tests/account-write-isolation.mjs && node tests/moderation-inbox.mjs && node tests/moderation-role-revocation.mjs && node tests/moderation-review-contract.mjs && node tests/protected-moderation-review.mjs && node tests/protected-publication-intake.mjs && node tests/private-publishing-release-gate.mjs && node tests/public-story-read.mjs && node tests/staging-build-isolation.mjs && node tests/staging-auth-qa-safety.mjs && node tests/visual-preview-isolation.mjs && node tests/staging-audit-policy.mjs && node tests/staging-pwa-isolation.mjs && node tests/pages-staging-auth.mjs",
+    "build:static": "node scripts/build-static.mjs",
+    "check:release": "npm run check && node --check scripts/build-static.mjs && node --check scripts/verify-staging.mjs && npm run build:static && npm run preflight:staging:schema:strict",
+    "audit:staging": "node scripts/verify-staging.mjs",
+    "preflight:staging:schema": "node scripts/staging-schema-preflight.mjs",
+    "preflight:staging:schema:strict": "node scripts/staging-schema-preflight.mjs --strict",
+    "qa:staging:auth:readonly": "node scripts/staging-auth-qa-readonly.mjs",
+    "build:visual-preview": "ORIGEN_VISUAL_PREVIEW_ONLY=1 node scripts/build-static.mjs",
+    "audit:staging:coverage": "node scripts/audit-staging-coverage.mjs"
   }
 }
