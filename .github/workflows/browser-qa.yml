@@ -30,7 +30,8 @@ concurrency:
 
 jobs:
   chromium-smoke:
-    runs-on: ubuntu-latest
+    # Pin to a supported runner until the Playwright Chromium version is upgraded.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
