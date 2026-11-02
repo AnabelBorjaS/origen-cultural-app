@@ -2898,10 +2898,13 @@
     const previousPassword = document.querySelector('#reg-basic [name="password"]');
     if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
     const confirmationInput = document.querySelector('#reg-basic [name="passwordConfirm"]');
-    if (confirmationInput) confirmationInput.addEventListener('input', () => {
-      confirmationInput.setCustomValidity(confirmationInput.value && confirmationInput.value !== document.querySelector('#reg-basic [name="password"]')?.value
+    const validateConfirmation = () => {
+      if (!confirmationInput) return;
+      confirmationInput.setCustomValidity(confirmationInput.value && confirmationInput.value !== previousPassword?.value
         ? (state.lang === 'es' ? 'Las contraseñas no coinciden.' : 'Passwords do not match.') : '');
-    });
+    };
+    confirmationInput?.addEventListener('input', validateConfirmation);
+    previousPassword?.addEventListener('input', validateConfirmation);
     if (state.regStep === 2) {
       bindLocationSelects(document.getElementById('reg-basic'));
     }
