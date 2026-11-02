@@ -199,8 +199,12 @@
     if (error) throw error;
   }
 
-  async function updatePassword(password) {
-    const { error } = await client.auth.updateUser({ password });
+  async function updatePassword(password, currentPassword = null) {
+    // For a signed-in password change, require the existing credential.
+    // Password recovery instead requires a verified Auth recovery session.
+    const changes = { password };
+    if (currentPassword !== null) changes.current_password = currentPassword;
+    const { error } = await client.auth.updateUser(changes);
     if (error) throw error;
   }
 
