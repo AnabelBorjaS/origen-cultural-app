@@ -1694,15 +1694,22 @@
       let index = Number(input.dataset.activeIndex || -1);
       if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
         event.preventDefault();
-        index = (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+        index = index < 0
+          ? (event.key === 'ArrowDown' ? 0 : options.length - 1)
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
         input.dataset.activeIndex = String(index);
         options.forEach((option, i) => {
           option.setAttribute('aria-selected', i === index ? 'true' : 'false');
           if (i === index) input.setAttribute('aria-activedescendant', option.id);
         });
-      } else if (event.key === 'Enter' && options.length) {
+      } else if (event.key === 'Enter') {
+        // Selecting a country/city must not also submit the wizard's current step.
         event.preventDefault();
-        options[Number(input.dataset.activeIndex || 0)]?.click();
+        event.stopPropagation();
+        if (options.length) {
+          const activeIndex = Number(input.dataset.activeIndex);
+          options[Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < options.length ? activeIndex : 0]?.click();
+        }
       } else if (event.key === 'Escape') closeList(input, list);
     });
     const showCountries = () => {
