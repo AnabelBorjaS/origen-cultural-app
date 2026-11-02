@@ -22,7 +22,13 @@ const pages = [
   { name: '04-mundo-cultural-movil', route: 'mundo', width: 390, height: 844, globe: 'world' },
   { name: '05-explorar-comunidades', route: 'explorar', width: 1440, height: 950 },
   { name: '06-registro-beta-movil', route: 'registro', width: 390, height: 844 },
-  { name: '07-centro-de-confianza', route: 'confianza', width: 1440, height: 950 }
+  { name: '07-centro-de-confianza', route: 'confianza', width: 1440, height: 950 },
+  // Screenshots of real rendered controls, never a real account or secret.
+  { name: '08-registro-contrasenas-movil', route: 'registro', width: 390, height: 844, capture: 'registration-passwords' },
+  { name: '09-ojito-contrasena-movil', route: 'registro', width: 390, height: 844, capture: 'registration-eye' },
+  { name: '10-recuperar-acceso-movil', route: 'recuperar', width: 390, height: 844 },
+  { name: '11-restablecer-contrasena-movil', route: 'restablecer', width: 390, height: 844 },
+  { name: '12-ayuda-contrasenas-movil', route: 'ayuda-contrasena', width: 390, height: 844 }
 ];
 try {
   for (const spec of pages) {
@@ -59,6 +65,18 @@ try {
         }
         // Let the globe settle so its actual appearance is visible.
         await page.waitForTimeout(1000);
+      }
+      if (spec.capture === 'registration-passwords' || spec.capture === 'registration-eye') {
+        // Display only the internal disconnected signup UI; no form submission.
+        await page.locator('[data-atype="explorer"]').click();
+        await page.locator('#reg-next').click();
+        await page.locator('#register-password-confirm').waitFor();
+        if (spec.capture === 'registration-eye') {
+          // Clearly synthetic example, never an actual credential or API request.
+          await page.locator('#register-password').fill('SoloEjemploNoUsar123!');
+          await page.locator('[aria-controls="register-password"]').click();
+        }
+        await page.locator('#register-password-confirm').scrollIntoViewIfNeeded();
       }
       const title = await page.title();
       const mainText = (await page.locator('#main-content').innerText()).slice(0, 500);
