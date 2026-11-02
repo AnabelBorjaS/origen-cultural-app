@@ -1370,8 +1370,15 @@ async function passwordVisibilityChecks() {
       'Signup eye must not reveal the confirmation field automatically');
     await page.locator('[aria-controls="register-password"]').click();
 
-    await page.locator('#language-toggle').click();
-    check(await page.locator('[aria-controls="register-password"]').getAttribute('aria-label') === 'Show password',
+    // Mobile navigation can hide the desktop language toggle. Verify English
+    // by loading the saved preference in a new route, not clicking hidden UI.
+    await page.evaluate(() => {
+      localStorage.setItem('origen-lang', 'en');
+      location.hash = '#login';
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('[aria-controls="login-password"]').waitFor();
+    check(await page.locator('[aria-controls="login-password"]').getAttribute('aria-label') === 'Show password',
       'Password visibility control must translate into English');
 
     check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
