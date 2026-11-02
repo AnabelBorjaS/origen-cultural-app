@@ -266,6 +266,13 @@ async function mobileChecks() {
   const password = page.locator('#reg-basic [name="password"]');
   await password.fill('ExampleSecure2026!');
   await page.locator('#reg-basic [name="passwordConfirm"]').fill('ExampleSecure2026!');
+  // A mismatched edit creates a field error. Restoring the original password
+  // must clear that error without forcing users to retype confirmation.
+  await password.fill('DifferentSecure2026!');
+  await page.locator('#reg-next').click();
+  check(/(?:paso|step)\s+2\b/i.test(await page.locator('.wizard-label').innerText()),
+    'Mismatched password must not advance registration');
+  await password.fill('ExampleSecure2026!');
   await password.press('Enter');
   await page.locator('#reg-avatar-input').waitFor({ state: 'attached', timeout: 8000 });
   const currentSignupStep = await page.locator('.wizard-label').innerText();
