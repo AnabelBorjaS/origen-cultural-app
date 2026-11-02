@@ -244,15 +244,22 @@ async function mobileChecks() {
   const city = page.locator('#reg-basic [name="cityGeonameId"]');
   const countrySearch = page.locator('#location-country-search');
   const citySearch = page.locator('#location-city-search');
+  // Enter selects a suggestion without leaking to the wizard's Enter-to-next
+  // listener; it must also work when the user has not arrowed through options.
   await countrySearch.fill('Australia');
-  await page.getByRole('option', { name: 'Australia', exact: true }).click();
-  check(await country.inputValue() === 'Australia', 'Country search should select Australia');
+  await page.getByRole('option', { name: 'Australia', exact: true }).waitFor();
+  await countrySearch.press('Enter');
+  check(await country.inputValue() === 'Australia', 'Country search Enter should select Australia');
+  check(/(?:paso|step)\s+2\b/i.test(await page.locator('.wizard-label').innerText()),
+    'Country suggestion Enter must not advance the registration wizard');
   await citySearch.fill('Brisbane');
   const brisbaneOption = page.locator('#location-city-options [role="option"]').filter({ hasText: /^Brisbane/ }).first();
   check(await brisbaneOption.count() > 0, 'City search should find Brisbane after selecting Australia');
-  await brisbaneOption.click();
-  check(Boolean(await city.inputValue()), 'City search should retain the selected Brisbane geoname ID');
+  await citySearch.press('Enter');
+  check(Boolean(await city.inputValue()), 'City search Enter should retain the selected Brisbane geoname ID');
   check((await citySearch.inputValue()).startsWith('Brisbane'), 'City search should show the selected Brisbane city');
+  check(/(?:paso|step)\s+2\b/i.test(await page.locator('.wizard-label').innerText()),
+    'City suggestion Enter must not advance the registration wizard');
 
   await page.locator('#reg-basic [name="name"]').fill('Artisana Yaruquí');
   await page.locator('#reg-basic [name="email"]').fill('piloto@qa.invalid');
