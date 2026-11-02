@@ -1948,6 +1948,7 @@
           <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Entrar' : 'Sign in'}</button></div>
         </form>
         <p class="auth-alt"><a href="#recuperar">${es ? '¿Olvidaste tu contraseña?' : 'Forgot your password?'}</a></p>
+        <p class="auth-alt"><a href="#ayuda-contrasena">${es ? 'Ayuda con tu contraseña' : 'Password help'}</a></p>
         <p class="auth-alt">${es ? '¿No tienes cuenta?' : "Don't have an account?"} <a href="#registro">${es ? 'Crear perfil cultural' : 'Create cultural profile'}</a></p>
         <p class="auth-alt"><a href="#explorar" style="color:#888">${es ? 'Explorar sin cuenta' : 'Explore without an account'} →</a></p>
       </div>
@@ -1967,6 +1968,7 @@
         <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Enviar enlace' : 'Send reset link'}</button></div>
       </form>
       <p class="auth-alt"><a href="#login">← ${es ? 'Volver a iniciar sesión' : 'Back to sign in'}</a></p>
+      <p class="auth-alt"><a href="#ayuda-contrasena">${es ? '¿Necesitas ayuda?' : 'Need help?'}</a></p>
     </div></div>`;
   }
 
@@ -1982,9 +1984,39 @@
         <div id="reset-status" class="form-field full" role="status" aria-live="polite"></div>
         <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Guardar nueva contraseña' : 'Save new password'}</button></div>
       </form>
+      <p class="auth-alt"><a href="#ayuda-contrasena">${es ? 'Ayuda para recuperar el acceso' : 'Help recovering access'}</a></p>
     </div></div>`;
   }
 
+
+
+  function passwordHelpView() {
+    const es = state.lang === 'es';
+    const L = (a, b) => es ? a : b;
+    return `<section class="section">
+      <div class="section-inner" style="max-width:760px">
+        <p class="eyebrow">${L('AYUDA Y SEGURIDAD DE LA CUENTA','ACCOUNT HELP & SECURITY')}</p>
+        <h1>${L('Contraseñas y acceso a ORIGEN','Passwords and access to ORIGEN')}</h1>
+        <h2>${L('¿Olvidaste tu contraseña?','Forgot your password?')}</h2>
+        <ol>
+          <li>${L('Abre Recuperar contraseña e introduce el correo de tu cuenta.', 'Open Password recovery and enter your account email.')}</li>
+          <li>${L('Revisa tu bandeja de entrada y spam. El aviso no confirma si ese correo tiene cuenta.', 'Check your inbox and spam. The notice never confirms whether an account exists.')}</li>
+          <li>${L('Abre el enlace recibido únicamente si corresponde a una solicitud que hiciste y verifica que el sitio sea oficial y HTTPS.', 'Only open a link for a request you made, and verify that the destination is an official HTTPS site.')}</li>
+          <li>${L('Escribe tu contraseña nueva dos veces; pulsa el ojito si necesitas revisar caracteres y guárdala.', 'Enter your new password twice; use the eye icon to check characters if needed, then save.')}</li>
+          <li>${L('Si el enlace venció, falla o no llegó, solicita otro desde Recuperar contraseña. Nunca compartas contraseñas ni códigos.', 'If the link expired, failed or did not arrive, request another one. Never share passwords or codes.')}</li>
+        </ol>
+        <p><a class="btn" href="#recuperar">${L('Recuperar contraseña','Recover password')}</a></p>
+        <h2>${L('¿Quieres cambiarla mientras estás conectado?','Want to change it while signed in?')}</h2>
+        <p>${L('Abre Mi perfil → Editar perfil → Seguridad: cambiar contraseña. Necesitarás escribir tu contraseña actual, la nueva y su confirmación.', 'Open My profile → Edit profile → Security: change password. You will need your current password, new password and confirmation.')}</p>
+        <p><a href="#cambiar-contrasena" style="text-decoration:underline">${L('Ir a cambiar contraseña','Change password')}</a></p>
+        <h2>${L('Consejos para proteger tu cuenta','Keep your account secure')}</h2>
+        <p>${L('Usa una contraseña larga y única, preferentemente guardada en un gestor de contraseñas. El ojito solo muestra el texto en tu pantalla: úsalo en privado.', 'Use a long, unique password, preferably stored in a password manager. The eye only reveals text on your screen: use it privately.')}</p>
+        <p>${L('ORIGEN nunca te solicitará tu contraseña por correo, chat ni teléfono. No compartas enlaces de recuperación.', 'ORIGEN will never ask for your password by email, chat or phone. Never share recovery links.')}</p>
+        <p>${L('Si sospechas acceso no autorizado o no controlas tu correo, contacta al soporte oficial sin enviar datos secretos:', 'If you suspect unauthorised access or cannot access your email, contact official support without sending sensitive credentials:')} <a href="mailto:info.origencultural@gmail.com">info.origencultural@gmail.com</a>.</p>
+        <p class="form-note">${L('La recuperación requiere que el correo y las redirecciones estén configurados y probados. Esta beta aún no ha completado la validación de extremo a extremo.', 'Recovery requires verified email delivery and approved redirects. This beta has not yet completed end-to-end validation.')}</p>
+      </div>
+    </section>`;
+  }
 
   function changePasswordView() {
     const es = state.lang === 'es';
@@ -2405,6 +2437,7 @@
     else if (route === 'recuperar')               html = recoverPasswordView();
     else if (route === 'restablecer')             html = resetPasswordView();
     else if (route === 'cambiar-contrasena')       html = changePasswordView();
+    else if (route === 'ayuda-contrasena')         html = passwordHelpView();
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
     else if (route === 'confianza')                html = trustCenterView();
@@ -2956,10 +2989,10 @@
         // A recovery link must produce an authenticated Supabase session.
         // Merely navigating to #restablecer never grants permission to reset.
         const { data, error } = await window.ORIGEN_API.client.auth.getUser();
-        if (error || !data?.user) {
+        if (error || !data?.user || !window.ORIGEN_API.hasPasswordRecoverySession?.()) {
           throw new Error(state.lang === 'es'
-            ? 'Enlace inválido, vencido o sesión no verificada. Solicita uno nuevo desde Recuperar contraseña.'
-            : 'Invalid or expired link, or no verified session. Request a new link from Password recovery.');
+            ? 'Enlace inválido, vencido o sesión de recuperación no verificada. Solicita uno nuevo desde Recuperar contraseña.'
+            : 'Invalid or expired link, or no verified recovery session. Request a new link from Password recovery.');
         }
         await window.ORIGEN_API.updatePassword(form.elements.password.value);
         form.reset();
