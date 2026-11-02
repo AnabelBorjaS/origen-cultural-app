@@ -27,6 +27,31 @@ img { display: block; max-width: 100%; }
 button { cursor: pointer; }
 hr { border: 0; border-top: 1px solid var(--grey); margin: 20px 0; }
 
+/* Accessible password reveal controls: keyboard, screen reader and 44px touch targets. */
+.password-control { position: relative; width: 100%; }
+.password-control > input { width: 100%; padding-right: 54px !important; }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--black);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.password-toggle:hover { background: var(--grey-2); }
+.password-toggle .password-eye-hide { display: none; }
+.password-toggle[aria-pressed="true"] .password-eye-show { display: none; }
+.password-toggle[aria-pressed="true"] .password-eye-hide { display: block; }
+.password-toggle:focus-visible { outline: 3px solid var(--sand); outline-offset: 2px; }
+
 /* ── SKIP LINK ─────────────────────────────────────────────── */
 .skip-link { position: fixed; z-index: 999; top: 8px; left: 8px; padding: 10px 14px; background: var(--black); color: var(--white); transform: translateY(-150%); }
 .skip-link:focus { transform: translateY(0); }
