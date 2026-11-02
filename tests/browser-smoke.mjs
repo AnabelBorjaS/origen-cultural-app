@@ -1324,8 +1324,68 @@ async function registrationUploadFailureChecks() {
   }
 }
 
+async function passwordVisibilityChecks() {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+  try {
+    await page.goto(baseURL + '#login', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const loginPassword = page.locator('#login-password');
+    const loginEye = page.locator('[aria-controls="login-password"]');
+    await loginEye.waitFor();
+    check(await loginPassword.getAttribute('type') === 'password', 'Login password must be masked by default');
+    check(await loginEye.getAttribute('aria-label') === 'Mostrar contraseña', 'Eye control needs an accessible Spanish label');
+    await loginPassword.fill('NotAnActualUserPassword42!');
+    await loginEye.click();
+    check(await loginPassword.getAttribute('type') === 'text', 'Login eye should reveal its field');
+    check(await loginEye.getAttribute('aria-pressed') === 'true', 'Eye should expose the visible state to accessibility tools');
+    check(await loginPassword.inputValue() === 'NotAnActualUserPassword42!', 'Toggling must preserve password text');
+    await loginEye.click();
+    check(await loginPassword.getAttribute('type') === 'password', 'Login eye should mask its field again');
+    check(await loginEye.getAttribute('aria-label') === 'Mostrar contraseña', 'Login eye should restore original accessible label');
+
+    await page.evaluate(() => { location.hash = '#restablecer'; });
+    await page.locator('#reset-password-form').waitFor();
+    const resetPass = page.locator('#reset-password');
+    const resetConfirm = page.locator('#reset-password-confirm');
+    check(await resetPass.getAttribute('type') === 'password' && await resetConfirm.getAttribute('type') === 'password',
+      'Reset password and confirmation must both be masked');
+    await resetPass.fill('NewSamplePassword2026!');
+    await resetConfirm.fill('NotMatching2026!');
+    check(await resetConfirm.evaluate(el => !el.checkValidity()), 'Reset confirmation mismatch must be rejected');
+    await resetConfirm.fill('NewSamplePassword2026!');
+    check(await resetConfirm.evaluate(el => el.checkValidity()), 'Matching reset confirmation must be accepted');
+    await page.locator('[aria-controls="reset-password-confirm"]').click();
+    check(await resetConfirm.getAttribute('type') === 'text' && await resetPass.getAttribute('type') === 'password',
+      'Reset confirmation eye reveals only its own field');
+    await page.locator('[aria-controls="reset-password-confirm"]').click();
+
+    await page.evaluate(() => { location.hash = '#registro'; });
+    await page.locator('[data-atype="explorer"]').click();
+    await page.locator('#reg-next').click();
+    await page.locator('#register-password').waitFor();
+    check(await page.locator('[data-password-toggle]').count() === 2,
+      'Signup requires independent eye controls for password and confirmation');
+    await page.locator('[aria-controls="register-password"]').click();
+    check(await page.locator('#register-password').getAttribute('type') === 'text' &&
+      await page.locator('#register-password-confirm').getAttribute('type') === 'password',
+      'Signup eye must not reveal the confirmation field automatically');
+    await page.locator('[aria-controls="register-password"]').click();
+
+    await page.locator('#language-toggle').click();
+    check(await page.locator('[aria-controls="register-password"]').getAttribute('aria-label') === 'Show password',
+      'Password visibility control must translate into English');
+
+    check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      'Mobile password eye must not overflow viewport');
+  } catch (error) {
+    failures.push('Password visibility regression: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+}
+
 try {
   await desktopChecks();
+  await passwordVisibilityChecks();
   await stagingAuthRedirectChecks();
   await mobileChecks();
   await publicCulturalStoryChecks();
