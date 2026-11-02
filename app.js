@@ -1615,6 +1615,7 @@
           <button class="btn" type="submit" style="width:100%">${L('Guardar cambios','Save changes')}</button>
         </div>
       </form>
+      <a href="#cambiar-contrasena" class="btn secondary" style="display:block;text-align:center;margin-top:16px">${L('Seguridad: cambiar contraseña','Security: change password')}</a>
       <button id="logout-btn" class="btn secondary" style="width:100%;margin-top:16px;color:#666;border-color:#ddd">${L('Cerrar sesión','Sign out')}</button>
     </div>`;
   }
@@ -1813,8 +1814,8 @@
       body = `<form class="form-grid" id="reg-basic">
         <div class="form-field"><label>${L('Nombre completo *','Full name *')}</label><input name="name" required autocomplete="name" value="${esc(d.name || '')}"></div>
         <div class="form-field"><label>${L('Correo electrónico *','Email address *')}</label><input type="email" name="email" required autocomplete="email" value="${esc(d.email || '')}"></div>
-        <div class="form-field"><label>${L('Contraseña *','Password *')}</label><input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
-        <div class="form-field"><label>${L('Confirma tu contraseña *','Confirm password *')}</label><input type="password" name="passwordConfirm" required minlength="8" autocomplete="new-password"></div>
+        <div class="form-field"><label for="register-password">${L('Contraseña *','Password *')}</label>${passwordFieldMarkup('password', 'register-password', 'new-password', 8)}</div>
+        <div class="form-field"><label for="register-password-confirm">${L('Confirma tu contraseña *','Confirm password *')}</label>${passwordFieldMarkup('passwordConfirm', 'register-password-confirm', 'new-password', 8)}</div>
         ${locationFieldsMarkup(d, L, true)}
       </form>`;
     } else if (step === 3) {
@@ -1881,6 +1882,53 @@
     </div>`;
   }
 
+
+  // Credentials remain in the input element; the eye toggle only changes
+  // the local display type, never storage, transport, validation or logging.
+  function passwordFieldMarkup(name, id, autocomplete, minLength = 0) {
+    const es = state.lang === 'es';
+    const show = es ? 'Mostrar contraseña' : 'Show password';
+    return `<div class="password-control">
+      <input id="${id}" name="${name}" type="password" required${minLength ? ` minlength="${minLength}"` : ''} autocomplete="${autocomplete}">
+      <button type="button" class="password-toggle" data-password-toggle aria-controls="${id}" aria-pressed="false" aria-label="${show}" title="${show}">
+        <svg class="password-eye-show" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 12s3.7-6 10-6 10 6 10 6-3.7 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        <svg class="password-eye-hide" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3l18 18M10.6 6.1A11 11 0 0 1 12 6c6.3 0 10 6 10 6a17 17 0 0 1-3.1 3.6M6.2 6.9C3.5 8.7 2 12 2 12s3.7 6 10 6a10.8 10.8 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+        </svg>
+      </button>
+    </div>`;
+  }
+
+  function bindPasswordVisibility() {
+    document.querySelectorAll('[data-password-toggle]').forEach(button => {
+      const input = document.getElementById(button.getAttribute('aria-controls'));
+      if (!input) return;
+      button.addEventListener('click', () => {
+        const visible = input.type === 'password';
+        input.type = visible ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(visible));
+        button.setAttribute('aria-label', state.lang === 'es'
+          ? (visible ? 'Ocultar contraseña' : 'Mostrar contraseña')
+          : (visible ? 'Hide password' : 'Show password'));
+        button.title = button.getAttribute('aria-label');
+      });
+    });
+  }
+
+  function bindPasswordConfirmation(form) {
+    const password = form?.elements?.password;
+    const confirmation = form?.elements?.passwordConfirm;
+    if (!password || !confirmation) return;
+    const check = () => {
+      confirmation.setCustomValidity(confirmation.value && confirmation.value !== password.value
+        ? (state.lang === 'es' ? 'Las contraseñas no coinciden.' : 'Passwords do not match.') : '');
+    };
+    password.addEventListener('input', check);
+    confirmation.addEventListener('input', check);
+  }
+
   /* ── LOGIN ───────────────────────────────────────────────── */
   function loginView() {
     const es = state.lang === 'es';
@@ -1894,7 +1942,7 @@
           : 'Account created. We sent a confirmation email to <strong>' + esc(state.registrationNotice) + '</strong>. Confirm your email before signing in; check spam or junk too.') + '</div>' : ''}
         <form class="form-grid" id="login-form">
           <div class="form-field full"><label>${es ? 'Correo electrónico' : 'Email address'}</label><input type="email" name="email" required autocomplete="email"></div>
-          <div class="form-field full"><label>${es ? 'Contraseña' : 'Password'}</label><input type="password" name="password" required autocomplete="current-password"></div>
+          <div class="form-field full"><label for="login-password">${es ? 'Contraseña' : 'Password'}</label>${passwordFieldMarkup('password', 'login-password', 'current-password')}</div>
           <div id="login-error" role="alert" aria-live="assertive" style="display:none;grid-column:1/-1"><p style="color:#c0392b;font-size:13px">${es ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'}</p></div>
           ${captchaSlot('login')}
           <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Entrar' : 'Sign in'}</button></div>
@@ -1929,11 +1977,55 @@
       <h2>${es ? 'Nueva contraseña' : 'New password'}</h2>
       <p class="auth-sub">${es ? 'Crea una contraseña nueva para tu cuenta ORIGEN.' : 'Create a new password for your ORIGEN account.'}</p>
       <form class="form-grid" id="reset-password-form">
-        <div class="form-field full"><label>${es ? 'Nueva contraseña' : 'New password'}</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+        <div class="form-field full"><label for="reset-password">${es ? 'Nueva contraseña' : 'New password'}</label>${passwordFieldMarkup('password', 'reset-password', 'new-password', 8)}</div>
+        <div class="form-field full"><label for="reset-password-confirm">${es ? 'Confirma tu nueva contraseña' : 'Confirm new password'}</label>${passwordFieldMarkup('passwordConfirm', 'reset-password-confirm', 'new-password', 8)}</div>
         <div id="reset-status" class="form-field full" role="status" aria-live="polite"></div>
         <div class="form-field full"><button class="btn" type="submit" style="width:100%">${es ? 'Guardar nueva contraseña' : 'Save new password'}</button></div>
       </form>
     </div></div>`;
+  }
+
+
+  function changePasswordView() {
+    const es = state.lang === 'es';
+    if (!state.authReady) return `<div class="auth-page" role="status">${es ? 'Verificando sesión…' : 'Checking session…'}</div>`;
+    if (!me()) return `<div class="auth-page"><div class="auth-card"><h2>${es ? 'Inicia sesión' : 'Sign in'}</h2><p>${es ? 'Debes iniciar sesión para cambiar tu contraseña.' : 'Sign in to change your password.'}</p><a href="#login">${es ? 'Ir al inicio de sesión' : 'Go to sign in'}</a></div></div>`;
+    return `<div class="auth-page"><div class="auth-card">
+      <h2>${es ? 'Cambiar contraseña' : 'Change password'}</h2>
+      <p class="auth-sub">${es ? 'Confirma tu contraseña actual y elige una nueva. ORIGEN nunca te pedirá tu contraseña por correo.' : 'Confirm your current password and choose a new one. ORIGEN will never ask for your password by email.'}</p>
+      <form class="form-grid" id="change-password-form">
+        <div class="form-field full"><label for="change-current-password">${es ? 'Contraseña actual' : 'Current password'}</label>${passwordFieldMarkup('currentPassword', 'change-current-password', 'current-password')}</div>
+        <div class="form-field full"><label for="change-new-password">${es ? 'Nueva contraseña' : 'New password'}</label>${passwordFieldMarkup('password', 'change-new-password', 'new-password', 8)}</div>
+        <div class="form-field full"><label for="change-confirm-password">${es ? 'Confirmar nueva contraseña' : 'Confirm new password'}</label>${passwordFieldMarkup('passwordConfirm', 'change-confirm-password', 'new-password', 8)}</div>
+        <div id="change-password-status" class="form-field full" role="status" aria-live="polite"></div>
+        <div class="form-field full"><button type="submit" class="btn" style="width:100%">${es ? 'Actualizar contraseña' : 'Update password'}</button></div>
+      </form>
+      <p class="auth-alt"><a href="#editar-perfil">← ${es ? 'Volver a editar perfil' : 'Back to edit profile'}</a></p>
+    </div></div>`;
+  }
+
+  function bindChangePassword() {
+    const form = document.getElementById('change-password-form');
+    if (!form) return;
+    bindPasswordConfirmation(form);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const status = document.getElementById('change-password-status');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const { data, error } = await window.ORIGEN_API.client.auth.getUser();
+        if (error || !data?.user) throw new Error(state.lang === 'es' ? 'Inicia sesión de nuevo.' : 'Please sign in again.');
+        await window.ORIGEN_API.updatePassword(form.elements.password.value, form.elements.currentPassword.value);
+        form.reset();
+        if (status) status.textContent = state.lang === 'es' ? 'Contraseña actualizada correctamente.' : 'Password updated successfully.';
+      } catch (error) {
+        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos actualizar tu contraseña.' : 'Could not change your password.');
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
   }
 
   /* ── PASSPORT ────────────────────────────────────────────── */
@@ -2312,6 +2404,7 @@
     else if (route === 'login')                   html = loginView();
     else if (route === 'recuperar')               html = recoverPasswordView();
     else if (route === 'restablecer')             html = resetPasswordView();
+    else if (route === 'cambiar-contrasena')       html = changePasswordView();
     else if (route === 'pasaporte')               html = passportView();
     else if (route === 'impacto')                 html = impactView();
     else if (route === 'confianza')                html = trustCenterView();
@@ -2341,6 +2434,8 @@
     if (route === 'login')         bindLogin();
     if (route === 'recuperar')     bindRecoverPassword();
     if (route === 'restablecer')   bindResetPassword();
+    if (route === 'cambiar-contrasena') bindChangePassword();
+    bindPasswordVisibility();
     if (route === 'crear')         bindCreatePost();
     if (route === 'editar-perfil') bindEditProfile();
     if (route === 'moderacion')    bindModerationQueue();
@@ -2850,16 +2945,30 @@
   function bindResetPassword() {
     const form = document.getElementById('reset-password-form');
     if (!form) return;
+    bindPasswordConfirmation(form);
     form.addEventListener('submit', async e => {
       e.preventDefault();
-      const password = new FormData(form).get('password');
+      if (!form.reportValidity()) return;
       const status = document.getElementById('reset-status');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
       try {
-        await window.ORIGEN_API.updatePassword(password);
+        // A recovery link must produce an authenticated Supabase session.
+        // Merely navigating to #restablecer never grants permission to reset.
+        const { data, error } = await window.ORIGEN_API.client.auth.getUser();
+        if (error || !data?.user) {
+          throw new Error(state.lang === 'es'
+            ? 'Enlace inválido, vencido o sesión no verificada. Solicita uno nuevo desde Recuperar contraseña.'
+            : 'Invalid or expired link, or no verified session. Request a new link from Password recovery.');
+        }
+        await window.ORIGEN_API.updatePassword(form.elements.password.value);
+        form.reset();
         if (status) status.textContent = state.lang === 'es' ? 'Contraseña actualizada. Ya puedes continuar.' : 'Password updated. You can continue now.';
         setTimeout(() => go('feed'), 900);
       } catch (error) {
         if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos actualizar la contraseña.' : 'We could not update the password.');
+      } finally {
+        if (submit) submit.disabled = false;
       }
     });
   }
@@ -2897,14 +3006,7 @@
     // template, URL or persistent browser storage.
     const previousPassword = document.querySelector('#reg-basic [name="password"]');
     if (previousPassword && state.regData.password) previousPassword.value = state.regData.password;
-    const confirmationInput = document.querySelector('#reg-basic [name="passwordConfirm"]');
-    const validateConfirmation = () => {
-      if (!confirmationInput) return;
-      confirmationInput.setCustomValidity(confirmationInput.value && confirmationInput.value !== previousPassword?.value
-        ? (state.lang === 'es' ? 'Las contraseñas no coinciden.' : 'Passwords do not match.') : '');
-    };
-    confirmationInput?.addEventListener('input', validateConfirmation);
-    previousPassword?.addEventListener('input', validateConfirmation);
+    bindPasswordConfirmation(document.getElementById('reg-basic'));
     if (state.regStep === 2) {
       bindLocationSelects(document.getElementById('reg-basic'));
     }
