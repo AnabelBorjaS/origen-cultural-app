@@ -49,6 +49,9 @@
 
   let authStateRevision = 0;
   let restoreRequestId = 0;
+  // Volatile UI guard: recovery must originate from a verified auth link.
+  // Not an authorization boundary; Supabase Auth remains authoritative.
+  let recoverySessionUserId = null;
 
   const normaliseUser = (authUser, profile) => {
     if (!authUser) return null;
@@ -200,12 +203,16 @@
   }
 
   async function updatePassword(password, currentPassword = null) {
-    // For a signed-in password change, require the existing credential.
-    // Password recovery instead requires a verified Auth recovery session.
+    // Ordinary signed-in changes must supply the existing password.
+    // The email recovery flow uses a verified Supabase PASSWORD_RECOVERY event.
+    if (currentPassword === null && (!recoverySessionUserId || recoverySessionUserId !== cache.session?.user?.id)) {
+      throw new Error('Solicita un enlace válido de recuperación para cambiar tu contraseña.');
+    }
     const changes = { password };
     if (currentPassword !== null) changes.current_password = currentPassword;
     const { error } = await client.auth.updateUser(changes);
     if (error) throw error;
+    recoverySessionUserId = null;
   }
 
   async function updateMyProfile(changes, expectedUserId = null) {
@@ -854,6 +861,8 @@
     // getSession/profile restoration. Identity changes and sign-out do.
     if (previousUid !== nextUid || event === 'SIGNED_OUT') authStateRevision++;
     cache.session = session || null;
+    if (event === 'PASSWORD_RECOVERY' && nextUid) recoverySessionUserId = nextUid;
+    else if (!nextUid || (previousUid && nextUid !== previousUid)) recoverySessionUserId = null;
     if (!nextUid || nextUid !== previousUid) clearPrivateCache();
 
     // Refresh profile data outside the Auth callback/lock. Token refreshes do
@@ -868,7 +877,7 @@
     // disabled until a privileged rights-aware promotion service is tested.
     culturalPublishingReady: false,
     client, cache, restoreSession, signIn, signUp, signOut,
-    resetPassword, updatePassword, updateMyProfile,
+    resetPassword, updatePassword, hasPasswordRecoverySession: () => !!recoverySessionUserId && recoverySessionUserId === cache.session?.user?.id, updateMyProfile,
     listPublicProfiles, ensureCreatorCulturalProfile,
     listCulturalProfiles, findCulturalProfile,
     myFollows, toggleFollow, myFavorites, toggleFavorite,
