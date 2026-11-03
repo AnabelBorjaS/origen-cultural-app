@@ -2021,3 +2021,85 @@ body:has(.hero-globe-section) .topbar .desktop-nav a::after {
   .hero-globe-popup { animation: none; }
   .hero-globe-actions .btn:hover { transform: none; }
 }
+
+
+/* ── REAL SOLAR LIGHTING · BILINGUAL, ACCESSIBLE, NO GEOLOCATION ── */
+.globe-light-box {
+  border: 1px solid rgba(222,197,165,.33);
+  border-radius: 14px;
+  padding: 9px 10px;
+  background: rgba(15,15,17,.87);
+  color: #f7f4ef;
+  box-shadow: 0 8px 32px rgba(0,0,0,.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.globe-light-options {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.globe-light-options button {
+  min-width: 55px;
+  min-height: 38px;
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: rgba(247,244,239,.87);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.globe-light-options button:hover,
+.globe-light-options button:focus-visible {
+  border-color: #dec5a5;
+  color: #dec5a5;
+}
+.globe-light-options button[aria-pressed="true"] {
+  background: #dec5a5;
+  border-color: #dec5a5;
+  color: #111113;
+}
+.globe-light-box [data-globe-light-status] {
+  margin: 4px 3px 0;
+  max-width: 220px;
+  color: rgba(247,244,239,.78);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.hero-globe-light {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 25;
+  width: min(218px, calc(100% - 48px));
+}
+.mundo-globe-light {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 205px;
+  max-width: 230px;
+}
+.globe-ui-bottom { max-width: calc(100% - 40px); }
+@media (max-width: 900px) {
+  .globe-ui-bottom { flex-wrap: wrap; gap: 10px; }
+  .mundo-globe-light { min-width: 190px; }
+}
+@media (max-width: 600px) {
+  .hero-globe-light {
+    left: 12px;
+    top: 107px;
+    width: 186px;
+    padding: 7px;
+  }
+  .globe-light-options button {
+    min-width: 49px;
+    min-height: 36px;
+    padding: 6px;
+  }
+  .globe-light-box [data-globe-light-status] { font-size: 9px; }
+  .mundo-globe-light { min-width: min(190px, 60vw); }
+  .globe-ui-bottom .globe-hint { display: none; }
+}
