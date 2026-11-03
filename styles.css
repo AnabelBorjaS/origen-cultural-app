@@ -1949,6 +1949,7 @@ body:has(.hero-globe-section) .topbar .desktop-nav a::after {
   letter-spacing: .025em;
   text-transform: none;
 }
+.hero-globe-ui { bottom: 86px; }
 .hero-globe-ctrl-bar { gap: 8px; }
 .hero-ctrl-btn {
   width: 40px;
