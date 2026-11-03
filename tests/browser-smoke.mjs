@@ -1438,6 +1438,23 @@ async function brandBGlobeChecks() {
       'Official logo SVG must remain unchanged in the header');
     check(await page.locator('#hero-country-search-form').count() === 1,
       'Find a country control must be present on the homepage');
+    const auto = page.locator('.hero-globe-light [data-globe-light="auto"]');
+    const day = page.locator('.hero-globe-light [data-globe-light="day"]');
+    const night = page.locator('.hero-globe-light [data-globe-light="night"]');
+    check(await auto.getAttribute('aria-pressed') === 'true',
+      'First visit should default to automatic solar illumination');
+    await night.click();
+    check(await night.getAttribute('aria-pressed') === 'true' &&
+      await auto.getAttribute('aria-pressed') === 'false',
+      'Night view selection must be exclusive and accessible');
+    check(await page.evaluate(() => localStorage.getItem('origen-globe-illumination')) === 'night',
+      'Night mode must persist locally without GPS or an account');
+    await day.click();
+    check(await day.getAttribute('aria-pressed') === 'true', 'Day mode must be selectable');
+    await auto.click();
+    check(await auto.getAttribute('aria-pressed') === 'true', 'Auto mode must restore solar view');
+    check((await page.locator('[data-globe-light-status]').innerText()).includes('UTC'),
+      'Auto mode must disclose approximate real-time UTC lighting');
 
     await page.locator('[data-hgt="ecuador"]').click();
     const popup = page.locator('#hero-globe-popup');
@@ -1486,6 +1503,8 @@ async function brandBGlobeChecks() {
     await mobile.locator('.hero-main-title').waitFor();
     check(await mobile.locator('#hero-country-search').isVisible(),
       'Mobile globe must expose country search');
+    check(await mobile.locator('.hero-globe-light [data-globe-light="auto"]').isVisible(),
+      'Mobile page must offer Auto, Day and Night without geolocation');
     check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2),
       'Modern ORIGEN home should not have horizontal overflow on a 390px phone');
   } catch (error) {
