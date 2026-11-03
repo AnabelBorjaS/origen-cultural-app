@@ -1054,6 +1054,18 @@
       <div class="hero-globe-right">
         <div class="hero-globe-container" id="hero-globe-container"></div>
         <div class="hero-globe-popup" id="hero-globe-popup" hidden></div>
+        <form class="hero-globe-search" id="hero-country-search-form" role="search">
+          <label for="hero-country-search">${es ? 'Buscar país' : 'Find a country'}</label>
+          <div class="hero-globe-search-input">
+            <input id="hero-country-search" name="country" list="hero-country-suggestions" autocomplete="off" placeholder="${es ? 'Ecuador, Japón…' : 'Ecuador, Japan…'}" required>
+            <button type="submit" aria-label="${es ? 'Buscar país' : 'Find country'}">⌕</button>
+          </div>
+          <datalist id="hero-country-suggestions">${[
+            ['Ecuador','Ecuador'],['Australia','Australia'],['Perú','Peru'],
+            ['Bolivia','Bolivia'],['México','Mexico'],['Japón','Japan']
+          ].map(([a,b])=>`<option value="${es?a:b}"></option>`).join('')}</datalist>
+          <p id="hero-country-search-status" role="status" aria-live="polite"></p>
+        </form>
         <div class="hero-globe-ui">
           <div class="hero-globe-ctrl-bar">
             <button id="hero-globe-pause" class="hero-ctrl-btn" title="${es ? 'Pausar / Reanudar rotación' : 'Pause / Resume rotation'}" aria-label="${es ? 'Pausar o reanudar rotación' : 'Pause or resume rotation'}">⏸</button>
@@ -2550,17 +2562,36 @@
     document.getElementById('hero-globe-zoom-out')?.addEventListener('click',
       () => HeroGlobe.zoom(1.4));
 
-    /* territory pills */
-    document.querySelectorAll('[data-hgt]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.hgt;
-        const db  = window.MundoCultural?._db?.[key];
-        if (!db || !popup) return;
-        /* reuse HeroGlobe popup logic by dispatching a fake click */
-        /* Actually: navigate to #mundo and select country */
-        window.location.hash = '#mundo';
-        setTimeout(() => { try { window.MundoCultural.selectCountry(key); } catch {} }, 600);
+    const focusCountry = key => {
+      if (!window.MundoCultural?._db?.[key]) return false;
+      window.HeroGlobe?.selectCountry(key);
+      document.querySelectorAll('[data-hgt]').forEach(btn => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.hgt === key));
       });
+      return true;
+    };
+    /* Keep exploration on the home page; do not navigate away from the globe. */
+    document.querySelectorAll('[data-hgt]').forEach(btn => {
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', () => focusCountry(btn.dataset.hgt));
+    });
+    document.getElementById('hero-country-search-form')?.addEventListener('submit', event => {
+      event.preventDefault();
+      const raw = document.getElementById('hero-country-search')?.value || '';
+      const normalise = value => value.trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+      const key = Object.entries({
+        ecuador: ['Ecuador'], australia: ['Australia'],
+        peru: ['Peru', 'Perú'], bolivia: ['Bolivia'],
+        mexico: ['Mexico', 'México'], japan: ['Japan', 'Japón']
+      }).find(([, names]) => names.some(name => normalise(name) === normalise(raw)))?.[0];
+      const status = document.getElementById('hero-country-search-status');
+      if (key && focusCountry(key)) {
+        if (status) status.textContent = '';
+      } else if (status) {
+        status.textContent = state.lang === 'es'
+          ? 'Este país todavía no tiene una ficha verificada en nuestro piloto.'
+          : 'This country does not yet have a reviewed card in our pilot.';
+      }
     });
 
     /* scroll to next section on mobile hint tap */
