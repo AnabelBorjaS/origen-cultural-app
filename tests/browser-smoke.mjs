@@ -1423,8 +1423,81 @@ async function passwordVisibilityChecks() {
   }
 }
 
+
+async function brandBGlobeChecks() {
+  // Real DOM/UI with synthetic browsing only: no Auth, storage or database writes.
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  try {
+    await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded' });
+    await page.locator('.hero-main-title').waitFor({ timeout: 15000 });
+    check((await page.locator('.hero-main-title').innerText()).includes('Conectando al mundo'),
+      'Brand B hero must have modern Spanish cultural mission');
+    check(await page.locator('.hero-wordmark').count() === 0,
+      'Do not duplicate the official brand lockup with a giant text imitation');
+    check(await page.locator('.brand img[src="assets/logo-lockup.svg"]').count() === 1,
+      'Official logo SVG must remain unchanged in the header');
+    check(await page.locator('#hero-country-search-form').count() === 1,
+      'Find a country control must be present on the homepage');
+
+    await page.locator('[data-hgt="ecuador"]').click();
+    const popup = page.locator('#hero-globe-popup');
+    await page.waitForFunction(() => !document.getElementById('hero-globe-popup')?.hidden, null, { timeout: 14000 });
+    check((await popup.locator('.hpop-name').innerText()) === 'Ecuador',
+      'Clicking Ecuador must select its country card on the homepage');
+    check((await popup.locator('.hpop-fact').innerText()).includes('Quito'),
+      'Visible Ecuador fact must use the curated UNESCO story, not an unsourced legacy claim');
+    check((await popup.locator('.hpop-source-link').getAttribute('href')).includes('whc.unesco.org/en/list/2'),
+      'Ecuador fact must link directly to the original UNESCO record');
+    check((await popup.locator('.hpop-source-link').getAttribute('target')) === '_blank' &&
+      (await popup.locator('.hpop-source-link').getAttribute('rel')).includes('noopener'),
+      'Institutional source must open safely without giving tab access');
+    check(await page.evaluate(() => location.hash) === '#inicio',
+      'Tapping a country must not unexpectedly leave the landing globe');
+    check(await page.locator('[data-hgt="ecuador"]').getAttribute('aria-pressed') === 'true',
+      'Selected country chip must expose its selected state');
+
+    await page.locator('#hero-country-search').fill('Japón');
+    await page.locator('#hero-country-search-form button[type="submit"]').click();
+    check((await popup.locator('.hpop-name').innerText()) === 'Japón',
+      'Accent-aware country search must select Japan in Spanish');
+    check((await popup.locator('.hpop-source-link').getAttribute('href')).includes('japan.travel'),
+      'Japan card must link to the official JNTO source');
+
+    await page.evaluate(() => localStorage.setItem('origen-lang', 'en'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.hero-main-title').waitFor();
+    check((await page.locator('.hero-main-title').innerText()).includes('Connecting the world'),
+      'Homepage Brand B wording must translate into English');
+    await page.locator('[data-hgt="japan"]').click();
+    await page.waitForFunction(() => !document.getElementById('hero-globe-popup')?.hidden);
+    check((await popup.locator('.hpop-fact').innerText()).includes('Japanese tea ceremony'),
+      'Official fact body must translate into English');
+    check((await popup.locator('.hpop-source-link').innerText()).includes('View original source'),
+      'Original source action must translate into English');
+  } catch (error) {
+    failures.push('Brand B globe and sourced culture: ' + (error?.message || error));
+  } finally {
+    await page.close();
+  }
+
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+  try {
+    await mobile.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded' });
+    await mobile.locator('.hero-main-title').waitFor();
+    check(await mobile.locator('#hero-country-search').isVisible(),
+      'Mobile globe must expose country search');
+    check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2),
+      'Modern ORIGEN home should not have horizontal overflow on a 390px phone');
+  } catch (error) {
+    failures.push('Brand B mobile: ' + (error?.message || error));
+  } finally {
+    await mobile.close();
+  }
+}
+
 try {
   await desktopChecks();
+  await brandBGlobeChecks();
   await passwordVisibilityChecks();
   await stagingAuthRedirectChecks();
   await mobileChecks();
