@@ -641,6 +641,24 @@ async function roleChecks(role) {
       'Report preserves the submitted complaint context');
     check(reportQA.dialogOpen === false,
       'Report modal should close only after mocked submission succeeds');
+
+    // A registered Agent must also open from the signed-in feed sidebar.
+    const qaAgentId = '99999999-9999-4999-8999-999999999999';
+    await page.evaluate(id => {
+      window.ORIGEN_API.cache.publicProfiles = [{
+        id, role: 'creator', display_name: 'QA Artisan',
+        location: 'Yaruquí, Ecuador', categories: ['Artesanía y tradición'],
+        links: {}, avatar_url: '', created_at: '2026-10-08'
+      }];
+      location.hash = '#explorar';
+    }, qaAgentId);
+    await page.locator('#explore-grid .creator-card').filter({ hasText: 'QA Artisan' }).waitFor({ timeout: 12000 });
+    await page.evaluate(() => { location.hash = '#feed'; });
+    const asideAgent = page.locator('.feed-aside .aside-row').filter({ hasText: 'QA Artisan' });
+    await asideAgent.waitFor({ timeout: 12000 });
+    const links = await asideAgent.locator('a[href^="#usuario/"]').evaluateAll(items => items.map(el => el.getAttribute('href')));
+    check(links.length === 2 && links.every(href => href === '#usuario/' + qaAgentId),
+      'Both feed sidebar links must open a registered Agent, not an editorial reference');
   }
 
   await page.close();
@@ -880,6 +898,21 @@ async function publicProfileStatusChecks() {
     await card.waitFor({ timeout: 12000 });
     check((await card.innerText()).includes('Cuenta sin verificar'),
       'Registered Cultural Agent should not be described as verified');
+    check(await card.locator('h3 a').getAttribute('href') === '#usuario/' + publicId,
+      'Cultural directory must link real Agents to the public user profile');
+
+    // Homepage features can contain real registered Agents alongside editorial
+    // references. Clicking one must open the registered account, never a 404.
+    await page.evaluate(() => { location.hash = '#inicio'; });
+    const homeCard = page.locator('.story-grid .story-card').filter({ hasText: 'QA Artisan' });
+    await homeCard.waitFor({ timeout: 12000 });
+    check(await homeCard.getAttribute('href') === '#usuario/' + publicId,
+      'Homepage real-Agent feature must not link to the editorial-reference route');
+    await homeCard.click();
+    await page.locator('.profile-trust-notice.profile-trust-unverified').waitFor({ timeout: 12000 });
+    check((await page.locator('.profile-title h1').innerText()).includes('QA Artisan'),
+      'Homepage real-Agent card should open the actual public account detail');
+
     await page.evaluate(id => { location.hash = '#usuario/' + id; }, publicId);
     await page.locator('.profile-trust-notice.profile-trust-unverified').waitFor({ timeout: 12000 });
     check(await page.locator('.profile-trust-notice a[href^="#reclamar/"]').count() === 0,
