@@ -2578,7 +2578,7 @@
     document.getElementById('hero-country-search-form')?.addEventListener('submit', event => {
       event.preventDefault();
       const raw = document.getElementById('hero-country-search')?.value || '';
-      const normalise = value => value.trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+      const normalise = value => value.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
       const key = Object.entries({
         ecuador: ['Ecuador'], australia: ['Australia'],
         peru: ['Peru', 'Perú'], bolivia: ['Bolivia'],
