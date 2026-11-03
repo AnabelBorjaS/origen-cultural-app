@@ -1304,6 +1304,21 @@ window.HeroGlobe = (() => {
     _updatePauseBtn();
   }
 
+  function selectCountry(key) {
+    const db = getDB()[key];
+    if (!db || _destroyed) return;
+    showPopup(key);
+    if (_globe) {
+      const match = _geoData?.find(feature => matchKey(feature) === key);
+      _selected = match || null;
+      _globe.polygonCapColor(hCap);
+      _globe.pointOfView({ lat: db.lat, lng: db.lng, altitude: 2.0 }, 700);
+      _globe.controls().autoRotate = false;
+      _rotating = false;
+      _updatePauseBtn();
+    }
+  }
+
   function zoom(factor) {
     if (!_globe) return;
     const pov = _globe.pointOfView();
@@ -1315,5 +1330,5 @@ window.HeroGlobe = (() => {
     if (btn) btn.textContent = _rotating ? '⏸' : '▶';
   }
 
-  return { init, destroy, toggleRotation, zoom };
+  return { init, destroy, toggleRotation, zoom, selectCountry };
 })();
