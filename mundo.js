@@ -45,38 +45,7 @@ window.MundoCultural = (() => {
       lat: -1.83, lng: -78.18, altitude: 1.8,
       creatorIds: ['pakarina', 'chawar', 'aji-de-piedra', 'yaruqui-vivo', 'danza-andina'],
       geoNames: ['Ecuador'],
-      microhistorias: [
-        {
-          id: 'ec-1', cat: 'Artesanía · Identidad',
-          txt: 'El llamado «sombrero Panamá» nace en Montecristi, Ecuador. Las tejedoras trabajan de madrugada para aprovechar la humedad que suaviza la paja toquilla y permite el tejido más fino.',
-          src: 'UNESCO / Artesanas de Montecristi, Ecuador',
-          href: '#explorar'
-        },
-        {
-          id: 'ec-2', cat: 'Gastronomía · Ritual',
-          txt: 'La colada morada se prepara en noviembre para honrar a los difuntos. Cada familia añade sus propias flores y frutas: la receta es también un mapa de memoria familiar y afecto.',
-          src: 'Ministerio de Cultura del Ecuador / INPC',
-          href: '#explorar'
-        },
-        {
-          id: 'ec-3', cat: 'Lengua · Cosmovisión',
-          txt: 'En kichwa, «Pachamama» no significa solo «Madre Tierra»: «pacha» es tiempo y espacio a la vez; «mama», madre. Nombrarla es reconocer que el universo entero es un ser vivo.',
-          src: 'Academia de la Lengua Kichwa del Ecuador',
-          href: '#explorar'
-        },
-        {
-          id: 'ec-4', cat: 'Artesanía · Comunidad',
-          txt: 'Las shigras son bolsas tejidas en fibra de cabuya por mujeres kichwas del Cotopaxi. Cada nudo y color cuenta una historia familiar que se transmite de generación en generación.',
-          src: 'Comunidades Kichwa de Cotopaxi / INPC Ecuador',
-          href: '#explorar'
-        },
-        {
-          id: 'ec-5', cat: 'Tradición · Territorio',
-          txt: 'El Inti Raymi kichwa no es una recreación turística: es una celebración viva del solsticio que comunidades de la Sierra practican sin interrupción desde antes de la conquista española.',
-          src: 'Comunidad Kichwa Panzaleo / INPC Ecuador',
-          href: '#mundo'
-        }
-      ]
+      microhistorias: []
     },
     australia: {
       key: 'australia', flag: '🇦🇺',
@@ -85,38 +54,7 @@ window.MundoCultural = (() => {
       lat: -25.27, lng: 133.77, altitude: 1.8,
       creatorIds: [],
       geoNames: ['Australia'],
-      microhistorias: [
-        {
-          id: 'au-1', cat: 'Territorio · Ley Sagrada',
-          txt: 'Los Anangu no fotografían ciertas zonas de Uluru porque consideran que hacerlo viola una ley espiritual viva, no una norma turística. Uluru no es un monumento: es un ser.',
-          src: 'Tjukurpa Law / Anangu Pitjantjatjara Yankunytjatjara',
-          href: '#explorar'
-        },
-        {
-          id: 'au-2', cat: 'Música · Ceremonia',
-          txt: 'El yidaki —conocido como didgeridoo— se toca con respiración circular continua. Requiere años de práctica y pertenece a ceremonias sagradas de los Yolŋu: no es música de entretenimiento.',
-          src: 'Yolŋu Elders / Australian Institute of Aboriginal Studies',
-          href: '#explorar'
-        },
-        {
-          id: 'au-3', cat: 'Arte · Cosmología',
-          txt: 'El arte puntillista aborigen no es decorativo: cada punto conecta mapas sagrados del Tiempo del Sueño, la cosmología que explica el origen del mundo para los Pueblos del Desierto.',
-          src: 'Desart / Araluen Arts Centre, Australia Central',
-          href: '#explorar'
-        },
-        {
-          id: 'au-4', cat: 'Lengua · Tiempo',
-          txt: 'Australia alberga más de 250 lenguas indígenas. Algunas no tienen tiempo lineal ni puntos cardinales fijos: cada lengua es también una manera distinta de concebir y habitar el mundo.',
-          src: 'AIATSIS — Instituto Australiano de Estudios Aborígenes',
-          href: '#explorar'
-        },
-        {
-          id: 'au-5', cat: 'Tradición · Transmisión',
-          txt: 'El Corroboree no es un espectáculo: es un encuentro ceremonial donde canto, danza y pintura corporal transmiten leyes y conocimientos de unas generaciones a otras, en comunidades específicas.',
-          src: 'AIATSIS / Consejo de Ancianos Aborígenes',
-          href: '#explorar'
-        }
-      ]
+      microhistorias: []
     },
     peru: {
       key: 'peru', flag: '🇵🇪',
@@ -125,38 +63,7 @@ window.MundoCultural = (() => {
       lat: -9.19, lng: -75.02, altitude: 1.8,
       creatorIds: [],
       geoNames: ['Peru', 'Perú'],
-      microhistorias: [
-        {
-          id: 'pe-1', cat: 'Gastronomía · Biodiversidad',
-          txt: 'Perú conserva más de 3.000 variedades de papa domesticadas hace 8.000 años en el altiplano andino. Cada variedad tiene nombre propio en quechua y propiedades distintas según la altitud.',
-          src: 'Centro Internacional de la Papa (CIP) — Lima',
-          href: '#explorar'
-        },
-        {
-          id: 'pe-2', cat: 'Música · Danza',
-          txt: 'La marinera norteña representa el cortejo entre dos personas usando solo un pañuelo blanco como intermediario. Su coreografía sin contacto fue declarada Patrimonio Cultural de la Nación en 1986.',
-          src: 'MINCUL — Ministerio de Cultura del Perú',
-          href: '#explorar'
-        },
-        {
-          id: 'pe-3', cat: 'Artesanía · Historia Viva',
-          txt: 'Los retablos ayacuchanos nacieron como altares portátiles para evangelizar. Hoy los artesanos los usan para narrar conflictos sociales, cosechas, fiestas y la historia reciente de sus comunidades.',
-          src: 'Museo de Arte Popular — Ayacucho, Perú',
-          href: '#explorar'
-        },
-        {
-          id: 'pe-4', cat: 'Tradición · Sincretismo',
-          txt: 'En Cusco, el Corpus Christi fusiona la procesión católica con el culto andino a los ancestros. Durante siglos, los pueblos indígenas llevaron a sus muertos junto a imágenes de santos.',
-          src: 'UNSAAC — Universidad Nacional San Antonio Abad del Cusco',
-          href: '#explorar'
-        },
-        {
-          id: 'pe-5', cat: 'Lengua · Emoción',
-          txt: 'En quechua, «llaki» es tristeza profunda y forma de amor al mismo tiempo. El idioma contiene maneras de sentir que el español no alcanza a nombrar con una sola palabra.',
-          src: 'Academia Mayor de la Lengua Quechua — Cusco',
-          href: '#explorar'
-        }
-      ]
+      microhistorias: []
     },
     bolivia: {
       key: 'bolivia', flag: '🇧🇴',
@@ -165,38 +72,7 @@ window.MundoCultural = (() => {
       lat: -16.5, lng: -64.5, altitude: 1.8,
       creatorIds: [],
       geoNames: ['Bolivia'],
-      microhistorias: [
-        {
-          id: 'bo-1', cat: 'Tradición · Deseo',
-          txt: 'En las Alasitas se compran miniaturas de lo que se desea: casa, salud, título. El Ekeko, dios aymara de la abundancia, activa esos deseos a mediodía del 24 de enero.',
-          src: 'UNESCO / Comunidades Aymara de La Paz',
-          href: '#explorar'
-        },
-        {
-          id: 'bo-2', cat: 'Artesanía · Cosmología',
-          txt: 'Los tejidos jalq\'a de Potosí representan el ukhu pacha, el mundo interior poblado de seres caóticos sin forma definida. Su simbología no es decorativa: es una cartografía del cosmos aymara.',
-          src: 'ASUR — Antropólogos del Sur Andino, Sucre',
-          href: '#explorar'
-        },
-        {
-          id: 'bo-3', cat: 'Gastronomía · Ritual Social',
-          txt: 'La salteña boliviana no es una empanada. Su masa dulce y su caldo espeso la hacen única, y morderla sin derramar nada es un arte que define identidad en Bolivia.',
-          src: 'Patrimonio Cultural Inmaterial de Bolivia',
-          href: '#explorar'
-        },
-        {
-          id: 'bo-4', cat: 'Música · Resistencia',
-          txt: 'La saya afraboliviana nació en los Yungas para resistir y celebrar a la vez. Su ritmo, letras y danza son memoria viva de las comunidades afrobolivianas contra el olvido histórico.',
-          src: 'Comunidad Afroboliviana de los Yungas / CADIC',
-          href: '#explorar'
-        },
-        {
-          id: 'bo-5', cat: 'Territorio · Sagrado',
-          txt: 'Para comunidades quechua y aymara, el Salar de Uyuni no es un paisaje turístico: es un espacio sagrado donde el cielo y la tierra se encuentran y se vuelven uno.',
-          src: 'Comunidades Quechua-Aymara de Potosí / CIPCA',
-          href: '#explorar'
-        }
-      ]
+      microhistorias: []
     },
     mexico: {
       key: 'mexico', flag: '🇲🇽',
@@ -205,38 +81,7 @@ window.MundoCultural = (() => {
       lat: 23.63, lng: -102.55, altitude: 1.8,
       creatorIds: [],
       geoNames: ['Mexico', 'México'],
-      microhistorias: [
-        {
-          id: 'mx-1', cat: 'Gastronomía · Origen',
-          txt: 'Mucho antes de que el chocolate se convirtiera en un postre dulce en Europa, los mayas preparaban cacao como una bebida espumosa. En escenas arqueológicas de vasijas mayas se representa el cacao vertido entre recipientes para crear esa espuma.',
-          src: 'INAH / The Metropolitan Museum of Art',
-          href: '#explorar'
-        },
-        {
-          id: 'mx-2', cat: 'Artesanía · Sueño',
-          txt: 'Los alebrijes nacieron en 1936 cuando Pedro Linares, enfermo y febril, soñó con criaturas que mezclaban animales reales. Al despertar los esculpió en papel y los pintó de colores imposibles.',
-          src: 'Museo de Arte Popular de México — Ciudad de México',
-          href: '#explorar'
-        },
-        {
-          id: 'mx-3', cat: 'Tradición · Sincretismo',
-          txt: 'El Día de los Muertos nació de la fusión de rituales nahuas con el catolicismo colonial. Cada ofrenda es un mapa de afectos: quién te amaba, qué comías, cómo eras.',
-          src: 'UNESCO / INAH México',
-          href: '#explorar'
-        },
-        {
-          id: 'mx-4', cat: 'Música · Cuerpo',
-          txt: 'En el son jarocho, la tarima de madera es un instrumento: el zapateado convierte el piso en percusión colectiva. El suelo mismo se vuelve voz de la comunidad veracruzana.',
-          src: 'Casa de la Cultura Jarocha — Veracruz',
-          href: '#explorar'
-        },
-        {
-          id: 'mx-5', cat: 'Lengua · Pensamiento',
-          txt: 'En náhuatl, «tlahtoa» significa hablar, pero también crear mundos. Para muchas comunidades nahuahablantes actuales, nombrar algo es traerlo a la existencia, no solo describirlo.',
-          src: 'Instituto Nacional de Lenguas Indígenas (INALI)',
-          href: '#explorar'
-        }
-      ]
+      microhistorias: []
     },
     japan: {
       key: 'japan', flag: '🇯🇵',
@@ -245,46 +90,14 @@ window.MundoCultural = (() => {
       lat: 36.2, lng: 138.25, altitude: 1.8,
       creatorIds: [],
       geoNames: ['Japan', 'Japón'],
-      microhistorias: [
-        {
-          id: 'jp-1', cat: 'Artesanía · Filosofía',
-          txt: 'El kintsugi no oculta las fracturas: las une con polvo de oro. La historia de cada pieza —sus roturas, sus reparaciones— se convierte en su mayor valor estético.',
-          src: 'Museo Nacional de Kyoto / Tradición de la Escuela Raku',
-          href: '#explorar'
-        },
-        {
-          id: 'jp-2', cat: 'Tradición · Ancestros',
-          txt: 'Durante el Obon, los espíritus de los ancestros regresan al hogar por tres días. Las familias encienden farolillos y bailan el Bon Odori para recibirlos y despedirlos con amor.',
-          src: 'Ministerio de Educación de Japón / Tradición Budista Bon',
-          href: '#explorar'
-        },
-        {
-          id: 'jp-3', cat: 'Gastronomía · Ritual',
-          txt: 'El matcha no es simplemente té molido: su preparación sigue el «Chado», un camino de siglos donde cada gesto, el cuenco, el agua y el silencio tienen un significado preciso.',
-          src: 'Urasenke Tea School — Kyoto / Sen no Rikyū',
-          href: '#explorar'
-        },
-        {
-          id: 'jp-4', cat: 'Lengua · Silencio',
-          txt: 'En japonés, «ma» (間) es el espacio vacío entre dos cosas, pero no es ausencia: es presencia activa. Existe en la música, la arquitectura, las relaciones humanas y la conversación.',
-          src: 'Academia Japonesa / Ensayos de Arata Isozaki',
-          href: '#explorar'
-        },
-        {
-          id: 'jp-5', cat: 'Conocimiento · Territorio',
-          txt: 'El «Satoyama» es el paisaje entre la aldea y la montaña. Comunidades japonesas lo gestionaron en equilibrio durante siglos: ni agricultura invasiva ni abandono. Un modelo vivo de coexistencia.',
-          src: 'United Nations University — Tokyo / RIHN',
-          href: '#explorar'
-        }
-      ]
+      microhistorias: []
     }
   };
 
-  const STORY_TRANSLATIONS_EN = Object.freeze({"ec-1":["Craft · Identity","The so-called Panama hat originated in Montecristi, Ecuador. Weavers often work before dawn, when humidity softens toquilla straw and makes finer weaving possible."],"ec-2":["Food · Ritual","Colada morada is prepared in November to honour the dead. Each family adds its own flowers and fruit, making the recipe a map of family memory and affection."],"ec-3":["Language · Worldview","In Kichwa, “Pachamama” means more than “Mother Earth”: “pacha” can hold both time and space, while “mama” means mother. The word reflects a worldview in which the whole universe is alive."],"ec-4":["Craft · Community","Shigras are bags woven from cabuya fibre by Kichwa women in Cotopaxi. Every knot and colour can carry a family story passed from one generation to the next."],"ec-5":["Tradition · Territory","Inti Raymi is not simply a tourist reenactment. It is a living solstice celebration practised by Kichwa communities in the Highlands, with roots that predate the Spanish conquest."],"au-1":["Territory · Sacred Law","Anangu people avoid photographing certain areas of Uluru because doing so can violate a living spiritual law, rather than just a visitor rule. For Anangu, Uluru is a living presence, not merely a landmark."],"au-2":["Music · Ceremony","The yidaki, often called the didgeridoo, is played using continuous circular breathing. For Yolŋu people it belongs to cultural and ceremonial contexts; it is not simply an entertainment instrument."],"au-3":["Art · Cosmology","In some Aboriginal art traditions, dot patterns do more than decorate: they can connect places and ancestral narratives within the living cosmologies of specific communities."],"au-4":["Language · Time","Australia is home to more than 250 Indigenous languages. Each carries distinct ways of understanding and inhabiting the world; some languages also use different systems for time and direction."],"au-5":["Tradition · Transmission","In some communities, corroboree is a ceremonial gathering where song, dance and body painting help pass laws and knowledge between generations. Its meaning and practice vary between communities."],"pe-1":["Food · Biodiversity","Peru is home to more than 3,000 potato varieties, domesticated in the Andes thousands of years ago. Many have their own Quechua names and grow best at different elevations."],"pe-2":["Music · Dance","The northern marinera represents courtship through the movement of two dancers and a white handkerchief. Its choreography traditionally avoids direct contact; the dance was declared a National Cultural Heritage of Peru in 1986."],"pe-3":["Craft · Living History","Ayacucho retablos began as portable altarpieces used in evangelisation. Today, artisans also use them to tell stories about social conflict, harvests, celebrations and recent community history."],"pe-4":["Tradition · Cultural Encounter","In Cusco, Corpus Christi brings Catholic processions into conversation with Andean relationships to ancestors. Over time, Indigenous communities incorporated their own meanings into the celebration."],"pe-5":["Language · Emotion","The Quechua word “llaki” can express profound sadness and grief. Like many words rooted in a particular language and worldview, it carries shades of meaning that a single English word cannot fully capture."],"bo-1":["Tradition · Wishes","At Alasitas, people buy miniature versions of things they hope for, such as a home, good health or a degree. In La Paz, many bring them to be blessed by the Ekeko, an Aymara figure associated with abundance."],"bo-2":["Craft · Cosmology","Jalq’a textiles from the Sucre region depict the ukhu pacha, an inner world populated by beings that resist clear definition. Their designs form a visual cosmology, not merely decoration."],"bo-3":["Food · Social Ritual","A Bolivian salteña is known for its sweet pastry and juicy filling. Eating one neatly, without spilling the broth inside, is a small but much-loved local skill."],"bo-4":["Music · Resistance","Saya Afro-Boliviana grew in the Yungas as a form of expression, resistance and celebration. Its rhythm, lyrics and dance keep Afro-Bolivian community memory present."],"bo-5":["Territory · Sacred Place","For some Quechua and Aymara communities, the Salar de Uyuni is more than a tourist landscape: it is a meaningful place where sky and earth seem to meet."],"mx-1":["Food · Origins","Long before chocolate became a sweet dessert in Europe, the Maya prepared cacao as a foamy drink. Archaeological scenes on Maya vessels depict cacao being poured between containers to create the froth."],"mx-2":["Craft · Dream","Alebrijes took shape in 1936, when Mexican artisan Pedro Linares said that, while ill with a fever, he dreamed of fantastical creatures combining different animals. After waking, he began making them from papier-mâché and painting them in vivid colours."],"mx-3":["Tradition · Cultural Encounter","Today’s Día de Muertos traditions bring Indigenous practices and Catholic influences together in different ways. An ofrenda can become a map of affection: who someone was, what they loved and how they are remembered."],"mx-4":["Music · Body","In son jarocho, the wooden tarima is also a musical instrument: dancers’ footwork turns it into shared percussion. The floor itself becomes part of the community’s sound."],"mx-5":["Language · Thought","The Nahuatl verb “tlahtoa” means “to speak.” For many Nahua speakers, language does more than describe the world: words also help shape shared meanings and ways of seeing."],"jp-1":["Craft · Philosophy","Kintsugi does not hide a broken ceramic piece’s cracks; it joins them with lacquer and powdered gold. The object’s history, including its repairs, becomes part of its beauty."],"jp-2":["Tradition · Ancestors","During Obon, many families welcome the spirits of their ancestors and later see them off. They may light lanterns and dance Bon Odori; customs vary by region and family."],"jp-3":["Food · Ritual","Matcha is more than powdered tea. In the Japanese way of tea, or chadō, the bowl, water, movements and shared attention all matter."],"jp-4":["Language · Pause","In Japanese, “ma” (間) can describe the meaningful space or pause between things. It is not simply emptiness; the idea appears in music, architecture and everyday relationships."],"jp-5":["Knowledge · Territory","Satoyama describes landscapes where villages and mountains meet. In many places, people have shaped these areas through a mix of farming, forests and community care."]});
   /* ── CONTROLLED CULTURAL FACTS — PILOT ECUADOR ────────────────
      Only institutionally sourced, short contextual statements are eligible
-     for public cards in the private beta. Legacy editorial micro-stories
-     remain in source for review but are not shown without verified links.
+     for public cards in the private beta. Earlier unverified stories are
+     excluded from this runtime until individual rights/source review.
      Source links are NOT endorsements by UNESCO, Parks Australia or JNTO.
      Community participation and correction remain essential before release.
   ─────────────────────────────────────────────────────────────── */
@@ -349,7 +162,7 @@ window.MundoCultural = (() => {
   const ENGLISH_COUNTRY_NAMES=Object.freeze({ecuador:'Ecuador',australia:'Australia',peru:'Peru',bolivia:'Bolivia',mexico:'Mexico',japan:'Japan'});
   const ENGLISH_CONTINENTS=Object.freeze({'América del Sur':'South America',Oceanía:'Oceania','América del Norte':'North America',Asia:'Asia'});
   function isEnglish(){try{const saved=localStorage.getItem('origen-lang');return String(saved||document.documentElement.lang||'es').toLowerCase().startsWith('en')}catch{return String(document.documentElement.lang||'es').toLowerCase().startsWith('en')}}
-  function localizedStory(story){if(!story||!isEnglish())return story;if(story.txtEn)return {...story,cat:story.catEn||story.cat,txt:story.txtEn,src:story.srcEn||story.src};const translation=STORY_TRANSLATIONS_EN[story.id];return translation?{...story,cat:translation[0],txt:translation[1]}:story}
+  function localizedStory(story){if(!story||!isEnglish())return story;return {...story,cat:story.catEn||story.cat,txt:story.txtEn||story.txt,src:story.srcEn||story.src};}
   function localizedCountryName(data){return isEnglish()?(ENGLISH_COUNTRY_NAMES[data.key]||data.name):data.name}
   function localizedContinent(data){return isEnglish()?(ENGLISH_CONTINENTS[data.continent]||data.continent):data.continent}
 
