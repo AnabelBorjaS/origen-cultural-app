@@ -281,10 +281,75 @@ window.MundoCultural = (() => {
   };
 
   const STORY_TRANSLATIONS_EN = Object.freeze({"ec-1":["Craft · Identity","The so-called Panama hat originated in Montecristi, Ecuador. Weavers often work before dawn, when humidity softens toquilla straw and makes finer weaving possible."],"ec-2":["Food · Ritual","Colada morada is prepared in November to honour the dead. Each family adds its own flowers and fruit, making the recipe a map of family memory and affection."],"ec-3":["Language · Worldview","In Kichwa, “Pachamama” means more than “Mother Earth”: “pacha” can hold both time and space, while “mama” means mother. The word reflects a worldview in which the whole universe is alive."],"ec-4":["Craft · Community","Shigras are bags woven from cabuya fibre by Kichwa women in Cotopaxi. Every knot and colour can carry a family story passed from one generation to the next."],"ec-5":["Tradition · Territory","Inti Raymi is not simply a tourist reenactment. It is a living solstice celebration practised by Kichwa communities in the Highlands, with roots that predate the Spanish conquest."],"au-1":["Territory · Sacred Law","Anangu people avoid photographing certain areas of Uluru because doing so can violate a living spiritual law, rather than just a visitor rule. For Anangu, Uluru is a living presence, not merely a landmark."],"au-2":["Music · Ceremony","The yidaki, often called the didgeridoo, is played using continuous circular breathing. For Yolŋu people it belongs to cultural and ceremonial contexts; it is not simply an entertainment instrument."],"au-3":["Art · Cosmology","In some Aboriginal art traditions, dot patterns do more than decorate: they can connect places and ancestral narratives within the living cosmologies of specific communities."],"au-4":["Language · Time","Australia is home to more than 250 Indigenous languages. Each carries distinct ways of understanding and inhabiting the world; some languages also use different systems for time and direction."],"au-5":["Tradition · Transmission","In some communities, corroboree is a ceremonial gathering where song, dance and body painting help pass laws and knowledge between generations. Its meaning and practice vary between communities."],"pe-1":["Food · Biodiversity","Peru is home to more than 3,000 potato varieties, domesticated in the Andes thousands of years ago. Many have their own Quechua names and grow best at different elevations."],"pe-2":["Music · Dance","The northern marinera represents courtship through the movement of two dancers and a white handkerchief. Its choreography traditionally avoids direct contact; the dance was declared a National Cultural Heritage of Peru in 1986."],"pe-3":["Craft · Living History","Ayacucho retablos began as portable altarpieces used in evangelisation. Today, artisans also use them to tell stories about social conflict, harvests, celebrations and recent community history."],"pe-4":["Tradition · Cultural Encounter","In Cusco, Corpus Christi brings Catholic processions into conversation with Andean relationships to ancestors. Over time, Indigenous communities incorporated their own meanings into the celebration."],"pe-5":["Language · Emotion","The Quechua word “llaki” can express profound sadness and grief. Like many words rooted in a particular language and worldview, it carries shades of meaning that a single English word cannot fully capture."],"bo-1":["Tradition · Wishes","At Alasitas, people buy miniature versions of things they hope for, such as a home, good health or a degree. In La Paz, many bring them to be blessed by the Ekeko, an Aymara figure associated with abundance."],"bo-2":["Craft · Cosmology","Jalq’a textiles from the Sucre region depict the ukhu pacha, an inner world populated by beings that resist clear definition. Their designs form a visual cosmology, not merely decoration."],"bo-3":["Food · Social Ritual","A Bolivian salteña is known for its sweet pastry and juicy filling. Eating one neatly, without spilling the broth inside, is a small but much-loved local skill."],"bo-4":["Music · Resistance","Saya Afro-Boliviana grew in the Yungas as a form of expression, resistance and celebration. Its rhythm, lyrics and dance keep Afro-Bolivian community memory present."],"bo-5":["Territory · Sacred Place","For some Quechua and Aymara communities, the Salar de Uyuni is more than a tourist landscape: it is a meaningful place where sky and earth seem to meet."],"mx-1":["Food · Origins","Long before chocolate became a sweet dessert in Europe, the Maya prepared cacao as a foamy drink. Archaeological scenes on Maya vessels depict cacao being poured between containers to create the froth."],"mx-2":["Craft · Dream","Alebrijes took shape in 1936, when Mexican artisan Pedro Linares said that, while ill with a fever, he dreamed of fantastical creatures combining different animals. After waking, he began making them from papier-mâché and painting them in vivid colours."],"mx-3":["Tradition · Cultural Encounter","Today’s Día de Muertos traditions bring Indigenous practices and Catholic influences together in different ways. An ofrenda can become a map of affection: who someone was, what they loved and how they are remembered."],"mx-4":["Music · Body","In son jarocho, the wooden tarima is also a musical instrument: dancers’ footwork turns it into shared percussion. The floor itself becomes part of the community’s sound."],"mx-5":["Language · Thought","The Nahuatl verb “tlahtoa” means “to speak.” For many Nahua speakers, language does more than describe the world: words also help shape shared meanings and ways of seeing."],"jp-1":["Craft · Philosophy","Kintsugi does not hide a broken ceramic piece’s cracks; it joins them with lacquer and powdered gold. The object’s history, including its repairs, becomes part of its beauty."],"jp-2":["Tradition · Ancestors","During Obon, many families welcome the spirits of their ancestors and later see them off. They may light lanterns and dance Bon Odori; customs vary by region and family."],"jp-3":["Food · Ritual","Matcha is more than powdered tea. In the Japanese way of tea, or chadō, the bowl, water, movements and shared attention all matter."],"jp-4":["Language · Pause","In Japanese, “ma” (間) can describe the meaningful space or pause between things. It is not simply emptiness; the idea appears in music, architecture and everyday relationships."],"jp-5":["Knowledge · Territory","Satoyama describes landscapes where villages and mountains meet. In many places, people have shaped these areas through a mix of farming, forests and community care."]});
+  /* ── CONTROLLED CULTURAL FACTS — PILOT ECUADOR ────────────────
+     Only institutionally sourced, short contextual statements are eligible
+     for public cards in the private beta. Legacy editorial micro-stories
+     remain in source for review but are not shown without verified links.
+     Source links are NOT endorsements by UNESCO, Parks Australia or JNTO.
+     Community participation and correction remain essential before release.
+  ─────────────────────────────────────────────────────────────── */
+  const REVIEWED_FACTS = Object.freeze({
+    ecuador: [{
+      id: 'ec-official-quito-1', cat: 'Patrimonio · Ciudad', catEn: 'Heritage · City',
+      txt: 'El centro histórico de Quito fue inscrito en la Lista del Patrimonio Mundial en 1978. La UNESCO destaca la fusión de tradiciones artísticas indígenas y europeas en su arquitectura.',
+      txtEn: 'Quito’s historic centre joined the World Heritage List in 1978. UNESCO highlights how Indigenous and European artistic traditions meet in its architecture.',
+      src: 'Centro del Patrimonio Mundial de la UNESCO',
+      srcEn: 'UNESCO World Heritage Centre',
+      href: 'https://whc.unesco.org/en/list/2/', reviewedOn: '2026-11-04'
+    }],
+    australia: [{
+      id: 'au-official-uluru-1', cat: 'Patrimonio · Cultura viva', catEn: 'Heritage · Living culture',
+      txt: 'Uluṟu-Kata Tjuṯa es Patrimonio Mundial por valores naturales y culturales. En 1994 se reconoció también el paisaje cultural vinculado a las tradiciones de sus propietarios Aṉangu.',
+      txtEn: 'Uluṟu-Kata Tjuṯa is World Heritage for both natural and cultural values. Its Aṉangu cultural landscape also gained recognition in 1994.',
+      src: 'Parks Australia · Uluṟu-Kata Tjuṯa',
+      srcEn: 'Parks Australia · Uluṟu-Kata Tjuṯa',
+      href: 'https://uluru.gov.au/discover/highlights/world-heritage/', reviewedOn: '2026-11-04'
+    }],
+    peru: [{
+      id: 'pe-official-machu-1', cat: 'Patrimonio · Territorio', catEn: 'Heritage · Territory',
+      txt: 'Machu Picchu se encuentra a unos 2.430 metros de altitud, entre los Andes y la cuenca amazónica. La UNESCO reconoce su excepcional valor cultural y natural.',
+      txtEn: 'Machu Picchu stands around 2,430 metres above sea level between the Andes and the Amazon Basin. UNESCO recognises its outstanding cultural and natural values.',
+      src: 'Centro del Patrimonio Mundial de la UNESCO',
+      srcEn: 'UNESCO World Heritage Centre',
+      href: 'https://whc.unesco.org/en/list/274/', reviewedOn: '2026-11-04'
+    }],
+    bolivia: [{
+      id: 'bo-official-oruro-1', cat: 'Tradición · Celebración', catEn: 'Tradition · Celebration',
+      txt: 'El Carnaval de Oruro reúne expresiones de danza, máscaras, bordados y textiles. La UNESCO lo inscribió como patrimonio cultural inmaterial en 2008.',
+      txtEn: 'The Carnival of Oruro brings together dance, masks, embroidery and textiles. UNESCO inscribed it as intangible cultural heritage in 2008.',
+      src: 'Patrimonio Cultural Inmaterial de la UNESCO',
+      srcEn: 'UNESCO Intangible Cultural Heritage',
+      href: 'https://ich.unesco.org/en/RL/carnival-of-oruro-00003', reviewedOn: '2026-11-04'
+    }],
+    mexico: [{
+      id: 'mx-official-dead-1', cat: 'Memoria · Celebración', catEn: 'Memory · Celebration',
+      txt: 'En comunidades indígenas de México, el Día de Muertos recuerda el regreso simbólico y temporal de familiares fallecidos. La UNESCO reconoció esta festividad como patrimonio cultural inmaterial.',
+      txtEn: 'In Indigenous communities in Mexico, Day of the Dead honours the symbolic, temporary return of deceased relatives. UNESCO recognises the festivity as intangible cultural heritage.',
+      src: 'Patrimonio Cultural Inmaterial de la UNESCO',
+      srcEn: 'UNESCO Intangible Cultural Heritage',
+      href: 'https://ich.unesco.org/en/RL/indigenous-festivity-dedicated-to-the-dead-00054', reviewedOn: '2026-11-04'
+    }],
+    japan: [{
+      id: 'jp-official-tea-1', cat: 'Hospitalidad · Tradición', catEn: 'Hospitality · Tradition',
+      txt: 'La ceremonia japonesa del té convierte la preparación y el servicio de una bebida en un arte de hospitalidad, vinculado con el principio de omotenashi.',
+      txtEn: 'The Japanese tea ceremony elevates preparing and serving tea into an art of hospitality, closely connected with the spirit of omotenashi.',
+      src: 'Organización Nacional de Turismo de Japón (JNTO)',
+      srcEn: 'Japan National Tourism Organization (JNTO)',
+      href: 'https://www.japan.travel/en/guide/tea-ceremony/', reviewedOn: '2026-11-04'
+    }]
+  });
+
+  // A reference is not a licence to publish community-restricted knowledge.
+  // Show only this reviewed introductory set until a rights-aware editorial
+  // workflow can record provenance, corrections and community permissions.
+  Object.values(CULTURAL_DB).forEach(country => {
+    country.microhistorias = REVIEWED_FACTS[country.key] || [];
+  });
+
   const ENGLISH_COUNTRY_NAMES=Object.freeze({ecuador:'Ecuador',australia:'Australia',peru:'Peru',bolivia:'Bolivia',mexico:'Mexico',japan:'Japan'});
   const ENGLISH_CONTINENTS=Object.freeze({'América del Sur':'South America',Oceanía:'Oceania','América del Norte':'North America',Asia:'Asia'});
   function isEnglish(){try{const saved=localStorage.getItem('origen-lang');return String(saved||document.documentElement.lang||'es').toLowerCase().startsWith('en')}catch{return String(document.documentElement.lang||'es').toLowerCase().startsWith('en')}}
-  function localizedStory(story){if(!story||!isEnglish())return story;const translation=STORY_TRANSLATIONS_EN[story.id];return translation?{...story,cat:translation[0],txt:translation[1]}:story}
+  function localizedStory(story){if(!story||!isEnglish())return story;if(story.txtEn)return {...story,cat:story.catEn||story.cat,txt:story.txtEn,src:story.srcEn||story.src};const translation=STORY_TRANSLATIONS_EN[story.id];return translation?{...story,cat:translation[0],txt:translation[1]}:story}
   function localizedCountryName(data){return isEnglish()?(ENGLISH_COUNTRY_NAMES[data.key]||data.name):data.name}
   function localizedContinent(data){return isEnglish()?(ENGLISH_CONTINENTS[data.continent]||data.continent):data.continent}
 
@@ -606,12 +671,13 @@ window.MundoCultural = (() => {
         <p class="mc-category">${_esc(story.cat)}</p>
         <h3 class="mc-sabias">${english ? 'Did you know…?' : '¿Sabías que…?'}</h3>
         <blockquote class="mc-text">${_esc(story.txt)}</blockquote>
-        <a href="${_esc(_safeHref(story.href))}" class="mc-discover-btn">
-          ${english ? 'Explore its origins' : 'Descubre su origen'} <span aria-hidden="true">→</span>
+        <a href="${_esc(_safeHref(story.href, '#confianza'))}" class="mc-discover-btn" target="_blank" rel="noopener noreferrer">
+          ${english ? 'View original source' : 'Ver fuente original'} <span aria-hidden="true">↗</span>
         </a>
       </div>
       <footer class="mc-footer">
-        <p class="mc-source"${english ? '>'+'Source:' : '>'+'Fuente:'} <em>${_esc(story.src)}</em></p>
+        <p class="mc-source">${english ? 'Official source:' : 'Fuente institucional:'} <em>${_esc(story.src)}</em></p>
+        <p class="mc-source">${english ? 'Reviewed:' : 'Revisado:'} ${_esc(story.reviewedOn || '—')} · ${english ? 'No institutional endorsement implied' : 'Sin aval institucional implícito'}</p>
       </footer>`;
 
     // Update dots
@@ -1104,7 +1170,9 @@ window.HeroGlobe = (() => {
         <div><p class="hpop-cont">${hEsc(continentName)}</p><h3 class="hpop-name">${hEsc(countryName)}</h3></div>
       </div>
       ${story ? `<p class="hpop-kicker">${english ? 'Did you know…?' : '¿Sabías que…?'} · ${hEsc(story.cat)}</p>
-        <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">${english ? 'Source:' : 'Fuente:'} ${hEsc(story.src)}</p>`
+        <p class="hpop-fact">${hEsc(story.txt)}</p><p class="hpop-source">${english ? 'Institutional source:' : 'Fuente institucional:'} ${hEsc(story.src)}</p>
+        <a class="hpop-source-link" href="${hEsc(story.href)}" target="_blank" rel="noopener noreferrer">${english ? 'View original source' : 'Ver fuente original'} ↗</a>
+        <p class="hpop-reviewed">${english ? 'Reviewed:' : 'Revisado:'} ${hEsc(story.reviewedOn || '—')}</p>`
         : `<p class="hpop-fact">${english ? 'A cultural story for this territory is being prepared.' : 'Estamos preparando una historia cultural para este territorio.'}</p>`}
       <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">${english ? 'Explore its culture' : 'Explorar cultura'} →</a>`;
     _popup.hidden = false;
