@@ -28,7 +28,9 @@ const pages = [
   { name: '09-ojito-contrasena-movil', route: 'registro', width: 390, height: 844, capture: 'registration-eye' },
   { name: '10-recuperar-acceso-movil', route: 'recuperar', width: 390, height: 844 },
   { name: '11-restablecer-contrasena-movil', route: 'restablecer', width: 390, height: 844 },
-  { name: '12-ayuda-contrasenas-movil', route: 'ayuda-contrasena', width: 390, height: 844 }
+  { name: '12-ayuda-contrasenas-movil', route: 'ayuda-contrasena', width: 390, height: 844 },
+  { name: '13-brand-b-ecuador-con-fuente', route: 'inicio', width: 1440, height: 950, globe: 'hero', capture: 'hero-country', country: 'ecuador' },
+  { name: '14-brand-b-japon-en-movil', route: 'inicio', width: 390, height: 844, globe: 'hero', capture: 'hero-country', country: 'japan', lang: 'en' }
 ];
 try {
   for (const spec of pages) {
@@ -40,6 +42,7 @@ try {
       reducedMotion: 'reduce'
     });
     const page = await context.newPage();
+    if (spec.lang === 'en') await page.addInitScript(() => localStorage.setItem('origen-lang', 'en'));
     let globeMode = null;
     try {
       await page.goto(base + '#' + spec.route, {
@@ -77,6 +80,12 @@ try {
           await page.locator('[aria-controls="register-password"]').click();
         }
         await page.locator('#register-password-confirm').scrollIntoViewIfNeeded();
+      }
+      if (spec.capture === 'hero-country') {
+        // Open the real bilingual cultural card with its official source.
+        // No HTTP request to the source institution is made by this test.
+        await page.locator('[data-hgt="' + spec.country + '"]').click();
+        await page.locator('#hero-globe-popup:not([hidden]) .hpop-source-link').waitFor({ timeout: 12000 });
       }
       const title = await page.title();
       const mainText = (await page.locator('#main-content').innerText()).slice(0, 500);
