@@ -13,6 +13,7 @@ const runtimeEntries = [
   'app.js',
   'data.js',
   'trust.js',
+  'solar-globe.js',
   'mundo.js',
   'styles.css',
   'supabase-client.js',
