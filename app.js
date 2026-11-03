@@ -1035,23 +1035,20 @@
     <section class="hero-globe-section">
       <div class="hero-globe-copy">
         <p class="eyebrow">${es ? 'RED SOCIAL CULTURAL GLOBAL' : 'GLOBAL CULTURAL SOCIAL NETWORK'}</p>
-        <div class="hero-wordmark">
-          <span class="hwm-origen">ORIGEN</span>
-          <span class="hwm-cultural">CULTURAL</span>
-        </div>
+        <h1 class="hero-main-title">${es ? 'Conectando al mundo' : 'Connecting the world'} <em>${es ? 'con sus raíces culturales.' : 'with its cultural origins.'}</em></h1>
         <p class="hero-tagline">${t('tagline')}</p>
-        <p class="hero-desc">${t('intro')}</p>
+        <p class="hero-desc">${es ? 'Una red social cultural gratuita para explorar, aprender y conectar con quienes mantienen vivas nuestras culturas.' : 'A free cultural social network to explore, learn and connect with those keeping living cultures alive.'}</p>
         <div class="hero-globe-actions">
           <a class="btn light hga-primary" href="#mundo">🌍&nbsp; ${es ? 'Explorar el mundo cultural' : 'Explore the cultural world'}</a>
           <a class="btn hga-outline" href="#registro">${es ? 'Compartir mi cultura' : 'Share my culture'}</a>
         </div>
         <a href="#login" class="hero-login-link">${es ? '¿Ya tienes cuenta? Entrar →' : 'Already have an account? Sign in →'}</a>
         <div class="hero-globe-stats">
-          <div class="hero-gstat"><strong>6</strong><span>${es ? 'Territorios explorables' : 'Territories to explore'}</span></div>
+          <div class="hero-gstat"><strong>06</strong><span>${es ? 'Países con fuentes' : 'Countries with sources'}</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>4</strong><span>${es ? 'Perfiles de referencia' : 'Reference profiles'}</span></div>
+          <div class="hero-gstat"><strong>ES / EN</strong><span>${es ? 'Contenido bilingüe' : 'Bilingual content'}</span></div>
           <div class="hero-gstat-div"></div>
-          <div class="hero-gstat"><strong>Beta</strong><span>${es ? 'Controlada' : 'Controlled pilot'}</span></div>
+          <div class="hero-gstat"><strong>Beta</strong><span>${es ? 'Piloto privado' : 'Private pilot'}</span></div>
         </div>
       </div>
       <div class="hero-globe-right">
