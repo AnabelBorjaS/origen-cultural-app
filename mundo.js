@@ -966,6 +966,8 @@ window.MundoCultural = (() => {
       })
       (el);
 
+    if (window.OrigenSolarGlobe) _globe._solarUnregister = window.OrigenSolarGlobe.register(_globe);
+
     /* controls */
     _globe.controls().autoRotate         = true;
     _globe.controls().autoRotateSpeed    = 0.35;
@@ -1069,6 +1071,7 @@ window.MundoCultural = (() => {
 
   /* ── INIT ───────────────────────────────────────────────────── */
   async function init(globeEl, panelEl) {
+    if (_globe) destroy();
     _destroyed = false;
     _panel     = panelEl;
     _selected  = null;
@@ -1098,6 +1101,7 @@ window.MundoCultural = (() => {
   function destroy() {
     _destroyed = true;
     if (_globe) {
+      _globe._solarUnregister?.();
       if (_globe._ro) _globe._ro.disconnect();
       try { _globe._destructor && _globe._destructor(); } catch {}
       _globe = null;
@@ -1203,6 +1207,7 @@ window.HeroGlobe = (() => {
 
   /* init */
   async function init(container, popup) {
+    if (_globe) destroy();
     _destroyed = false; _popup = popup;
     _selected = null; _hovered = null; _rotating = true;
     hidePopup();
@@ -1260,6 +1265,8 @@ window.HeroGlobe = (() => {
         })
         (container);
 
+      if (window.OrigenSolarGlobe) _globe._solarUnregister = window.OrigenSolarGlobe.register(_globe);
+
       _globe.controls().autoRotate      = !prefersReduced;
       _globe.controls().autoRotateSpeed  = 0.30;
       _globe.controls().enableDamping    = true;
@@ -1290,6 +1297,7 @@ window.HeroGlobe = (() => {
     _destroyed = true;
     hidePopup();
     if (_globe) {
+      _globe._solarUnregister?.();
       if (_globe._hRo) _globe._hRo.disconnect();
       try { _globe._destructor && _globe._destructor(); } catch {}
       _globe = null;
