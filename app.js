@@ -775,11 +775,19 @@
   /* ═══════════════════════════════════════════════════════════
      CREATOR CARD (directory)
   ═══════════════════════════════════════════════════════════ */
+  function culturalProfileHref(profile) {
+    // Registered Cultural Agents use their public user UUID; editorial
+    // references use their controlled reference slugs.
+    return profile?._kind === 'user'
+      ? `#usuario/${encodeURIComponent(profile.id)}`
+      : `#perfil/${encodeURIComponent(profile?.id || '')}`;
+  }
+
   function creatorCard(c) {
     c = localizedSeedProfile(c);
     const favs  = remoteFavoriteRefs();
     const saved = favs.includes(c.id);
-    const href  = c._kind === 'user' ? `#usuario/${c.id}` : `#perfil/${c.id}`;
+    const href = culturalProfileHref(c);
     const image = c.image || c.avatar || 'assets/logo-mark.svg';
     return `<article class="creator-card">
       <div class="creator-card-image">
@@ -1083,7 +1091,7 @@
           <div><p class="eyebrow">${es ? 'CURADURÍA CULTURAL' : 'CULTURAL CURATION'}</p><h2>${t('featured')}</h2></div>
           <div><p>${t('featuredBody')}</p><a class="link-arrow" href="#explorar">${t('seeAll')}</a></div>
         </div>
-        <div class="story-grid">${featured.map(c => `<a class="story-card" href="${esc('#perfil/' + c.id)}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
+        <div class="story-grid">${featured.map(c => `<a class="story-card" href="${esc(culturalProfileHref(c))}"><img src="${esc(safeMediaUrl(c.image) || 'assets/logo-mark.svg')}" alt="${esc(c.name)}" loading="lazy"><div class="story-card-content"><div class="meta">${verBadge(c)} ${esc(c.category)} · ${esc(c.location)}</div><h3>${esc(c.name)}</h3><p>${esc(c.short)}</p></div></a>`).join('')}</div>
       </div>
     </section>
 
@@ -1212,8 +1220,8 @@
           <p class="eyebrow">${es ? 'DESCUBRIR' : 'DISCOVER'}</p>
           <h3>${es ? 'Agentes culturales' : 'Cultural Agents'}</h3>
           ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
-            <a href="${esc('#perfil/' + c.id)}">${avatarEl(c, 'sm')}</a>
-            <div class="aside-row-info"><a href="${esc('#perfil/' + c.id)}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
+            <a href="${esc(culturalProfileHref(c))}">${avatarEl(c, 'sm')}</a>
+            <div class="aside-row-info"><a href="${esc(culturalProfileHref(c))}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
             <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${esc(c.id)}">${myFollows.includes(c.id) ? (es ? 'Siguiendo' : 'Following') : (es ? '+ Seguir' : '+ Follow')}</button>
           </div>`).join('')}
           <a class="link-arrow" href="#explorar" style="display:block;margin-top:18px;font-size:12px">${es ? 'Ver todos' : 'View all'} →</a>
