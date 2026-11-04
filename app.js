@@ -1514,10 +1514,15 @@
         ${d.type !== 'text' ? `
           <div class="upload-zone wide" id="post-media-zone">
             ${hasMedia
-              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb${(d.type === 'video' || String(d.files?.[i]?.type || '').startsWith('video/')) ? ' preview-video' : ''}">${(d.type === 'video' || String(d.files?.[i]?.type || '').startsWith('video/'))
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb${(d.type === 'video' || String(d.files?.[i]?.type || '').startsWith('video/')) ? ' preview-video' : ''}" data-preview-index="${i}">${(d.type === 'video' || String(d.files?.[i]?.type || '').startsWith('video/'))
                 ? `<video src="${esc(safeMediaUrl(src))}" controls muted playsinline preload="metadata" aria-label="Vista previa del video"></video>`
                 : `<img src="${esc(safeMediaUrl(src))}" alt="Vista previa de imagen ${i + 1}">`}
-                <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${(d.type === 'carousel' || d.type === 'mixed') ? `<button class="preview-add" id="add-more-media" type="button" aria-label="${L('Añadir archivos','Add media')}">＋</button>` : ''}</div>`
+                ${d.type === 'mixed' ? `<div class="mixed-media-order">
+                  <button type="button" data-move-media="${i}" data-move-dir="-1" aria-label="${L('Mover archivo anterior', 'Move media earlier')}" ${i === 0 ? 'disabled' : ''}>←</button>
+                  <span aria-hidden="true">${i + 1}</span>
+                  <button type="button" data-move-media="${i}" data-move-dir="1" aria-label="${L('Mover archivo siguiente', 'Move media later')}" ${i === d.media.length - 1 ? 'disabled' : ''}>→</button>
+                </div>` : ''}
+                <button class="remove-media" data-rmidx="${i}" type="button" aria-label="${L('Quitar archivo', 'Remove media')} ${i + 1}">×</button></div>`).join('')}${(d.type === 'carousel' || d.type === 'mixed') ? `<button class="preview-add" id="add-more-media" type="button" aria-label="${L('Añadir archivos','Add media')}">＋</button>` : ''}</div>`
               : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? L('Selecciona un video','Select a video') : d.type === 'carousel' ? L('Selecciona fotos (puedes elegir varias)','Select photos (you can choose multiple)') : d.type === 'mixed' ? L('Selecciona fotos y videos en el mismo orden','Select photos and videos in the same order') : L('Selecciona una foto','Select a photo')}</p><small>${L('Haz clic para subir','Click to upload')}</small></div>`}
             <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : d.type === 'mixed' ? 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${(d.type === 'carousel' || d.type === 'mixed') ? 'multiple' : ''} style="display:none">
           </div>${(d.type === 'video' || d.type === 'mixed') ? `<p id="post-video-duration-status" class="form-note" role="status" aria-live="polite">${state.createData.videoDurationSeconds ? L(`Duración: ${Math.round(state.createData.videoDurationSeconds)} s (máximo 90 s).`, `Duration: ${Math.round(state.createData.videoDurationSeconds)} s (90 s maximum).`) : L('Máximo 90 segundos. Verificaremos la duración antes de publicar.','Maximum 90 seconds. Duration will be checked before publishing.')}</p>` : ''}` : ''}
@@ -3322,6 +3327,8 @@
         state.createData.audioRightsSource = '';
         state.createData.audioAttribution = '';
         state.createData.videoDurationSeconds = null;
+        state.createData.videoDurations = {};
+        state.carIdx._prev = 0;
         state.createData.media = [];
         state.createData.files = [];
         render('crear', false);
@@ -3333,7 +3340,7 @@
     const mediaInput = document.getElementById('post-media-input');
     if (mediaZone && mediaInput) {
       mediaZone.addEventListener('click', e => {
-        if (e.target.closest('video, video *, [data-rmidx], #add-more-media')) return;
+        if (e.target.closest('video, video *, [data-rmidx], [data-move-media], #add-more-media')) return;
         mediaInput.click();
       });
       mediaInput.addEventListener('change', async e => {
@@ -3345,11 +3352,23 @@
         state.createData.audioRightsSource = '';
         state.createData.audioAttribution = '';
         state.createData.videoDurationSeconds = null;
-        if (state.createData.type === 'video') {
+        const validImage = file => ['image/jpeg','image/png','image/webp'].includes(file.type);
+        const validVideo = file => ['video/mp4','video/webm','video/quicktime'].includes(file.type);
+        const type = state.createData.type;
+        const allowed = file => type === 'video' ? validVideo(file)
+          : type === 'mixed' ? (validImage(file) || validVideo(file)) : validImage(file);
+        if (files.some(file => !allowed(file))) {
+          showToast(state.lang === 'es'
+            ? 'Formato no admitido: usa JPG, PNG, WebP, MP4, WebM o MOV según la publicación.'
+            : 'Unsupported file: use JPG, PNG, WebP, MP4, WebM or MOV for the chosen post type.');
+          return;
+        }
+        state.createData.videoDurations = {};
+        if (type === 'video') {
           for (const url of state.createData.media || []) releasePreview(url);
           state.createData.files = [files[0]];
           state.createData.media = [URL.createObjectURL(files[0])];
-        } else if (state.createData.type === 'carousel') {
+        } else if (type === 'carousel' || type === 'mixed') {
           state.createData.files = [...(state.createData.files || []), ...files];
           state.createData.media = [...(state.createData.media || []), ...files.map(file => URL.createObjectURL(file))];
         } else {
@@ -3363,33 +3382,60 @@
 
     // The browser checks metadata for an early user-facing limit. A trusted
     // publication service must independently inspect the media before publish.
-    const videoPreview = mediaZone?.querySelector('video');
     const durationStatus = document.getElementById('post-video-duration-status');
-    if (videoPreview && durationStatus) {
-      const checkVideoDuration = () => {
-        const seconds = Number(videoPreview.duration);
-        if (Number.isFinite(seconds) && seconds > 0) {
-          state.createData.videoDurationSeconds = seconds;
-          durationStatus.textContent = seconds <= 90
-            ? (state.lang === 'es' ? `Duración: ${Math.round(seconds)} s (máximo 90 s).` : `Duration: ${Math.round(seconds)} s (90 s maximum).`)
-            : (state.lang === 'es' ? `El video dura ${Math.round(seconds)} s. El máximo es 90 s.` : `This video is ${Math.round(seconds)} s long. The maximum is 90 s.`);
-          durationStatus.setAttribute('data-duration-valid', String(seconds <= 90));
-        } else {
-          state.createData.videoDurationSeconds = null;
-          durationStatus.textContent = state.lang === 'es'
-            ? 'No pudimos verificar la duración. Selecciona un video compatible de máximo 90 segundos.'
-            : 'We could not verify the duration. Select a supported video no longer than 90 seconds.';
-          durationStatus.setAttribute('data-duration-valid', 'false');
-        }
+    const videoPreviews = [...(mediaZone?.querySelectorAll('.preview-thumb video') || [])];
+    if (videoPreviews.length && durationStatus) {
+      const updateDurationStatus = () => {
+        const d = state.createData;
+        const videoIndices = (d.files || []).map((file, i) =>
+          String(file?.type || '').startsWith('video/') ? i : -1).filter(i => i >= 0);
+        const durations = videoIndices.map(i => Number(d.videoDurations?.[i]));
+        const verified = durations.every(seconds => Number.isFinite(seconds) && seconds > 0 && seconds <= 90);
+        const invalid = durations.some(seconds => Number.isFinite(seconds) && seconds > 90);
+        durationStatus.setAttribute('data-duration-valid', String(verified));
+        if (d.type === 'video' && verified) d.videoDurationSeconds = durations[0];
+        else if (d.type === 'video') d.videoDurationSeconds = null;
+        durationStatus.textContent = invalid
+          ? (state.lang === 'es' ? 'Un video supera el máximo de 90 segundos.' : 'A video exceeds the 90-second limit.')
+          : verified
+            ? (state.lang === 'es' ? `${videoIndices.length} video(s) verificados · hasta 90 s cada uno.` : `${videoIndices.length} video(s) checked · up to 90 s each.`)
+            : (state.lang === 'es' ? 'Verificando duración de cada video (máximo 90 s).' : 'Checking each video duration (maximum 90 s).');
       };
-      videoPreview.addEventListener('loadedmetadata', checkVideoDuration);
-      if (videoPreview.readyState >= 1) checkVideoDuration();
+      videoPreviews.forEach(video => {
+        const index = Number(video.closest('[data-preview-index]')?.dataset.previewIndex);
+        const checkVideoDuration = () => {
+          const seconds = Number(video.duration);
+          state.createData.videoDurations ||= {};
+          state.createData.videoDurations[index] = Number.isFinite(seconds) && seconds > 0 ? seconds : NaN;
+          updateDurationStatus();
+        };
+        video.addEventListener('loadedmetadata', checkVideoDuration);
+        video.addEventListener('error', checkVideoDuration);
+        if (video.readyState >= 1) checkVideoDuration();
+      });
+      updateDurationStatus();
     }
 
     /* add more media (carousel) */
     const addMore = document.getElementById('add-more-media');
     if (addMore) addMore.addEventListener('click', e => { e.stopPropagation(); mediaInput && mediaInput.click(); });
 
+    /* Reorder local mixed-media preview; never sends or stores any file. */
+    document.querySelectorAll('[data-move-media]').forEach(btn => {
+      btn.addEventListener('click', event => {
+        event.stopPropagation();
+        const from = Number(btn.dataset.moveMedia);
+        const to = from + Number(btn.dataset.moveDir);
+        const d = state.createData;
+        if (d.type !== 'mixed' || !Number.isInteger(from) || !Number.isInteger(to) ||
+            from < 0 || to < 0 || to >= (d.files || []).length) return;
+        [d.files[from], d.files[to]] = [d.files[to], d.files[from]];
+        [d.media[from], d.media[to]] = [d.media[to], d.media[from]];
+        d.videoDurations = {};
+        state.carIdx._prev = to;
+        render('crear', false);
+      });
+    });
     /* remove media thumbnail */
     document.querySelectorAll('[data-rmidx]').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -3397,6 +3443,8 @@
         const idx = parseInt(btn.dataset.rmidx, 10);
         const [preview] = state.createData.media.splice(idx, 1);
         state.createData.videoDurationSeconds = null;
+        state.createData.videoDurations = {};
+        state.carIdx._prev = 0;
         state.createData.rightsAcknowledged = false;
         state.createData.culturalAcknowledged = false;
         state.createData.audioRightsAcknowledged = false;
@@ -3459,9 +3507,9 @@
       const user = me(); if (!user) return;
       // Programmatic form submission and stale DOM must fail closed too.
       // This UX switch cannot authorize real Storage or DB writes.
-      const publishingReady = user.accountType === 'explorer'
+      const publishingReady = state.createData.type !== 'mixed' && (user.accountType === 'explorer'
         ? window.ORIGEN_API?.explorerPublishingReady === true
-        : window.ORIGEN_API?.culturalPublishingReady === true;
+        : window.ORIGEN_API?.culturalPublishingReady === true);
       if (!publishingReady) {
         const message = state.lang === 'es'
           ? 'La publicación aún no está disponible. Tu vista previa permanece solo en este dispositivo; ningún contenido se ha enviado a ORIGEN.'
