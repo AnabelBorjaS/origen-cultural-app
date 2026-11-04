@@ -1,0 +1,67 @@
+-- Separate the culture an agent shares from where they are currently based.
+alter table public.profiles
+  add column if not exists city_geoname_id bigint,
+  add column if not exists city_subcountry text,
+  add column if not exists cultural_identity text;
+
+-- Keep signup's legal-consent gate and legal acceptance record intact while
+-- copying only the new, allow-listed location and cultural-identity fields.
+create or replace function private.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $origen_strict_registration$
+declare
+  requested_role public.user_role;
+begin
+  if new.raw_user_meta_data -> 'accepted_legal' is distinct from 'true'::jsonb
+     or new.is_anonymous is distinct from false
+     or new.raw_app_meta_data->>'provider' is distinct from 'email'
+  then
+    raise exception 'ORIGEN requires explicit legal acknowledgement for email signup'
+      using errcode = '22023';
+  end if;
+
+  requested_role :=
+    case
+      when new.raw_user_meta_data->>'account_type' = 'creator' then 'creator'::public.user_role
+      else 'explorer'::public.user_role
+    end;
+
+  insert into public.profiles (
+    id, role, display_name, location, country, city,
+    city_geoname_id, city_subcountry, cultural_identity,
+    story, categories, links
+  ) values (
+    new.id,
+    requested_role,
+    coalesce(new.raw_user_meta_data->>'display_name', ''),
+    nullif(new.raw_user_meta_data->>'location', ''),
+    nullif(new.raw_user_meta_data->>'country', ''),
+    nullif(new.raw_user_meta_data->>'city', ''),
+    nullif(new.raw_user_meta_data->>'city_geoname_id', '')::bigint,
+    nullif(new.raw_user_meta_data->>'city_subcountry', ''),
+    nullif(new.raw_user_meta_data->>'cultural_identity', ''),
+    nullif(new.raw_user_meta_data->>'story', ''),
+    coalesce(
+      array(select jsonb_array_elements_text(coalesce(new.raw_user_meta_data->'categories','[]'::jsonb))),
+      '{}'::text[]
+    ),
+    case
+      when jsonb_typeof(new.raw_user_meta_data->'links') = 'object'
+      then new.raw_user_meta_data->'links'
+      else '{}'::jsonb
+    end
+  ) on conflict (id) do nothing;
+
+  insert into public.legal_acceptances (
+    user_id, terms_version, privacy_version,
+    community_guidelines_version, cultural_rights_version
+  ) values (
+    new.id, 'v1.2', 'v1.2', 'v1.2', 'v1.2'
+  );
+
+  return new;
+end;
+$origen_strict_registration$;

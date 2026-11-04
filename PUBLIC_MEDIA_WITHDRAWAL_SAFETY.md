@@ -1,0 +1,145 @@
+# ORIGEN Cultural — Retirada segura de publicaciones y archivos públicos
+
+**Estado:** protocolo de desarrollo para beta; **NO** es un procedimiento ya operativo de moderación.  
+**Fecha:** 9 de octubre de 2026.  
+**Bloqueo:** P0 antes de invitar Agentes Culturales reales.  
+**Alcance:** historias culturales del feed, fotografías, videos, derechos de imagen, conocimiento cultural y solicitudes de retirada.
+
+## 1. Hechos verificados (auditoría SQL de solo lectura, 9-10-2026)
+
+- La tabla `public.cultural_posts` tiene RLS habilitado. La política `posts public read` permite `SELECT` a `anon` y `authenticated` si `is_published=true`, o acceso del autor o administrador autorizado. La consulta pública del enlace de historia filtra **ambos** `id` e `is_published=true`.
+- `storage.buckets` muestra `post-media.public=true`, al igual que `avatars` y `covers`. **Cualquier persona con una URL válida de un objeto en un bucket público puede descargar ese objeto**, aunque su publicación deje de ser visible en la Data API.
+- `public.cultural_posts` tenía **0 publicaciones, 0 publicadas y 0 ocultas** al momento de la verificación. Esto no demuestra que una futura retirada funcione.
+- En el código beta, la eliminación de un post se restringe al autor por filtro de `author_id` y la DB/RLS, y se intenta eliminar de Storage su `media_urls` y `image_url` heredado.
+- Revisión 9-10-2026: antes, esa limpieza se lanzaba sin esperarla, y la interfaz podía decir «eliminada» mientras fallaba. El código beta ahora **espera el resultado de los intentos de limpieza**, evita marcarlos como éxito si falla alguno e informa de que podrían quedar archivos públicos.
+- **No hay todavía** cola de eliminación en servidor, bitácora protegida de retirada, moderación administrativa probada ni integración de proveedores para retirar contenido externo.
+
+## 2. Riesgo concreto
+
+**Eliminar u ocultar una publicación no equivale a revocar su archivo público.**
+
+La retirada de la fila de la base de datos evita su presentación normal en el feed y el permalink. No obstante:
+1. Un usuario con una URL de `/storage/v1/object/public/post-media/...` aún puede acceder al medio si el objeto no se ha borrado de Storage.
+2. Borrar el objeto de Storage puede requerir propagación de cachés CDN/navegadores. No se debe garantizar eliminación inmediata de copias que otros descargaron, guardaron o republicaron.
+3. Fotos o videos hospedados fuera del Storage de ORIGEN no se pueden revocar desde ORIGEN sin colaboración del proveedor/titular.
+4. La eliminación desde el navegador puede fallar por caída de red, cierre de sesión, cambio de cuenta, error de permisos o fin de batería.
+5. Si el post ya fue eliminado de base de datos y la limpieza falló, el cliente puede haber perdido la asociación entre el post y los objetos: se necesita un proceso administrativo seguro para recuperar y cerrar ese caso.
+
+**Riesgo reputacional:** el Agente o titular puede creer que su imagen o conocimiento cultural dejó de estar disponible cuando persiste una URL accesible.
+
+## 3. Medidas beta ya programadas (no probadas con Storage real)
+
+- La página `#publicacion/<UUID>` usa una consulta individual publicada para evitar divulgar la historia cuando no está disponible.
+- `deletePost` consulta al autor y medios anteriores; elimina por `author_id` (defensa adicional a RLS); espera el resultado de los intentos de borrado de medios conocidos y reconoce resultados inciertos/errores.
+- Tras confirmar la eliminación de DB, un error posterior de actualización de feed **no** se comunica como si DB no hubiera eliminado el post.
+- Ante limpieza incompleta, la interfaz avisa: publicación retirada, pero no se pudo confirmar la eliminación de todos los archivos, y presenta `info.origencultural@gmail.com`.
+- Pruebas unitarias simuladas cubren: no sesión, otro autor, DELETE de cero filas, limpieza de medios de autor, `image_url` heredado, URLs externas, fallo de Storage y espera real de la resolución. **No prueban un objeto real ni invalidación de CDN.**
+
+### Ajuste de seguridad del cliente (9 octubre 2026)
+
+El método `removeOwnMedia` ahora requiere que la respuesta de Storage incluya el identificador exacto del archivo solicitado entre los objetos eliminados. Una respuesta exitosa pero vacía, sin error, o con otro archivo deja la limpieza en estado no confirmado. El flujo de post y los de limpieza auxiliar reportan esa incertidumbre. Se añadieron pruebas simuladas para ambos casos. Esto **no demuestra** que una URL pública haya quedado inaccesible y tampoco sustituye una cola de reintentos ni auditoría del servidor. Comprobar en staging con medios sintéticos antes del piloto.
+
+## 4. Procedimiento propuesto para retirada administrativa
+
+**No implementar en Production sin aprobación, proyecto staging aislado y revisión de permisos.**
+
+1. **Recepción y clasificación:** recibir reporte auténtico por canal autorizado; documentar motivo, fecha, referencia mínima y responsable de revisión en almacenamiento privado.
+2. **Contención del post:** operador administrativo verificado cambia a `is_published=false` a través de endpoint servidor protegido/privilegios mínimos y registra decisión. Una denuncia **no** debe retirar automáticamente contenido por sí sola.
+3. **Inventario del medio:** conservar en un registro privado los identificadores de Storage y el resultado previsto; no copiar URLs públicas de contenido sensible a logs, GitHub, analítica o documentos públicos.
+4. **Revocación:** retirar objetos gestionados mediante un proceso servidor autenticado y auditable; registrar por objeto los intentos, resultados y fecha. Definir el tratamiento de medios también asociados a otros posts para evitar borrado indebido.
+5. **Verificación:** revisar que el permalink ya no expone la historia y que el objeto no se puede recuperar desde una URL original. Documentar eventuales demoras de caché y repetir la comprobación según la estrategia aprobada.
+6. **Comunicación:** informar exactamente qué se ha retirado, qué sigue pendiente, límites respecto de copias externas y vías de revisión/apelación. No afirmar «eliminado de Internet».
+7. **Conservación legal y privacidad:** plazos de evidencia y respaldos definidos por asesoría competente. La retención de pruebas se separa de la visibilidad pública y de los archivos compartidos.
+
+## 5. Requisitos para un backend de retirada seguro
+
+- Endpoint o función exclusiva de operadores autorizados; sin `service_role` en navegador.
+- Flujo transaccional o compensable de estado del post + inventario de medios + bitácora.
+- Lista de estados para seguimiento de cada archivo: `pending`, `deleted`, `retry_needed`, `external_unavailable`; sin inventar éxito.
+- Reintentos idempotentes y controlados, preferiblemente procesados en servidor; alertas privadas si hay fallos persistentes.
+- Reglas claras para imágenes de menores, consentimiento comunitario, reclamaciones concurrentes y preservación legal.
+- Riesgo de acceso a medios compartidos entre contenidos evaluado antes de borrarlos.
+- No prometer eliminación instantánea en redes y CDNs de terceros.
+- Auditoría con dos cuentas (Agente A/B), persona anónima y operador de moderación con roles separados.
+- Seleccionar estrategia de bucket: **público con retirada auditada** para contenido destinado a todos o **privado con URLs firmadas** para contenidos cuyo acceso debe poder controlarse. Esta decisión requiere un diseño separado y no se presupone equivalente a borrar copias antiguas.
+
+## 6. Matriz de aceptación obligatoria en staging aislado
+
+| Caso | Prueba | Resultado aceptable |
+|---|---|---|
+| Historia pública | Compartir permalink y URL original del medio | Ambos públicos según consentimiento |
+| Autor oculta post | `is_published=false` | Feed y permalink ya no enseñan historia |
+| Medio de post oculto | Probar URL Storage **sin borrar archivo** | **Sigue accesible** en bucket público: limitación esperada, debe documentarse |
+| Autor elimina post | Usuario A borra post con medio propio | DB elimina solo A; intenta y confirma borrado Storage |
+| Storage falla | Forzar error controlado durante retiro | Notificar operación parcial sin falso «todo eliminado», registrar para acción humana |
+| Intenta borrar B | A intenta retirar post y medio de B | Backend y Storage lo impiden |
+| Moderador autorizado | Operador retira contenido reportado sin ser dueño | Hay permiso administrativo auditable y confirmación verificada |
+| Visitante anónimo | Intenta acceder a borrador/retirado por Data API | Sin contenido; RLS aplicado |
+| CDN y cachés | Acceso a URL pública de objeto después de borrarlo | Verificar límites, caché y plazos reales; no prometer instantaneidad |
+| Material externo | Medio fuera de ORIGEN | No afirmar que se eliminó del servidor tercero |
+| Varios posts → mismo medio | Intento de retirar solo una referencia | No destruir otros contenidos autorizados inadvertidamente |
+| Evidencia privada | Reporte y bitácora | No accesible por terceros o cuentas ordinarias |
+
+## 7. Puertas de lanzamiento y responsables
+
+**Antes del piloto Ecuador:** implementación de una respuesta proporcionada a reportes y retiradas, acceso administrativo limitado, pruebas en staging con dos cuentas, documentación del consentimiento de publicación y de las limitaciones de URLs públicas. La fundadora debe aprobar los costos y servicios antes de contratar o desplegar.
+
+**No-go:** falta de un método fiable para detener exposición de contenido cultural restringido o datos de menores; media retirada sin control/auditoría; permisos de backend no probados.
+
+**Interdependencias:** issues #5 (staging), #7 (derechos culturales server-side), #8 (moderación), #10 (permalinks).
+
+**Fuentes técnicas actuales verificadas:** 
+- Documentación Supabase Storage Buckets: https://supabase.com/docs/guides/storage/buckets/fundamentals
+- Documentación Supabase CDN Smart CDN: https://supabase.com/docs/guides/storage/cdn/smart-cdn
+- Código: `supabase-client.js`, `app.js` y `tests/client-ownership.mjs`
+
+**Nota:** ningún paso de este documento fue ejecutado contra datos reales ni implica que ya exista un servicio de retirada administrativa en Production.
+
+## 8. Fallo ambiguo de red durante publicación — corrección de cliente (13 Oct 2026)
+
+**Hallazgo P0 relacionado con medios:** un `createPost()` cuyo INSERT fue **intentado** puede lanzar un error por corte de conexión después de que Supabase haya confirmado internamente la transacción. En esa situación, el cliente NO puede demostrar que la publicación no existe. Borrar automáticamente los medios recién subidos puede dejar la historia publicada, pero sin fotografías ni videos.
+
+**Corrección en PR #3 (sin desplegar):**
+
+1. `app.js` diferencia el momento **anterior** al intento de insertar de un resultado **incierto después** de iniciar la operación. Antes de intentar insertar, una subida fallida hace limpieza de archivos conocidos con `await Promise.allSettled`, y solo después comunica el error. Si alguna eliminación falla, se registra una advertencia.
+2. Después de intentar insertar, **no se borra automáticamente el material** ante un error; aparece un aviso bilingüe que explica que ORIGEN no pudo confirmar si el post se guardó, que las fotos o videos se conservaron, y que el autor debe revisar el feed.
+3. Se desactiva el botón de reenvío de ese formulario para evitar un intento duplicado inmediato. La persona puede navegar y revisar el feed, pero el sistema **todavía no cuenta con detección de duplicados en servidor ni una cola de archivos huérfanos**.
+4. `tests/post-submit-error-recovery.mjs` ejecuta el **handler real extraído de `app.js`** con APIs y archivos sintéticos; cubre fallos ambiguos en español/inglés, limpieza previa a INSERT con espera efectiva, envío exitoso y bloqueo de publicaciones sin las declaraciones de derechos.
+
+**Evidencia:** Quality Gate #432 SUCCESS, con cuatro mensajes de prueba PASS en el log. CodeQL #236 y Browser QA #295 deben verificarse por separado en GitHub Actions antes de dar la batería completa por cerrada.
+
+**Limitación explícita:** un fallo durante la **propia subida a Storage** también puede dejar objetos cuya respuesta no llegó al navegador; todavía no existe reconciliación server-side. Preservar medios frente a una operación ambigua protege contra una pérdida accidental, pero puede dejar objetos huérfanos y no sustituye un inventario privado, limpieza supervisada o procedimiento administrativo. El P0 #12 continúa abierto hasta probarlo con Storage real, cuentas ficticias y moderación protegida.
+
+## 9. Menor retención en caché del navegador para medios culturales (13 octubre 2026)
+
+**Problema:** el cliente tenía `cacheControl: '3600'` para todas las subidas, incluidas las fotos y videos de `post-media`. Cuando se retira una publicación cultural, un navegador que ya descargó esos archivos puede conservarlos hasta que venza ese tiempo de caché. Suprimir el post o el objeto en Storage no elimina copias externas y no garantiza purgar cachés de navegadores.
+
+**Mitigación implementada únicamente en la beta PR #3:** `supabase-client.js` configura `cacheControl: '60'` para **nuevas** imágenes o videos de `post-media`; conserva `3600` segundos para `avatars` y `covers`. No modifica el `cacheControl` de archivos existentes. La elección prioriza posibles retiradas sensibles frente a la máxima reutilización local del archivo.
+
+**Prueba automática:** `tests/cultural-media-cache.mjs` simula la subida sin red y verifica 60 segundos para foto/video cultural, 3600 para perfil, `upsert:false`, rutas por propietario, rechazo de tipos/tamaños incorrectos y comportamiento ante fallos de Storage. Se ejecuta dentro de `npm run check`; Quality Gate **#447 SUCCESS** sobre commit `46eca8677adbb13731a12af958710fbc5cf76104`.
+
+**Límites y costos:** esta duración es una directiva de caché para el navegador, **no** una garantía de que el objeto sea inaccesible 60 segundos después de retirarlo; otros niveles de CDN, dispositivos, capturas y copias externas pueden seguir conservándolo. La reducción del caché puede elevar solicitudes/egress en un piloto de uso intenso; supervisar el consumo del plan gratuito sin añadir servicios de pago. Antes de recibir material restringido culturalmente siguen siendo esenciales la decisión bucket público/privado, permiso comunitario, operaciones humanas de retirada, auditoría de Storage/CDN y pruebas con cuentas sintéticas.
+
+Documentación de referencia: https://supabase.com/docs/guides/storage/cdn/smart-cdn y https://supabase.com/docs/guides/storage/cdn/fundamentals
+
+**No declara cerrado P0 #12 y no modifica Production.**
+
+## 10. Protección contra colisiones de nombres al subir medios (13 octubre de 2026)
+
+**Mejora integrada en el código de la beta, todavía sin pruebas reales con Storage.** En `supabase-client.js`, `upload()` ya no utiliza solamente `user-id/timestamp-nombre.ext`; ahora exige aleatoriedad criptográfica del navegador (`crypto.randomUUID()` o, para navegadores antiguos compatibles, `crypto.getRandomValues()`) para generar un segmento aleatorio de 128 bits por archivo: `user-id/timestamp-nonce-nombre.ext`. Se mantienen la carpeta de propiedad del usuario, la extensión del MIME permitido, el filtro del nombre, el rechazo de archivos grandes y `upsert:false`.
+
+Esto evita colisiones de nombre en subidas simultáneas desde una misma cuenta, incluso con la misma hora y el mismo nombre. Si un navegador no dispone de generación aleatoria segura, la subida falla expresamente antes de escribir a Storage; no se utiliza una ruta predecible como alternativa. El código existente de análisis de URLs gestionadas puede seguir leyendo los archivos con nombres antiguos. El límite del nombre amigable es 64 caracteres.
+
+**Limitación importante:** los buckets de medios siguen siendo **públicos**; añadir un segmento aleatorio a la ruta no es cifrado, autorización ni revocación de acceso. Las URLs publicadas pueden copiarse y continuarán accesibles hasta que se cumplan las condiciones de borrado/retirada. Se mantienen íntegros los bloqueos de permisos, moderación, derechos culturales, pruebas con dos cuentas y retirada real de Storage/CDN.
+
+Pruebas sintéticas añadidas a `tests/cultural-media-cache.mjs`: dos archivos del mismo nombre en el mismo milisegundo obtienen rutas distintas, el modo seguro alternativo `getRandomValues()` funciona, y sin Web Crypto no se solicita ninguna escritura. **Quality Gate #494: aprobado.** No se ejecutaron subidas reales, ni cambios al bucket ni permisos de Supabase, y `main`/Production permanecen intactos.
+
+## 11. Aislamiento de cuentas durante subidas en curso — 13 octubre de 2026
+
+En la beta, `upload()` guarda el ID de la cuenta que inicia la solicitud. Tras confirmar una escritura de Storage, **comprueba de nuevo la sesión** antes de devolver la URL pública al editor. Si el usuario cerró sesión o cambió a otra cuenta, no devuelve la URL ni permite que el editor de la nueva cuenta reutilice accidentalmente el medio anterior. Emite un aviso de operación incompleta, sin publicar el identificador del usuario ni la URL en los logs, y remite al contacto oficial para revisión.
+
+**Riesgo residual P0:** la respuesta de Storage puede llegar después de que se haya creado el objeto; abortar la devolución de la URL **no elimina el objeto**, y el código no debe intentar eliminarlo con las credenciales de otra cuenta. Se necesita inventario/limpieza segura de archivos huérfanos en un backend autorizado y pruebas de Storage y CDN reales. No afirmar que se borró un archivo cuya retirada no ha sido verificada.
+
+Las pruebas `tests/media-upload-account-isolation.mjs` ejecutan el cliente real con respuestas de Storage sintéticas retrasadas: cambio A→B, cierre de sesión, y éxito de la cuenta que permanece conectada. `npm run check` exige estas pruebas en cada Quality Gate. **Quality Gate #498 SUCCESS** sobre el código implementado; no se usaron usuarios, medios ni claves reales.
+
+**El bloqueo para el piloto NO se levanta.** El servicio de revisión administrativa, la trazabilidad de retirada, la protección de datos culturales y las pruebas finales de permisos continúan pendientes.

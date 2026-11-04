@@ -1,0 +1,39 @@
+name: ORIGEN Staging Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_url:
+        description: HTTPS Cloudflare Pages staging URL
+        required: true
+        type: string
+      audit_mode:
+        description: "Protected staging audit: real Auth or disconnected visual preview"
+        required: true
+        type: choice
+        default: auth-staging
+        options:
+          - auth-staging
+          - visual-only
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout release candidate
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Audit deployed staging
+        env:
+          ORIGEN_STAGING_URL: ${{ inputs.staging_url }}
+          ORIGEN_STAGING_AUDIT_MODE: ${{ inputs.audit_mode }}
+          ORIGEN_CF_ACCESS_CLIENT_ID: ${{ secrets.ORIGEN_CF_ACCESS_CLIENT_ID }}
+          ORIGEN_CF_ACCESS_CLIENT_SECRET: ${{ secrets.ORIGEN_CF_ACCESS_CLIENT_SECRET }}
+        run: npm run audit:staging

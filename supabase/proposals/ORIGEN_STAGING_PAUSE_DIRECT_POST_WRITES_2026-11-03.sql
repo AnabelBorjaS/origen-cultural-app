@@ -1,0 +1,32 @@
+-- ORIGEN Cultural — Staging-only defence-in-depth for cultural publishing
+-- Prepared 03 Nov 2026. Do NOT apply to Production without explicit
+-- founder authorization, rights workflow approval, migration review, and QA.
+--
+-- Preflight (read-only, confirmed on 03 Nov):
+--   SELECT count(*) FROM public.cultural_posts; -- Staging: 0
+--   RLS INSERT creator posts own insert = WITH CHECK (false).
+--   RLS UPDATE posts own update currently permits authors to update a row,
+--   and the role authenticated has UPDATE privilege on is_published, is_editorial,
+--   media_urls and other fields. A later draft/seed published by a privileged
+--   service could be promoted directly by its author, bypassing rights review.
+--
+-- This is an intentionally temporary NO-PUBLISH gate for the isolated
+-- Staging project. Do not interpret it as a complete editorial workflow.
+-- SELECT and owner DELETE privileges are deliberately left unchanged.
+-- Moderation server operation must use a reviewed, restricted server role.
+-- No user table data is modified by this migration.
+
+REVOKE INSERT, UPDATE ON TABLE public.cultural_posts FROM authenticated;
+
+-- No automatic rollback. Re-granting INSERT/UPDATE to all authenticated
+-- users would reopen the cultural publishing bypass. Once a server-reviewed
+-- publication process exists, replace this policy with carefully scoped,
+-- tested, role- and column-specific grants/RLS/trigger validation.
+--
+-- Verification (run separately, read-only):
+-- SELECT has_table_privilege('authenticated','public.cultural_posts','INSERT') AS authenticated_can_insert,
+--        has_table_privilege('authenticated','public.cultural_posts','UPDATE') AS authenticated_can_update,
+--        has_table_privilege('authenticated','public.cultural_posts','SELECT') AS authenticated_can_read,
+--        has_table_privilege('authenticated','public.cultural_posts','DELETE') AS authenticated_can_delete,
+--        has_table_privilege('service_role','public.cultural_posts','UPDATE') AS server_can_update;
+-- Desired: false / false / true / true / true
