@@ -2116,6 +2116,21 @@ body:has(.hero-globe-section) .topbar .desktop-nav a::after {
   line-height: 1.55;
 }
 .preview-thumb[data-preview-index] { position: relative; }
+.preview-thumb[data-preview-index]:has(.mixed-media-order) {
+  display: flex;
+  flex-direction: column;
+  min-height: 152px;
+  height: auto;
+  background: #f7f4ef;
+  border: 1px solid rgba(174, 144, 111, .25);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.preview-thumb[data-preview-index]:has(.mixed-media-order) > img { height: 104px; }
+.preview-thumb.preview-video[data-preview-index]:has(.mixed-media-order) > video { height: 170px; }
+@media (max-width: 600px) {
+  .preview-thumb.preview-video[data-preview-index]:has(.mixed-media-order) { max-width: 100%; }
+}
 .mixed-media-order {
   display: flex;
   align-items: center;
