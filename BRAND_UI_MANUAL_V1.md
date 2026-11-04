@@ -1,6 +1,6 @@
-# ORIGEN Cultural — Brand & UI Manual v1.0
+# ORIGEN Cultural — Brand & UI Manual v1.1
 
-**Versión:** 1.0 · **Estado:** dirección de marca aprobada por la fundadora y especificación de la beta; pendiente de revisión visual/móvil, legal y accesibilidad para publicación pública.  
+**Versión:** 1.1 · **Estado:** dirección de marca aprobada por la fundadora y especificación de la beta; pendiente de revisión visual/móvil, legal y accesibilidad para publicación pública.  
 **Alcance:** sitio web responsive + red social cultural, portada, feed, explorar, perfiles, mundo cultural, creación de publicaciones, registro y páginas de confianza.  
 **Logotipo:** fuente de verdad inalterada: `assets/logo-lockup.svg` y `assets/logo-mark.svg`. Nunca redibujar, sustituir, distorsionar ni utilizar iconos «O» genéricos en su lugar.
 
@@ -30,21 +30,33 @@ El *hero* puede adaptar el mensaje a ambos idiomas, pero **no debe repetir exact
 
 **Contraste:** texto sobre fondo oscuro en marfil casi blanco; nunca usar negro para acciones del header oscuro. El champagne se usa como acento, no como texto fino de bajo contraste sobre fondos claros. Colores de banderas, imágenes y fotos son contenido real: no deben teñirse para cumplir una paleta.
 
-## 3. Tipografía y escala
+## 3. Tipografía y escala · Pass 2 de legibilidad (5 Nov 2026)
 
 **Texto e interfaz:** `DM Sans`, Avenir Next, Segoe UI o sans del sistema disponible sin descargar servicios de terceros.  
-**Acento editorial:** `Cormorant Garamond` o Georgia, SOLO en palabras/frases cortas de titulares; no en formularios, botones o párrafos.
+**Acento editorial:** `Cormorant Garamond` o Georgia, solo en frases editoriales cortas; nunca en labels de formularios ni en el menú.
 
-| Uso | Escritorio | Móvil | Line-height |
-|---|---|---|---|
-| H1 hero | 44–62 px según ancho real | 34–42 px | 1.08–1.16 |
-| H2 | 28–40 px | 26–32 px | 1.14–1.25 |
-| H3 / título de card | 20–25 px | 19–22 px | 1.2–1.35 |
-| Cuerpo | 15–17 px | 15–16 px | 1.55–1.75 |
-| Etiqueta / metadato | 11–13 px | 11–12 px | 1.35–1.6 |
-| Botón | 13–14 px | 13–14 px | 1.1–1.3 |
+Esta escala sustituye los mínimos anteriores de 9–11 px detectados en etiquetas, navegación y tarjetas. Son medidas CSS en píxeles, no el tamaño aparente de una captura reducida o de un navegador con zoom:
 
-**Reglas:** máximo 68 caracteres por línea en lectura larga; máximo 2–3 niveles de jerarquía por bloque; evitar titulazos que ocupen media pantalla; mínimo 44 × 44 px en controles táctiles principales.
+| Elemento | Escritorio (≥1061 px) | Tablet (701–1060 px) | Móvil (≤700 px) | Interlineado / criterio |
+|---|---:|---:|---:|---|
+| Título principal H1 de portada | **38–57 px** fluido | **40–56 px** fluido | **36–43 px** fluido | 1.10–1.14; no aumentar |
+| H2 de secciones | 32–46 px según componente | 30–40 px | 28–34 px | 1.14–1.25 |
+| H3 / títulos de tarjetas | 20–26 px | 20–24 px | 19–22 px | 1.2–1.3 |
+| Texto de lectura / descripción | **16 px** | **16 px** | **16 px** | 1.65–1.75 |
+| Menú de escritorio | **14 px** | Se sustituye por menú adaptativo | Se sustituye por menú adaptativo | 1.4, peso 600 |
+| Etiqueta superior / eyebrow | **12 px** | **12 px** | **12 px** | 1.5, tracking moderado |
+| Metadatos de perfiles y tarjetas | **13 px** | **13 px** | **13 px** | 1.45–1.55 |
+| Botones principales | **13–14 px** | **13–14 px** | **13–14 px** | Alto interactivo ≥44 px |
+| Buscar país: label / campo | **12 / 14 px** | **12 / 14 px** | **12 / 14 px** | Texto visible, sin depender del placeholder |
+| Controles Auto / Día / Noche | **12 px** | **12 px** | **12 px** | 1.45, targets táctiles accesibles |
+| Indicadores de portada | número 19–24 / descriptor **12 px** | igual | igual | Contraste al menos suficiente para lectura |
+| Ficha cultural: contenido / fuente | **14 / 12–13 px** | igual | **15 / 12–13 px** | Fuente legible y enlazada |
+| Texto en historias destacadas | **15 px** | **15 px** | **15 px** | Sombra o degradado para contraste |
+| Submenú de feed y autores | autor **15** / metadata **13 px** | igual | igual | Ajuste a ancho, truncado solo si es indispensable |
+| Pie de página: enlaces / legal | **14 / 13 px** | igual | igual | Color más claro que gris tenue |
+| Barra social inferior móvil | — | **11 px** etiqueta + icono | **11 px** etiqueta + icono | 5 destinos, alto táctil accesible |
+
+**Reglas de legibilidad:** no bajar de **12 px** para texto auxiliar persistente de importancia; las excepciones son solo elementos puramente decorativos o etiquetas ultracortas con alternativa accesible. Las etiquetas de barra inferior tienen 11 px por la limitación de cinco destinos, con iconos y área táctil suficiente. Máximo ~68 caracteres por línea en lectura larga; 2–3 niveles de jerarquía visual por bloque; contraste especialmente en fondo negro, fotos y máscaras. Admitir zoom del navegador al 200% y texto aumentado por ajustes del sistema sin pérdida de funciones. En pantallas pequeñas mostrar ES/EN y búsqueda si caben; usar reflow real en lugar de ocultarlos sin alternativa.
 
 ## 4. Retícula, espacios y superficies
 
