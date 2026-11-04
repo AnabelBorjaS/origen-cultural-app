@@ -675,7 +675,7 @@
           ? `<video src="${esc(safeMediaUrl(post.media[cidx]))}" controls muted playsinline preload="metadata" aria-label="${esc(post.title || 'Video cultural')}"></video>`
           : `<img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">`}
         ${isCarousel ? `
-          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${esc(post.id)}" data-ci="${i}" aria-label="${mixedPreview ? (String(post.mediaTypes?.[i] || '').startsWith('video/') ? 'Video' : 'Foto') : 'Imagen'} ${i + 1}"></button>`).join('')}</div>
+          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${esc(post.id)}" data-ci="${i}" aria-label="${mixedPreview ? (String(post.mediaTypes?.[i] || '').startsWith('video/') ? 'Video' : (state.lang === 'es' ? 'Foto' : 'Photo')) : (state.lang === 'es' ? 'Imagen' : 'Image')} ${i + 1}"></button>`).join('')}</div>
           ${cidx > 0 ? `<button class="car-btn car-l" data-car="${esc(post.id)}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
           ${cidx < post.media.length - 1 ? `<button class="car-btn car-r" data-car="${esc(post.id)}" data-cdir="1" aria-label="Siguiente">›</button>` : ''}
           <span class="car-count">${cidx + 1} / ${post.media.length}</span>
@@ -3455,6 +3455,10 @@
         [d.files[from], d.files[to]] = [d.files[to], d.files[from]];
         [d.media[from], d.media[to]] = [d.media[to], d.media[from]];
         d.videoDurations = {};
+        d.videoDurationSeconds = null;
+        d.rightsAcknowledged = false;
+        d.culturalAcknowledged = false;
+        d.audioRightsAcknowledged = false;
         state.carIdx._prev = to;
         render('crear', false);
       });
