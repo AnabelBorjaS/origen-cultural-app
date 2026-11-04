@@ -2680,3 +2680,65 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   .hero-globe-stats { flex-wrap: wrap; }
 }
 /* Zoom/reflow remains enabled; do not constrain user text scaling. */
+
+
+/* ── ORIGEN · CULTURAL FACT CARD POLISH (tablet screenshot review) ──
+   Keep the culture readable and visually linked to one selected country,
+   with full provenance accessible without a cramped internal scrollbar.
+*/
+.hero-globe-popup:not([hidden]) {
+  width: min(304px, 37%);
+  max-height: min(435px, calc(100% - 120px));
+  padding: 16px 17px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232,220,200,.42) transparent;
+}
+.hero-globe-popup .hpop-heading {
+  margin-bottom: 10px;
+  gap: 10px;
+}
+.hero-globe-popup .hpop-cont {
+  font-size: 12px;
+  letter-spacing: .06em;
+}
+.hero-globe-popup .hpop-name { font-size: 23px; line-height: 1.15; }
+.hero-globe-popup .hpop-kicker {
+  padding-top: 9px;
+  margin-bottom: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.hero-globe-popup .hpop-fact { margin-bottom: 8px; line-height: 1.56; }
+.hero-globe-popup .hpop-source {
+  margin-bottom: 5px;
+  line-height: 1.45;
+}
+.hero-globe-popup .hpop-source-link {
+  margin-bottom: 5px;
+  line-height: 1.45;
+}
+.hero-globe-popup .hpop-reviewed { margin-bottom: 10px; }
+.hero-globe-popup .hpop-btn {
+  min-height: 44px;
+  font-size: 13px;
+  line-height: 1.3;
+}
+/* Globe.gl attaches hover labels to its scene. Never show a second
+   territory name while a sourced cultural card is already open. */
+.hero-globe-right:has(.hero-globe-popup:not([hidden])) .scene-tooltip,
+.hero-globe-right:has(.hero-globe-popup:not([hidden])) .globe-tooltip {
+  display: none !important;
+}
+@media (max-width: 1060px) {
+  .hero-globe-popup:not([hidden]) { width: min(300px, 38%); }
+}
+@media (max-width: 700px) {
+  .hero-globe-popup:not([hidden]) {
+    width: auto;
+    max-height: none;
+    padding: 18px;
+    overflow: visible;
+  }
+}
