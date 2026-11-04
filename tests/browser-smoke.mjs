@@ -608,6 +608,61 @@ async function roleChecks(role) {
     check(forcedPaused.message.includes('no está disponible'),
       'Paused publishing must explain failure instead of claiming success');
 
+    // Mixed-media drafts use the genuine composer with synthetic in-memory files.
+    // They must NEVER reach even the mock upload API, regardless of its status.
+    await page.locator('[data-ctype="mixed"]').click();
+    check(await page.locator('#create-form button[type="submit"]').isDisabled(),
+      'Mixed photo/video format must never be sent before trusted backend support');
+    await page.locator('#post-media-input').setInputFiles([
+      { name: 'qa-textile.png', mimeType: 'image/png',
+        buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==', 'base64') },
+      { name: 'qa-culture.webm', mimeType: 'video/webm', buffer: Buffer.from([0x1a,0x45,0xdf,0xa3,0x9f]) }
+    ]);
+    check(await page.locator('#post-media-zone .preview-thumb').count() === 2,
+      'One local mixed draft shows both photo and video thumbnails');
+    check(await page.locator('#post-media-zone img').count() === 1 &&
+          await page.locator('#post-media-zone video').count() === 1,
+      'Image/video MIME types must render in their respective native players');
+    check(await page.locator('#create-live-preview img').count() === 1,
+      'Mixed draft initially previews its first photo');
+    check(await page.locator('#create-form [name="audioRightsAcknowledged"]').count() === 1,
+      'Mixed draft with video requires audio-rights acknowledgement');
+    await page.locator('#create-live-preview .car-r').click();
+    check(await page.locator('#create-live-preview video').count() === 1,
+      'Mixed carousel switches to its video while preserving file order');
+    await page.locator('#post-media-zone video').evaluate(video => {
+      Object.defineProperty(video, 'duration', { configurable:true, value:91 });
+      video.dispatchEvent(new Event('loadedmetadata'));
+    });
+    check(await page.locator('#post-video-duration-status').getAttribute('data-duration-valid') === 'false',
+      'Mixed video over 90 seconds must be flagged as invalid');
+    await page.locator('#post-media-zone video').evaluate(video => {
+      Object.defineProperty(video, 'duration', { configurable:true, value:64 });
+      video.dispatchEvent(new Event('loadedmetadata'));
+    });
+    check(await page.locator('#post-video-duration-status').getAttribute('data-duration-valid') === 'true',
+      'Each mixed video must have verified duration at most 90 seconds');
+    await page.locator('[data-move-media="1"][data-move-dir="-1"]').click();
+    check(await page.locator('#post-media-zone .preview-thumb').first().locator('video').count() === 1,
+      'Local mixed draft allows reordering a video before a photo');
+    await page.locator('[data-rmidx="0"]').click();
+    check(await page.locator('#post-media-zone .preview-thumb').count() === 1 &&
+          await page.locator('#post-media-zone img').count() === 1,
+      'Removing video leaves the valid photo thumbnail');
+    check(await page.locator('#create-form [name="audioRightsAcknowledged"]').count() === 0,
+      'Image-only mixed draft must not demand a video-audio declaration');
+    await page.evaluate(() => { window.ORIGEN_API.culturalPublishingReady = true; });
+    const beforeMixed = await page.evaluate(() => ({ ...window.__postSafetyQA }));
+    const mixedAttempt = await page.evaluate(async () => {
+      const form = document.getElementById('create-form');
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      return { uploads: window.__postSafetyQA.uploads, writes: window.__postSafetyQA.writes };
+    });
+    check(mixedAttempt.uploads === beforeMixed.uploads && mixedAttempt.writes === beforeMixed.writes,
+      'Mixed preview must stay unpublished even if standard post backend is falsely marked ready');
+    await page.evaluate(() => { window.ORIGEN_API.culturalPublishingReady = false; });
+
     // Signed-in report route must keep the current reporter identity,
     // canonical reason, target and details. This is a mocked server response.
     await page.evaluate(() => {
