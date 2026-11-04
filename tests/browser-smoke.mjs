@@ -209,6 +209,15 @@ async function mobileChecks() {
   await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => (document.querySelector('#main-content')?.innerText || '').trim().length > 40, null, { timeout: 20000 });
   await page.waitForSelector('#menu-button');
+  check(await page.locator('.bottom-nav a').count() === 5,
+    'Mobile website must have five social navigation destinations');
+  check(await page.locator('.bottom-nav a[data-route-link="mundo"]').getAttribute('href') === '#mundo',
+    'Mobile social navigation must include interactive Cultural World');
+  check(await page.locator('.bottom-nav a[data-route-link="registro"]').getAttribute('href') === '#registro',
+    'Guest creation action must open real registration route');
+  check(await page.locator('.bottom-nav a[data-route-link="login"]').getAttribute('href') === '#login',
+    'Guest profile action must open real sign-in route');
+
 
   await page.locator('#menu-button').click();
   await page.waitForFunction(() => document.activeElement?.id === 'close-menu');
