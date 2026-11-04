@@ -2103,3 +2103,36 @@ body:has(.hero-globe-section) .topbar .desktop-nav a::after {
   .mundo-globe-light { min-width: min(190px, 60vw); }
   .globe-ui-bottom .globe-hint { display: none; }
 }
+
+
+/* ORIGEN · mixed media is draft-only until per-file rights are server-verified. */
+.create-type-btn[data-ctype="mixed"] { letter-spacing: 0; }
+.mixed-draft-note {
+  padding: 13px 16px;
+  border: 1px solid rgba(174, 144, 111, .38);
+  border-radius: 12px;
+  background: rgba(232, 220, 200, .14);
+  color: inherit;
+  line-height: 1.55;
+}
+.preview-thumb[data-preview-index] { position: relative; }
+.mixed-media-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 0;
+}
+.mixed-media-order button {
+  border: 1px solid rgba(142, 122, 101, .4);
+  border-radius: 8px;
+  min-height: 34px;
+  min-width: 36px;
+  background: #f7f4ef;
+  color: #161515;
+  cursor: pointer;
+}
+.mixed-media-order button:disabled { opacity: .35; cursor: default; }
+.mixed-media-order span { min-width: 20px; font-size: 12px; font-weight: 700; text-align: center; }
+.mixed-media-order button:focus-visible,
+.create-type-btn:focus-visible { outline: 3px solid #be9a6e; outline-offset: 2px; }
