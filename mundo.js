@@ -1059,6 +1059,10 @@ window.HeroGlobe = (() => {
         .polygonSideColor(() => 'rgba(200,169,126,0.07)')
         .polygonStrokeColor(feat => matchKey(feat) ? 'rgba(230,207,170,0.62)' : 'rgba(210,220,235,0.14)')
         .polygonLabel(feat => {
+          // An open cultural card describes the selected country. Avoid a
+          // simultaneous hover label for a *different* country (e.g. Colombia
+          // floating over Ecuador), which misleads visitors about the source.
+          if (_popup && !_popup.hidden) return '';
           const n   = feat.properties?.ADMIN || feat.properties?.name || feat.properties?.NAME || '';
           const key = matchKey(feat);
           return `<div class="globe-tooltip">${key ? '⭐ ' : ''}${hEsc(n)}</div>`;
