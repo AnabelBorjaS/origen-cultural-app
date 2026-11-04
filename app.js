@@ -675,7 +675,7 @@
           ? `<video src="${esc(safeMediaUrl(post.media[cidx]))}" controls muted playsinline preload="metadata" aria-label="${esc(post.title || 'Video cultural')}"></video>`
           : `<img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">`}
         ${isCarousel ? `
-          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${esc(post.id)}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
+          <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${esc(post.id)}" data-ci="${i}" aria-label="${mixedPreview ? (String(post.mediaTypes?.[i] || '').startsWith('video/') ? 'Video' : 'Foto') : 'Imagen'} ${i + 1}"></button>`).join('')}</div>
           ${cidx > 0 ? `<button class="car-btn car-l" data-car="${esc(post.id)}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
           ${cidx < post.media.length - 1 ? `<button class="car-btn car-r" data-car="${esc(post.id)}" data-cdir="1" aria-label="Siguiente">›</button>` : ''}
           <span class="car-count">${cidx + 1} / ${post.media.length}</span>
@@ -3294,6 +3294,27 @@
 
   // Update only the preview, never the active editor. Replacing the form
   // on each keystroke used to blur text fields and interrupt cultural stories.
+  function bindMixedDraftPreviewControls() {
+    if (state.createData.type !== 'mixed') return;
+    const root = document.getElementById('create-live-preview');
+    if (!root) return;
+    root.querySelectorAll('[data-car="_prev"]').forEach(button => {
+      button.addEventListener('click', event => {
+        event.stopPropagation();
+        const d = state.createData;
+        const count = (d.media || []).length;
+        if (!count) return;
+        const idx = Number(button.dataset.ci);
+        const delta = Number(button.dataset.cdir);
+        const next = button.hasAttribute('data-ci')
+          ? idx : (state.carIdx._prev || 0) + delta;
+        if (!Number.isInteger(next) || next < 0 || next >= count) return;
+        state.carIdx._prev = next;
+        updateCreatePostPreview();
+      });
+    });
+  }
+
   function updateCreatePostPreview() {
     const preview = document.getElementById('create-live-preview');
     const user = me();
@@ -3310,10 +3331,12 @@
           timestamp: new Date().toISOString(), likes: 0
         })
       : '<div class="create-preview-empty"><p>La vista previa aparecerá aquí.</p></div>';
+    bindMixedDraftPreviewControls();
   }
 
   /* Create post */
   function bindCreatePost() {
+    bindMixedDraftPreviewControls();
     const currentUser = me();
     if (!currentUser || !['creator','explorer'].includes(currentUser.accountType)) return;
     /* type buttons */
