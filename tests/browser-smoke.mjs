@@ -1561,10 +1561,19 @@ async function brandBGlobeChecks() {
     check(await page.evaluate(() => {
       const popup = document.querySelector('#hero-globe-popup').getBoundingClientRect();
       const world = document.querySelector('.hero-globe-right').getBoundingClientRect();
-      return popup.width / world.width <= 0.4 && popup.height <= 365;
-    }), 'Country information must not cover more than 40% of the globe column');
+      const source = document.querySelector('#hero-globe-popup .hpop-source-link');
+      const c = getComputedStyle(source);
+      return popup.width / world.width <= 0.4 && popup.height <= 445 &&
+        parseFloat(c.fontSize) >= 13;
+    }), 'Country card must stay compact while keeping the source link readable');
     check((await popup.locator('.hpop-fact').innerText()).includes('Quito'),
       'Visible Ecuador fact must use the curated UNESCO story, not an unsourced legacy claim');
+    check(await page.evaluate(() => {
+      const card = document.querySelector('#hero-globe-popup');
+      const tooltip = document.querySelector('.hero-globe-container .scene-tooltip');
+      return !tooltip || getComputedStyle(tooltip).display === 'none' ||
+        !tooltip.textContent?.trim();
+    }), 'An open Ecuador card must suppress other-country hover labels');
     check((await popup.locator('.hpop-source-link').getAttribute('href')).includes('whc.unesco.org/en/list/2'),
       'Ecuador fact must link directly to the original UNESCO record');
     check((await popup.locator('.hpop-source-link').getAttribute('target')) === '_blank' &&
