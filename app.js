@@ -1062,41 +1062,45 @@
         </div>
       </div>
       <div class="hero-globe-right">
-        <div class="hero-globe-container" id="hero-globe-container"></div>
+        <div class="hero-globe-toolbar" aria-label="${es ? 'Herramientas de exploración' : 'Exploration controls'}">
+          <form class="hero-globe-search" id="hero-country-search-form" role="search">
+                    <label for="hero-country-search">${es ? 'Buscar país' : 'Find a country'}</label>
+                    <div class="hero-globe-search-input">
+                      <input id="hero-country-search" name="country" list="hero-country-suggestions" autocomplete="off" placeholder="${es ? 'Ecuador, Japón…' : 'Ecuador, Japan…'}" required>
+                      <button type="submit" aria-label="${es ? 'Buscar país' : 'Find country'}">⌕</button>
+                    </div>
+                    <datalist id="hero-country-suggestions">${[
+                      ['Ecuador','Ecuador'],['Australia','Australia'],['Perú','Peru'],
+                      ['Bolivia','Bolivia'],['México','Mexico'],['Japón','Japan']
+                    ].map(([a,b])=>`<option value="${es?a:b}"></option>`).join('')}</datalist>
+                    <p id="hero-country-search-status" role="status" aria-live="polite"></p>
+                  </form>
+          <div class="globe-light-box hero-globe-light" role="group" aria-label="${es ? 'Iluminación del planeta' : 'Planet lighting'}">
+                    <div class="globe-light-options">
+                      <button type="button" data-globe-light="auto" aria-pressed="true">${es ? 'Auto' : 'Auto'}</button>
+                      <button type="button" data-globe-light="day" aria-pressed="false">${es ? 'Día' : 'Day'}</button>
+                      <button type="button" data-globe-light="night" aria-pressed="false">${es ? 'Noche' : 'Night'}</button>
+                    </div>
+                    <p data-globe-light-status role="status" aria-live="polite"></p>
+                  </div>
+        </div>
+        <div class="hero-globe-stage">
+          <div class="hero-globe-container" id="hero-globe-container"></div>
+          <div class="hero-globe-ui">
+                    <div class="hero-globe-ctrl-bar">
+                      <button id="hero-globe-pause" class="hero-ctrl-btn" title="${es ? 'Pausar / Reanudar rotación' : 'Pause / Resume rotation'}" aria-label="${es ? 'Pausar o reanudar rotación' : 'Pause or resume rotation'}">⏸</button>
+                      <button id="hero-globe-zoom-in" class="hero-ctrl-btn" title="${es ? 'Acercar' : 'Zoom in'}" aria-label="${es ? 'Acercar globo' : 'Zoom in on globe'}">+</button>
+                      <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="${es ? 'Alejar' : 'Zoom out'}" aria-label="${es ? 'Alejar globo' : 'Zoom out on globe'}">−</button>
+                    </div>
+                    <a href="#mundo" class="hero-mundo-link">${es ? 'Mundo Cultural completo' : 'Explore the full Cultural World'} →</a>
+                  </div>
+                  <p class="hero-globe-hint">${es ? 'Toca un país para explorar su cultura' : 'Select a country to explore its culture'}</p>
+                  <div class="hero-globe-territories">
+                    ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪',es ? 'Perú' : 'Peru'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽',es ? 'México' : 'Mexico'],['japan','🇯🇵',es ? 'Japón' : 'Japan']]
+                      .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="${es ? 'Ver' : 'Explore'} ${n}">${f} ${n}</button>`).join('')}
+                  </div>
+        </div>
         <div class="hero-globe-popup" id="hero-globe-popup" hidden></div>
-        <form class="hero-globe-search" id="hero-country-search-form" role="search">
-          <label for="hero-country-search">${es ? 'Buscar país' : 'Find a country'}</label>
-          <div class="hero-globe-search-input">
-            <input id="hero-country-search" name="country" list="hero-country-suggestions" autocomplete="off" placeholder="${es ? 'Ecuador, Japón…' : 'Ecuador, Japan…'}" required>
-            <button type="submit" aria-label="${es ? 'Buscar país' : 'Find country'}">⌕</button>
-          </div>
-          <datalist id="hero-country-suggestions">${[
-            ['Ecuador','Ecuador'],['Australia','Australia'],['Perú','Peru'],
-            ['Bolivia','Bolivia'],['México','Mexico'],['Japón','Japan']
-          ].map(([a,b])=>`<option value="${es?a:b}"></option>`).join('')}</datalist>
-          <p id="hero-country-search-status" role="status" aria-live="polite"></p>
-        </form>
-        <div class="globe-light-box hero-globe-light" role="group" aria-label="${es ? 'Iluminación del planeta' : 'Planet lighting'}">
-          <div class="globe-light-options">
-            <button type="button" data-globe-light="auto" aria-pressed="true">${es ? 'Auto' : 'Auto'}</button>
-            <button type="button" data-globe-light="day" aria-pressed="false">${es ? 'Día' : 'Day'}</button>
-            <button type="button" data-globe-light="night" aria-pressed="false">${es ? 'Noche' : 'Night'}</button>
-          </div>
-          <p data-globe-light-status role="status" aria-live="polite"></p>
-        </div>
-        <div class="hero-globe-ui">
-          <div class="hero-globe-ctrl-bar">
-            <button id="hero-globe-pause" class="hero-ctrl-btn" title="${es ? 'Pausar / Reanudar rotación' : 'Pause / Resume rotation'}" aria-label="${es ? 'Pausar o reanudar rotación' : 'Pause or resume rotation'}">⏸</button>
-            <button id="hero-globe-zoom-in" class="hero-ctrl-btn" title="${es ? 'Acercar' : 'Zoom in'}" aria-label="${es ? 'Acercar globo' : 'Zoom in on globe'}">+</button>
-            <button id="hero-globe-zoom-out" class="hero-ctrl-btn" title="${es ? 'Alejar' : 'Zoom out'}" aria-label="${es ? 'Alejar globo' : 'Zoom out on globe'}">−</button>
-          </div>
-          <a href="#mundo" class="hero-mundo-link">${es ? 'Mundo Cultural completo' : 'Explore the full Cultural World'} →</a>
-        </div>
-        <p class="hero-globe-hint">${es ? 'Toca un país para explorar su cultura' : 'Select a country to explore its culture'}</p>
-        <div class="hero-globe-territories">
-          ${[['ecuador','🇪🇨','Ecuador'],['australia','🇦🇺','Australia'],['peru','🇵🇪',es ? 'Perú' : 'Peru'],['bolivia','🇧🇴','Bolivia'],['mexico','🇲🇽',es ? 'México' : 'Mexico'],['japan','🇯🇵',es ? 'Japón' : 'Japan']]
-            .map(([k,f,n]) => `<button class="hgt-pill" data-hgt="${k}" title="${es ? 'Ver' : 'Explore'} ${n}">${f} ${n}</button>`).join('')}
-        </div>
       </div>
     </section>
 
