@@ -3,6 +3,16 @@
 **Revisión:** 4 noviembre 2026 · **Base:** `BRAND_UI_MANUAL_V1.md` · Solo rama Draft PR #3.  
 **Objetivo:** una sola red social cultural que se vea profesional tanto en web como en móvil, sin eliminar significado, conocimiento ni funciones.
 
+## Refinamiento de legibilidad · Pass 2 (5 noviembre 2026)
+
+- [x] Manual `BRAND_UI_MANUAL_V1.md` actualizado a v1.1 con escala exacta en px para escritorio/tablet/móvil.
+- [x] Tipografía de navegación web 14px, lectura 16px, labels 12px, metadatos 13px, footer 14/13px y control solar 12px.
+- [x] ES/EN y búsqueda restaurados en cabecera tablet/móvil: el breakpoint anterior de 980px los ocultaba sin alternativa en el header.
+- [x] Aumentada legibilidad de historias culturales, fichas de Agentes, estadísticas del hero, controles del globo, footer y feed.
+- [x] Tests de estilos computados añadidos para 390 / 768 / 1440px y comprobación de desbordamiento horizontal.
+- [ ] **Aún no hay nueva ejecución confirmada de GitHub Actions**; inspección visual del despliegue actual y navegación en dispositivo real siguen pendientes.
+- [ ] Confirmar comportamiento del header a 320–360px y ampliación del texto del navegador al 200%.
+
 ## P0 — Portada pública (cambios en la rama beta)
 
 - [x] Hero con título más proporcionado y descripción concisa sin tagline repetido.
