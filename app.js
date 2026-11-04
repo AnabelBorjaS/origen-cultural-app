@@ -951,7 +951,9 @@
 
     document.documentElement.lang = state.lang;
     if (langBtn) {
-      langBtn.textContent = es ? 'EN' : 'ES';
+      langBtn.innerHTML = es
+        ? '<span class="lang-active" aria-hidden="true">ES</span><span class="lang-separator" aria-hidden="true">/</span><span aria-hidden="true">EN</span>'
+        : '<span aria-hidden="true">ES</span><span class="lang-separator" aria-hidden="true">/</span><span class="lang-active" aria-hidden="true">EN</span>';
       langBtn.setAttribute('aria-label', es ? 'Cambiar idioma a inglés' : 'Switch language to Spanish');
     }
     document.getElementById('menu-button')?.setAttribute('aria-label', es ? 'Abrir menú' : 'Open menu');
@@ -1043,8 +1045,9 @@
       <div class="hero-globe-copy">
         <p class="eyebrow">${es ? 'RED SOCIAL CULTURAL GLOBAL' : 'GLOBAL CULTURAL SOCIAL NETWORK'}</p>
         <h1 class="hero-main-title">${es ? 'Conectando al mundo' : 'Connecting the world'} <em>${es ? 'con sus raíces culturales.' : 'with its cultural origins.'}</em></h1>
-        <p class="hero-tagline">${t('tagline')}</p>
-        <p class="hero-desc">${es ? 'Una red social cultural gratuita para explorar, aprender y conectar con quienes mantienen vivas nuestras culturas.' : 'A free cultural social network to explore, learn and connect with those keeping living cultures alive.'}</p>
+        <p class="hero-desc">${es
+          ? 'Descubre culturas vivas, conecta con sus protagonistas y comparte historias con respeto. Una red social cultural gratuita.'
+          : 'Discover living cultures, connect with their people and share stories with respect. A free cultural social network.'}</p>
         <div class="hero-globe-actions">
           <a class="btn light hga-primary" href="#mundo">🌍&nbsp; ${es ? 'Explorar el mundo cultural' : 'Explore the cultural world'}</a>
           <a class="btn hga-outline" href="#registro">${es ? 'Compartir mi cultura' : 'Share my culture'}</a>
@@ -3846,7 +3849,9 @@
   document.getElementById('language-toggle').addEventListener('click', () => {
     state.lang = state.lang === 'es' ? 'en' : 'es';
     localStorage.setItem('origen-lang', state.lang);
-    document.getElementById('language-toggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
+    document.getElementById('language-toggle').innerHTML = state.lang === 'es'
+      ? '<span class="lang-active" aria-hidden="true">ES</span><span class="lang-separator" aria-hidden="true">/</span><span aria-hidden="true">EN</span>'
+      : '<span aria-hidden="true">ES</span><span class="lang-separator" aria-hidden="true">/</span><span class="lang-active" aria-hidden="true">EN</span>';
     document.documentElement.lang = state.lang;
     render(currentRoute(), false);
     showToast(state.lang === 'es' ? 'Idioma cambiado a español' : 'Language changed to English');
