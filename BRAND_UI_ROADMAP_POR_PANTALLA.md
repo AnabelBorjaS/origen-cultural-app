@@ -1,0 +1,63 @@
+# ORIGEN — Hoja de ruta visual y UX por pantalla
+
+**Revisión:** 4 noviembre 2026 · **Base:** `BRAND_UI_MANUAL_V1.md` · Solo rama Draft PR #3.  
+**Objetivo:** una sola red social cultural que se vea profesional tanto en web como en móvil, sin eliminar significado, conocimiento ni funciones.
+
+## P0 — Portada pública (cambios en la rama beta)
+
+- [x] Hero con título más proporcionado y descripción concisa sin tagline repetido.
+- [x] Selector de idioma ES/EN visualmente identificable y búsqueda contrastada en cabecera negra.
+- [x] Barra dedicada al buscador de países + Auto/Día/Noche, **separada del globo**.
+- [x] Ficha de país más compacta; en móvil debajo de la esfera.
+- [x] Selector de países con desplazamiento horizontal en una sola fila cuando falta espacio.
+- [ ] Validar visualmente en Staging **1440, 1024, 768 y 390 px** que ningún control desborde ni oculte el planeta.
+- [ ] Verificar solidez de los enlaces a fuentes; Cloudflare Access antes de cualquier prueba con cuentas.
+
+## P0 — Mundo Cultural
+
+- [x] Modo Auto/Día/Noche, país resaltado y fuentes institucionales ES/EN en seis fichas piloto.
+- [ ] Aplicar escala de tipografía y márgenes de v1 a la página de Mundo completo.
+- [ ] Comprobar ventana de fuente cultural y mapa usable con toque/teclado/teléfono.
+- [ ] Auditar las condiciones de licencia de las texturas del globo y rendimiento móvil.
+
+## P0 — Feed social
+
+- [x] Feed central con publicaciones, videos y perfiles de referencia etiquetados, con navegación de red social.
+- [ ] Unificar jerarquía autor → contenido → contexto cultural → acciones con tarjetas marfil discretas.
+- [ ] Garantizar captions, pausa, mute y reproducción solo cuando se ve en pantalla.
+- [ ] Mantener vacío real cuando no hay publicaciones; no crear likes, comentarios o usuarios ficticios.
+
+## P0 — Crear publicación
+
+- [x] Foto, carrusel fotográfico y video individual ≤90 s en editor.
+- [x] Carrusel mixto foto + video **solo vista previa local** con orden manual y derechos visibles.
+- [ ] UI refinada: cargar archivo → vista previa → descripción/contexto → permisos → guardar/publicar.
+- [ ] Implementar esquema de medios tipado y derechos por pieza del servidor; **no publicar** hasta RLS/Storage/moderación.
+- [ ] Verificar en dos cuentas sintéticas que jamás se accede a medios o borradores de otra persona.
+
+## P1 — Explorar y perfiles
+
+- [ ] Filtros de país, ciudad, tipo de contenido y agente cultural claros, con ayuda contextual.
+- [ ] Grid adaptable 1/2/3 columnas, imagen no distorsionada, texto alternativo y fuente cuando corresponda.
+- [ ] Diferenciar **origen cultural** de **ubicación actual** en perfiles.
+- [ ] Verificar que la identidad comunitaria y la fuente de la historia no se presentan como certificación oficial.
+
+## P1 — Registro, seguridad, idiomas
+
+- [ ] Revisar flujo de confirmar contraseña, email de confirmación, reintentos y errores.
+- [ ] Mantener búsqueda predictiva país/ciudad; no listas gigantes.
+- [ ] Asegurar derechos de música, consentimiento comunitario, reporte y retirada accesible.
+- [ ] Verificar ES/EN en todos los estados; no mezclar interfaces incompletas.
+- [ ] Aplicar Cloudflare Access en hostname raíz y previews y realizar pruebas con dos cuentas de Staging antes de abrir.
+
+## Listo para aprobar diseño (no equivale a aprobación de piloto)
+
+- [ ] Header oscuro con logos intactos y selector/buscador contrastados.
+- [ ] No solapamiento de buscador/sol y globo.
+- [ ] Ficha cultural no tapa la esfera en móvil, fuente visible.
+- [ ] Home funciona con y sin WebGL.
+- [ ] Navegación social 5 destinos de usuario móvil y escritorio accesible.
+- [ ] Navegador sin errores, pruebas visuales y estáticas completas, confirmadas.
+- [ ] No autenticación ni publicación real expuestas al acceso público de Staging.
+
+**Nota operativa:** Cloudflare Pages puede desplegar automáticamente una rama sin proteger su URL. Un despliegue verde **no demuestra** Access, QA de backend ni aprobación de release. No tocar `main` ni `origencultural.com`.
