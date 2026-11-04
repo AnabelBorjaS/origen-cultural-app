@@ -2494,3 +2494,189 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   .hero-globe-popup { animation: none; }
   .hero-main-title, .hero-globe-stage .hgt-pill { transition: none; }
 }
+
+
+/* ════════════════════════════════════════════════════════════
+   ORIGEN · TYPOGRAPHY PASS 2 — readable luxury, not microtype
+   5 Nov 2026. See BRAND_UI_MANUAL_V1.md for exact type scale.
+   Preserve hero H1 sizing, logo artwork and 3D globe placement.
+════════════════════════════════════════════════════════════ */
+:root {
+  --type-body: 16px;
+  --type-reading: 16px;
+  --type-label: 12px;
+  --type-meta: 13px;
+  --type-nav: 14px;
+  --type-button: 14px;
+  --type-footer: 13px;
+}
+.desktop-nav a {
+  font-size: var(--type-nav);
+  line-height: 1.4;
+  letter-spacing: .015em;
+  font-weight: 600;
+}
+.topbar #language-toggle { font-size: 12px; }
+.topbar #search-button svg { width: 22px; height: 22px; }
+.eyebrow, .hero-globe-copy .eyebrow {
+  font-size: var(--type-label);
+  line-height: 1.5;
+  letter-spacing: .13em;
+}
+.hero-globe-copy .hero-desc {
+  font-size: var(--type-reading);
+  line-height: 1.68;
+}
+.hero-globe-actions .btn {
+  font-size: 13px;
+  line-height: 1.3;
+  min-height: 48px;
+}
+.hero-login-link {
+  font-size: var(--type-meta);
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+.hero-gstat strong { font-size: clamp(19px,1.8vw,24px); }
+.hero-gstat span {
+  font-size: var(--type-label);
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: rgba(247,244,239,.84);
+}
+.hero-globe-toolbar .hero-globe-search label {
+  font-size: var(--type-label);
+  font-weight: 700;
+  line-height: 1.45;
+}
+.hero-globe-toolbar .hero-globe-search-input input { font-size: 14px; }
+.hero-globe-toolbar .globe-light-options button {
+  font-size: 12px;
+  min-height: 38px;
+}
+.hero-globe-toolbar .globe-light-box [data-globe-light-status] {
+  font-size: 11px;
+  color: rgba(247,244,239,.87);
+  line-height: 1.45;
+}
+.hero-globe-stage .hgt-pill {
+  font-size: 13px;
+  min-height: 42px;
+}
+.hero-globe-stage .hero-mundo-link { font-size: 13px; }
+.hero-globe-popup .hpop-cont,
+.hero-globe-popup .hpop-kicker {
+  font-size: 12px;
+  letter-spacing: .045em;
+  line-height: 1.5;
+}
+.hero-globe-popup .hpop-fact {
+  font-size: 14px;
+  line-height: 1.62;
+}
+.hero-globe-popup .hpop-source,
+.hero-globe-popup .hpop-reviewed {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(247,244,239,.84);
+}
+.hero-globe-popup .hpop-source-link { font-size: 13px; }
+.hero-globe-popup .hpop-btn { font-size: 13px; min-height: 44px; }
+.manifesto-copy, .section-head p { font-size: 16px; line-height: 1.7; }
+.section-head h2 { line-height: 1.14; }
+.story-card .meta {
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: .035em;
+}
+.story-card p {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.story-card h3 { line-height: 1.22; }
+.creator-card-body p {
+  font-size: var(--type-body);
+  line-height: 1.65;
+}
+.creator-meta {
+  font-size: var(--type-meta);
+  line-height: 1.55;
+  letter-spacing: .02em;
+  color: #54514e;
+}
+.creator-tags span {
+  font-size: 12px;
+  line-height: 1.45;
+}
+.link-arrow { font-size: 13px; letter-spacing: .025em; }
+.chip { font-size: 14px; min-height: 44px; }
+.impact-item span { font-size: 15px; line-height: 1.6; }
+.footer-brand p { font-size: 14px; line-height: 1.7; color: #dad6d0; }
+.footer h4 { font-size: 12px; letter-spacing: .08em; }
+.footer-links { font-size: 14px; line-height: 1.5; }
+.footer-links a { min-height: 30px; display: inline-flex; align-items: center; }
+.footer-bottom { font-size: var(--type-footer); color: #c7c1b9; line-height: 1.6; }
+.post-author-info strong { font-size: 15px; }
+.post-author-info span { font-size: 13px; color: #595959; }
+.post-cat { font-size: 12px; letter-spacing: .07em; }
+.post-desc { font-size: 16px; line-height: 1.7; }
+.post-tags span { font-size: 13px; }
+.pact span { font-size: 13px; }
+.btn-follow-sm { font-size: 12px; min-height: 38px; }
+.post-more-btn { min-height: 40px; min-width: 40px; }
+.feed-sentinel { font-size: 13px; letter-spacing: .02em; }
+.bottom-nav small { font-size: 11px; letter-spacing: .01em; }
+.card-section-label { font-size: 12px; line-height: 1.5; }
+.card-curiosities li { font-size: 15px; line-height: 1.65; color: rgba(255,255,255,.87); }
+.card-meta, .creator-mini-info span, .territory-disclaimer {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.79);
+}
+.creator-mini-info a, .featured-country { font-size: 14px; }
+.panel-welcome p { font-size: 15px; color: rgba(255,255,255,.82); line-height: 1.7; }
+.cont-pill { font-size: 12px; min-height: 39px; color: rgba(255,255,255,.85); }
+.card-pill { font-size: 13px; line-height: 1.5; }
+.profile-aside dt, .creator-trust-label { font-size: 12px; }
+.profile-trust-chip, .profile-trust-notice p { font-size: 13px; }
+/* Accessible controls: restore the ES/EN and search buttons on tablets.
+   The older 980px rule hid both despite available space. */
+@media (max-width: 980px) {
+  .topbar .topbar-actions #language-toggle {
+    display: inline-flex;
+    min-width: 86px;
+  }
+  .topbar .topbar-actions #search-button {
+    display: grid;
+    min-width: 42px;
+    min-height: 42px;
+  }
+  .topbar { column-gap: 8px; padding-inline: 10px; }
+  .topbar-actions { gap: 5px; }
+  .brand img { max-width: 145px; width: clamp(100px,19vw,145px); }
+  .hero-globe-copy .hero-desc { font-size: 16px; }
+  .hero-gstat span { font-size: 12px; }
+}
+@media (max-width: 700px) {
+  .hero-globe-toolbar .globe-light-options button { font-size: 12px; }
+  .hero-globe-toolbar .globe-light-box [data-globe-light-status] {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .hero-globe-copy .eyebrow { font-size: 12px; }
+  .hero-globe-stage .hgt-pill { font-size: 13px; }
+  .hero-globe-popup .hpop-fact { font-size: 15px; }
+  .section-head p, .creator-card-body p, .post-desc { font-size: 16px; }
+  .footer-links { font-size: 14px; }
+  .footer-bottom { font-size: 13px; }
+}
+@media (max-width: 410px) {
+  .topbar #language-toggle { min-width: 74px !important; gap: 3px; }
+  .topbar #language-toggle .lang-active { min-width: 28px; }
+  .topbar .topbar-actions #search-button,
+  .topbar .topbar-actions .avatar-button { min-width: 38px; width: 38px; }
+  .topbar .brand img { width: 112px !important; }
+  .topbar { grid-template-columns: 40px minmax(0,1fr) auto; }
+  .hero-globe-stats { flex-wrap: wrap; }
+}
+/* Zoom/reflow remains enabled; do not constrain user text scaling. */
