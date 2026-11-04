@@ -663,10 +663,17 @@
 
     /* media */
     let media = '';
-    if ((post.type === 'photo' || post.type === 'carousel') && post.media && post.media.length) {
-      const isCarousel = post.type === 'carousel' && post.media.length > 1;
+    if ((post.type === 'photo' || post.type === 'carousel' ||
+         (post.type === 'mixed' && post.id === '_prev')) && post.media && post.media.length) {
+      // Mixed items are preview-only. No server-side media schema or public
+      // playback is enabled until rights and storage validation are approved.
+      const mixedPreview = post.type === 'mixed' && post.id === '_prev';
+      const isCarousel = (post.type === 'carousel' || mixedPreview) && post.media.length > 1;
+      const previewVideo = mixedPreview && String(post.mediaTypes?.[cidx] || '').startsWith('video/');
       media = `<div class="post-media${isCarousel ? ' is-carousel' : ''}" data-pid="${esc(post.id)}">
-        <img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">
+        ${previewVideo
+          ? `<video src="${esc(safeMediaUrl(post.media[cidx]))}" controls muted playsinline preload="metadata" aria-label="${esc(post.title || 'Video cultural')}"></video>`
+          : `<img src="${esc(safeMediaUrl(post.media[cidx]))}" alt="${esc(post.title)}" loading="lazy">`}
         ${isCarousel ? `
           <div class="car-dots">${post.media.map((_, i) => `<button class="car-dot${i === cidx ? ' on' : ''}" data-car="${esc(post.id)}" data-ci="${i}" aria-label="Imagen ${i + 1}"></button>`).join('')}</div>
           ${cidx > 0 ? `<button class="car-btn car-l" data-car="${esc(post.id)}" data-cdir="-1" aria-label="Anterior">‹</button>` : ''}
@@ -1469,8 +1476,8 @@
     const explorerPublishingReady = window.ORIGEN_API?.explorerPublishingReady === true;
     const isProvider = user.accountType === 'creator';
     const isExplorer = user.accountType === 'explorer';
-    const accountPublishingReady = isExplorer ? explorerPublishingReady : culturalPublishingReady;
-    const types = [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')]];
+    const accountPublishingReady = d.type !== 'mixed' && (isExplorer ? explorerPublishingReady : culturalPublishingReady);
+    const types = [['photo',L('◫ Foto','◫ Photo')],['carousel',L('⊟ Carrusel','⊟ Carousel')],['video',L('▷ Video','▷ Video')],['mixed',L('▣ Fotos + videos','▣ Photos + videos')]];
     const CATS  = [['Artesanía y tradición','Crafts and tradition'],['Gastronomía ancestral','Ancestral gastronomy'],['Música y danza','Music and dance'],['Territorio y patrimonio','Territory and heritage'],['Arte y cultura','Art and culture'],['Educación cultural','Cultural education'],['Comunidad','Community']];
     const CREATOR_PURPOSES = [
       ['education',L('Educación cultural','Cultural education')],
@@ -1490,12 +1497,13 @@
     const PURPOSES = isExplorer ? EXPLORER_PURPOSES : CREATOR_PURPOSES;
     if (!PURPOSES.some(([value]) => value === d.contentPurpose)) d.contentPurpose = PURPOSES[0][0];
     const hasMedia = d.media && d.media.length > 0;
+    const mixedHasVideo = d.type === 'mixed' && (d.files || []).some(file => String(file?.type || '').startsWith('video/'));
 
     return `<section class="page-hero" style="min-height:220px">
       <div class="section-inner">
         <p class="eyebrow">${L('NUEVA PUBLICACIÓN','NEW POST')}</p>
         <h1>${isExplorer ? L('Compartir un descubrimiento cultural','Share a cultural discovery') : L('Compartir cultura','Share culture')}</h1>
-        ${isExplorer ? `<p class="lead">${L('Comparte una experiencia que ayude a descubrir Agentes Culturales o cuenta lo que aprendiste como Explorador. Puedes usar una foto, un carrusel o un video de hasta 90 segundos.','Share an experience that helps people discover Cultural Agents, or tell what you learned as an Explorer. Use a photo, carousel or video up to 90 seconds.')}</p>` : ''}
+        ${isExplorer ? `<p class="lead">${L('Comparte una experiencia que ayude a descubrir Agentes Culturales o cuenta lo que aprendiste como Explorador. Puedes preparar fotos, un carrusel, un video de hasta 90 segundos o una mezcla de fotos y videos.','Share an experience that helps people discover Cultural Agents, or tell what you learned as an Explorer. Preview photos, carousels, videos up to 90 seconds or a mixed photo/video story.')}</p>` : ''}
       </div>
     </section>
     <div class="create-layout">
@@ -1506,13 +1514,13 @@
         ${d.type !== 'text' ? `
           <div class="upload-zone wide" id="post-media-zone">
             ${hasMedia
-              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb${d.type === 'video' ? ' preview-video' : ''}">${d.type === 'video'
+              ? `<div class="post-media-preview">${d.media.map((src, i) => `<div class="preview-thumb${(d.type === 'video' || String(d.files?.[i]?.type || '').startsWith('video/')) ? ' preview-video' : ''}">${(d.type === 'video' || String(d.files?.[i]?.type || '').startsWith('video/'))
                 ? `<video src="${esc(safeMediaUrl(src))}" controls muted playsinline preload="metadata" aria-label="Vista previa del video"></video>`
                 : `<img src="${esc(safeMediaUrl(src))}" alt="Vista previa de imagen ${i + 1}">`}
-                <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${d.type === 'carousel' ? `<button class="preview-add" id="add-more-media" type="button">＋</button>` : ''}</div>`
-              : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? L('Selecciona un video','Select a video') : d.type === 'carousel' ? L('Selecciona fotos (puedes elegir varias)','Select photos (you can choose multiple)') : L('Selecciona una foto','Select a photo')}</p><small>${L('Haz clic para subir','Click to upload')}</small></div>`}
-            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${d.type === 'carousel' ? 'multiple' : ''} style="display:none">
-          </div>${d.type === 'video' ? `<p id="post-video-duration-status" class="form-note" role="status" aria-live="polite">${state.createData.videoDurationSeconds ? L(`Duración: ${Math.round(state.createData.videoDurationSeconds)} s (máximo 90 s).`, `Duration: ${Math.round(state.createData.videoDurationSeconds)} s (90 s maximum).`) : L('Máximo 90 segundos. Verificaremos la duración antes de publicar.','Maximum 90 seconds. Duration will be checked before publishing.')}</p>` : ''}` : ''}
+                <button class="remove-media" data-rmidx="${i}" type="button" aria-label="Quitar archivo ${i + 1}">×</button></div>`).join('')}${(d.type === 'carousel' || d.type === 'mixed') ? `<button class="preview-add" id="add-more-media" type="button" aria-label="${L('Añadir archivos','Add media')}">＋</button>` : ''}</div>`
+              : `<div class="upload-placeholder"><span>+</span><p>${d.type === 'video' ? L('Selecciona un video','Select a video') : d.type === 'carousel' ? L('Selecciona fotos (puedes elegir varias)','Select photos (you can choose multiple)') : d.type === 'mixed' ? L('Selecciona fotos y videos en el mismo orden','Select photos and videos in the same order') : L('Selecciona una foto','Select a photo')}</p><small>${L('Haz clic para subir','Click to upload')}</small></div>`}
+            <input type="file" id="post-media-input" accept="${d.type === 'video' ? 'video/mp4,video/webm,video/quicktime' : d.type === 'mixed' ? 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'}" ${(d.type === 'carousel' || d.type === 'mixed') ? 'multiple' : ''} style="display:none">
+          </div>${(d.type === 'video' || d.type === 'mixed') ? `<p id="post-video-duration-status" class="form-note" role="status" aria-live="polite">${state.createData.videoDurationSeconds ? L(`Duración: ${Math.round(state.createData.videoDurationSeconds)} s (máximo 90 s).`, `Duration: ${Math.round(state.createData.videoDurationSeconds)} s (90 s maximum).`) : L('Máximo 90 segundos. Verificaremos la duración antes de publicar.','Maximum 90 seconds. Duration will be checked before publishing.')}</p>` : ''}` : ''}
         <form class="form-grid" id="create-form">
           ${isProvider ? `<div class="form-field full cultural-feed-note"><p class="eyebrow">${L('FEED CULTURAL Y EDUCATIVO','CULTURAL AND EDUCATIONAL FEED')}</p><p>${L('Comparte conocimiento, contexto, técnicas, historias o territorio mediante foto, carrusel o video. Los servicios pueden presentarse en tu perfil profesional; evita publicidad genérica en el feed.','Share knowledge, context, techniques, stories or territory through a photo, carousel or video. Present services on your professional profile; avoid generic advertising in the feed.')}</p></div>` : ''}
           ${isExplorer ? `<div class="form-field full explorer-post-note"><p>${L('Las publicaciones de Exploradores se centran en descubrir Agentes Culturales y compartir experiencias culturales propias. No sustituyen ni verifican el perfil del Agente.','Explorer posts focus on discovering Cultural Agents and sharing personal cultural experiences. They do not replace or verify an Agent’s profile.')}</p></div>` : ''}
@@ -1525,8 +1533,8 @@
           <fieldset class="post-cultural-safety form-field full" aria-describedby="post-safety-intro">
             <legend>${state.lang === 'es' ? 'Responsabilidad cultural antes de publicar' : 'Cultural responsibility before publishing'}</legend>
             <p id="post-safety-intro">${state.lang === 'es'
-              ? (d.type === 'video' ? 'Confirma los derechos de contenido y culturales, además de los derechos de audio del video. Tu declaración no equivale a una verificación oficial de ORIGEN.' : 'Confirma ambos puntos para cada publicación. Tu declaración no equivale a una verificación oficial de ORIGEN.')
-              : (d.type === 'video' ? 'Confirm content and cultural rights, plus the video audio rights. Your declaration is not an official verification by ORIGEN.' : 'Confirm both statements for each post. Your declaration is not an official verification by ORIGEN.')}</p>
+              ? ((d.type === 'video' || mixedHasVideo) ? 'Confirma los derechos de contenido y culturales, además de los derechos de audio de cada video. Tu declaración no equivale a una verificación oficial de ORIGEN.' : 'Confirma ambos puntos para cada publicación. Tu declaración no equivale a una verificación oficial de ORIGEN.')
+              : ((d.type === 'video' || mixedHasVideo) ? 'Confirm content and cultural rights, plus audio rights for every video. Your declaration is not an official verification by ORIGEN.' : 'Confirm both statements for each post. Your declaration is not an official verification by ORIGEN.')}</p>
             <label class="post-safety-check">
               <input type="checkbox" name="rightsAcknowledged" data-post-attestation="rightsAcknowledged" required ${d.rightsAcknowledged ? 'checked' : ''}>
               <span>${state.lang === 'es'
@@ -1539,7 +1547,7 @@
                 ? 'He comprobado que tengo autorización para divulgar cualquier conocimiento cultural que requiera consentimiento comunitario y que no revelo información sagrada, restringida o privada sin permiso.'
                 : 'I have confirmed permission to share any cultural knowledge requiring community consent, and I am not disclosing sacred, restricted or private information without permission.'}</span>
             </label>
-            ${d.type === 'video' ? `
+            ${(d.type === 'video' || mixedHasVideo) ? `
               <div class="form-field full audio-rights-fields">
                 <label>${state.lang === 'es' ? 'Derechos del audio del video *' : 'Video audio rights *'}
                   <select name="audioRightsSource" required>
@@ -1573,6 +1581,7 @@
             <p id="post-safety-error" class="post-safety-error" role="alert" aria-live="assertive" hidden></p>
           </fieldset>
           <div class="form-field full">
+            ${d.type === 'mixed' ? `<p class="form-note mixed-draft-note" role="status">${L('Vista previa local: fotos y videos combinados. La publicación mixta permanece bloqueada hasta verificar almacenamiento, derechos de cada archivo y moderación.', 'Local preview: combined photos and videos. Mixed publishing remains blocked until storage, per-file rights and moderation have been verified.')}</p>` : ''}
             ${!accountPublishingReady ? `<p id="post-publication-paused" class="form-note" role="status" aria-live="polite">${state.lang === 'es'
               ? 'La publicación está temporalmente pausada para todos los perfiles mientras verificamos la recepción privada y los derechos culturales. Puedes preparar una vista previa en este dispositivo, pero tus archivos y textos NO se enviarán ni guardarán en ORIGEN.'
               : 'Publishing is temporarily paused for all account types while private intake and cultural rights are verified. You can prepare a preview on this device, but your files and text will NOT be submitted or saved to ORIGEN.'}</p>` : ''}
@@ -1587,7 +1596,7 @@
         <p class="eyebrow" style="margin-bottom:16px">${L('VISTA PREVIA','PREVIEW')}</p>
         <div id="create-live-preview">
           ${d.title || hasMedia
-            ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], title: d.title || L('Título','Title'), description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
+            ? postCard({ id:'_prev', authorId: user.id, type: d.type, media: d.media || [], mediaTypes: (d.files || []).map(file => file?.type || ''), title: d.title || L('Título','Title'), description: d.description || '', category: d.category || '', contentPurpose: d.contentPurpose || 'education', territory: d.territory || '', tags: d.tags || [], timestamp: new Date().toISOString(), likes: 0 })
             : `<div style="padding:40px;text-align:center;border:1px dashed #ccc;color:#888"><p>${L('La vista previa aparecerá aquí.','Your preview will appear here.')}</p></div>`}
         </div>
       </div>
@@ -3289,7 +3298,7 @@
     preview.innerHTML = d.title || hasMedia
       ? postCard({
           id: '_prev', authorId: user.id, type: d.type,
-          media: d.media || [], title: d.title || 'Título',
+          media: d.media || [], mediaTypes: (d.files || []).map(file => file?.type || ''), title: d.title || 'Título',
           description: d.description || '', category: d.category || '',
           contentPurpose: d.contentPurpose || 'education',
           territory: d.territory || '', tags: d.tags || [],
