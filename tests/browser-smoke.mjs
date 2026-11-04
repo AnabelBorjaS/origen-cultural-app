@@ -49,7 +49,8 @@ async function desktopChecks() {
   await page.locator('#language-toggle').click();
   await page.waitForFunction(() => document.documentElement.lang === 'en');
   check(await page.locator('html').getAttribute('lang') === 'en', 'Language toggle should update html lang to en');
-  check((await page.locator('#language-toggle').innerText()).trim() === 'ES', 'Language toggle should offer ES after switching to English');
+  check((await page.locator('#language-toggle .lang-active').innerText()).trim() === 'EN',
+    'Language control should visibly mark English as the selected language');
   await page.context().setOffline(true);
   await page.waitForFunction(() => !document.querySelector('#connection-status')?.hidden);
   check((await page.locator('#connection-status').innerText()).includes('You appear to be offline.'),
@@ -1502,6 +1503,38 @@ async function brandBGlobeChecks() {
       'Official logo SVG must remain unchanged in the header');
     check(await page.locator('#hero-country-search-form').count() === 1,
       'Find a country control must be present on the homepage');
+    const brandLayout = await page.evaluate(() => {
+      const header = document.querySelector('.topbar');
+      const switcher = document.querySelector('#language-toggle');
+      const searchHeader = document.querySelector('#search-button');
+      const toolbar = document.querySelector('.hero-globe-toolbar');
+      const stage = document.querySelector('.hero-globe-stage');
+      const form = document.querySelector('.hero-globe-search');
+      const lighting = document.querySelector('.hero-globe-light');
+      const rect = el => el.getBoundingClientRect();
+      return {
+        switchColor: getComputedStyle(switcher).color,
+        searchColor: getComputedStyle(searchHeader).color,
+        toolbarBottom: rect(toolbar).bottom,
+        stageTop: rect(stage).top,
+        formRight: rect(form).right,
+        lightLeft: rect(lighting).left,
+        globeWidth: rect(stage).width,
+        switchVisible: rect(switcher).width >= 88,
+        hasLogo: !!header.querySelector('img[src="assets/logo-lockup.svg"]')
+      };
+    });
+    check(brandLayout.hasLogo && brandLayout.switchVisible,
+      'Brand B must preserve the official SVG and expose a visible ES/EN selector');
+    check(brandLayout.toolbarBottom <= brandLayout.stageTop + 2,
+      'Country search and solar controls must be outside the interactive globe');
+    check(brandLayout.formRight <= brandLayout.lightLeft + 2,
+      'Desktop toolbar controls must not visually overlap');
+    check(brandLayout.globeWidth > 480,
+      'Planet must remain the hero instead of losing space to the controls');
+    check(brandLayout.switchColor !== 'rgb(14, 14, 14)' &&
+      brandLayout.searchColor !== 'rgb(14, 14, 14)',
+      'Language selector and topbar search must have light contrast on dark header');
     const auto = page.locator('.hero-globe-light [data-globe-light="auto"]');
     const day = page.locator('.hero-globe-light [data-globe-light="day"]');
     const night = page.locator('.hero-globe-light [data-globe-light="night"]');
@@ -1525,6 +1558,11 @@ async function brandBGlobeChecks() {
     await page.waitForFunction(() => !document.getElementById('hero-globe-popup')?.hidden, null, { timeout: 14000 });
     check((await popup.locator('.hpop-name').innerText()) === 'Ecuador',
       'Clicking Ecuador must select its country card on the homepage');
+    check(await page.evaluate(() => {
+      const popup = document.querySelector('#hero-globe-popup').getBoundingClientRect();
+      const world = document.querySelector('.hero-globe-right').getBoundingClientRect();
+      return popup.width / world.width <= 0.4 && popup.height <= 365;
+    }), 'Country information must not cover more than 40% of the globe column');
     check((await popup.locator('.hpop-fact').innerText()).includes('Quito'),
       'Visible Ecuador fact must use the curated UNESCO story, not an unsourced legacy claim');
     check((await popup.locator('.hpop-source-link').getAttribute('href')).includes('whc.unesco.org/en/list/2'),
@@ -1567,6 +1605,17 @@ async function brandBGlobeChecks() {
     await mobile.locator('.hero-main-title').waitFor();
     check(await mobile.locator('#hero-country-search').isVisible(),
       'Mobile globe must expose country search');
+    check(await mobile.locator('.hero-globe-toolbar').isVisible(),
+      'Mobile globe must offer a separate, readable exploration toolbar');
+    check(await mobile.locator('#language-toggle .lang-active').count() === 1,
+      'Mobile must have a visible selected-language label');
+    await mobile.locator('[data-hgt="ecuador"]').click();
+    await mobile.waitForFunction(() => !document.querySelector('#hero-globe-popup')?.hidden);
+    check(await mobile.evaluate(() => {
+      const card = document.querySelector('#hero-globe-popup').getBoundingClientRect();
+      const stage = document.querySelector('.hero-globe-stage').getBoundingClientRect();
+      return card.top >= stage.bottom - 2 && card.width < innerWidth;
+    }), 'Mobile cultural card must appear BELOW globe instead of obscuring the planet');
     check(await mobile.locator('.hero-globe-light [data-globe-light="auto"]').isVisible(),
       'Mobile page must offer Auto, Day and Night without geolocation');
     check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2),
