@@ -993,6 +993,15 @@ window.HeroGlobe = (() => {
         : `<p class="hpop-fact">${english ? 'A cultural story for this territory is being prepared.' : 'Estamos preparando una historia cultural para este territorio.'}</p>`}
       <a href="#mundo" class="hpop-btn" data-hpopkey="${key}">${english ? 'Explore its culture' : 'Explorar cultura'} →</a>`;
     _popup.hidden = false;
+    // On narrow screens the cultural card lives below the globe rather than
+    // obscuring it; reveal it after a user intentionally selects a country.
+    if (window.matchMedia('(max-width: 700px)').matches) {
+      requestAnimationFrame(() => {
+        if (!_popup || _popup.hidden || !_popup.isConnected) return;
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        _popup.scrollIntoView({ behavior: reduceMotion ? 'instant' : 'smooth', block: 'nearest' });
+      });
+    }
     document.getElementById('hpop-close')?.addEventListener('click', () => {
       hidePopup(); _selected = null;
       if (_globe) _globe.polygonCapColor(hCap);
