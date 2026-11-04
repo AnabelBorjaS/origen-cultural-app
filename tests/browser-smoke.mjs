@@ -1627,8 +1627,70 @@ async function brandBGlobeChecks() {
   }
 }
 
+
+async function typographyPass2Checks() {
+  // Read-only automated checks on desktop, tablet and mobile.
+  for (const width of [390, 768, 1440]) {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    try {
+      await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded' });
+      await page.locator('.hero-main-title').waitFor({ timeout: 15000 });
+      const sizing = await page.evaluate(() => {
+        const value = selector => {
+          const el = document.querySelector(selector);
+          return el ? parseFloat(getComputedStyle(el).fontSize) : -1;
+        };
+        const rect = selector => document.querySelector(selector)?.getBoundingClientRect();
+        const globalSearch = document.querySelector('#search-button');
+        return {
+          eyebrow:value('.hero-globe-copy .eyebrow'),
+          body:value('.hero-globe-copy .hero-desc'),
+          stats:value('.hero-gstat span'),
+          globeSearch:value('.hero-globe-search-input input'),
+          globeLabel:value('.hero-globe-search label'),
+          solar:value('.hero-globe-light .globe-light-options button'),
+          status:value('.hero-globe-light [data-globe-light-status]'),
+          story:value('.story-card p'),
+          metadata:value('.story-card .meta'),
+          creator:value('.creator-card-body p'),
+          creatorMeta:value('.creator-meta'),
+          footer:value('.footer-links'),
+          footerBottom:value('.footer-bottom'),
+          nav:value('.desktop-nav a'),
+          selectedLangVisible: !!rect('#language-toggle') && rect('#language-toggle').width > 60 &&
+            getComputedStyle(document.querySelector('#language-toggle')).display !== 'none',
+          searchVisible: !!rect('#search-button') && rect('#search-button').width >= 38 &&
+             getComputedStyle(globalSearch).display !== 'none',
+          pageWidth:document.documentElement.scrollWidth,
+          viewport:window.innerWidth,
+          heading:value('.hero-main-title')
+        };
+      });
+      const pass = (condition, label) => check(condition,
+        'Typography pass 2 · ' + width + 'px: ' + label);
+      pass(sizing.eyebrow >= 12, 'eyebrow readability');
+      pass(sizing.body >= 16, 'hero description readability');
+      pass(sizing.stats >= 12, 'stats captions readability');
+      pass(sizing.globeSearch >= 14 && sizing.globeLabel >= 12, 'country search readability');
+      pass(sizing.solar >= 12 && sizing.status >= 11, 'lighting controls readability');
+      pass(sizing.story >= 15 && sizing.metadata >= 12, 'cultural story readability');
+      pass(sizing.creator >= 16 && sizing.creatorMeta >= 13, 'creator cards readability');
+      pass(sizing.footer >= 14 && sizing.footerBottom >= 13, 'footer readability');
+      pass(sizing.selectedLangVisible && sizing.searchVisible, 'language and search visible');
+      pass(sizing.pageWidth <= sizing.viewport + 2, 'no horizontal overflow');
+      if (width === 1440) pass(sizing.nav >= 14, 'desktop navigation readability');
+      else pass(sizing.heading >= 36, 'mobile and tablet main heading hierarchy');
+    } catch (error) {
+      failures.push('Typography pass 2 at ' + width + 'px: ' + (error?.message || error));
+    } finally {
+      await page.close();
+    }
+  }
+}
+
 try {
   await desktopChecks();
+  await typographyPass2Checks();
   await brandBGlobeChecks();
   await passwordVisibilityChecks();
   await stagingAuthRedirectChecks();
