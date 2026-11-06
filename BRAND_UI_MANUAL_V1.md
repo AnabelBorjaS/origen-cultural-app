@@ -1,4 +1,4 @@
-# ORIGEN Cultural — Brand & UI Manual v1.1
+# ORIGEN Cultural — Brand & UI Manual v1.2
 
 **Versión:** 1.2 · **Estado:** dirección de marca aprobada por la fundadora y especificación de la beta; pendiente de revisión visual/móvil, legal y accesibilidad para publicación pública.  
 **Alcance:** sitio web responsive + red social cultural, portada, feed, explorar, perfiles, mundo cultural, creación de publicaciones, registro y páginas de confianza.  
