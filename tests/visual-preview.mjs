@@ -31,8 +31,8 @@ const pages = [
   { name: '12-ayuda-contrasenas-movil', route: 'ayuda-contrasena', width: 390, height: 844 },
   { name: '13-brand-b-ecuador-con-fuente', route: 'inicio', width: 1440, height: 950, globe: 'hero', capture: 'hero-country', country: 'ecuador' },
   { name: '14-brand-b-japon-en-movil', route: 'inicio', width: 390, height: 844, globe: 'hero', capture: 'hero-country', country: 'japan', lang: 'en' },
-  { name: '15-globo-solar-dia', route: 'inicio', width: 1440, height: 950, globe: 'hero', illumination: 'day' },
-  { name: '16-globo-solar-noche', route: 'inicio', width: 1440, height: 950, globe: 'hero', illumination: 'night' }
+  { name: '15-globo-dia-permanente-tablet', route: 'inicio', width: 768, height: 960, globe: 'hero' },
+  { name: '16-mundo-cultural-dia-tablet', route: 'mundo', width: 768, height: 960, globe: 'world' }
 ];
 try {
   for (const spec of pages) {
@@ -89,10 +89,6 @@ try {
         await page.locator('[data-hgt="' + spec.country + '"]').click();
         await page.locator('#hero-globe-popup:not([hidden]) .hpop-source-link').waitFor({ timeout: 12000 });
       }
-      if (spec.illumination) {
-        await page.locator('.hero-globe-light [data-globe-light="' + spec.illumination + '"]').click();
-        await page.waitForTimeout(1700);
-      }
       const title = await page.title();
       const mainText = (await page.locator('#main-content').innerText()).slice(0, 500);
       const filename = spec.name + '.png';
@@ -115,7 +111,7 @@ const report = {
   provenance: 'Actual ORIGEN beta build, captured on ephemeral local GitHub Actions runner',
   source: 'reconcile-main-beta-2026-10-07',
   auth: 'DISABLED; no real account sign-in, no live backend, no deployment',
-  note: 'Rendered screenshots, NOT a live website. Auto lighting uses approximate NOAA-derived UTC solar geometry, may fall back to day without image CORS, and has no geolocation. A 3D globe requires a capable browser, internet to load globe.gl and map textures. The simplified globe is a real application fallback, not proof that the 3D experience is broken for everyone.',
+  note: 'Rendered screenshots, NOT a live website. ORIGEN intentionally uses a permanently daytime Earth image, independent of visitor time. 3D globe requires browser graphics support and internet access to load its map textures; the simplified globe is a fallback. No location access, real account, or publication is involved.',
   snapshots
 };
 await fs.writeFile(path.join(out, 'preview-manifest.json'), JSON.stringify(report, null, 2) + '\n');
