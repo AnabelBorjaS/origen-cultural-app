@@ -724,6 +724,21 @@ async function roleChecks(role) {
     const links = await asideAgent.locator('a[href^="#usuario/"]').evaluateAll(items => items.map(el => el.getAttribute('href')));
     check(links.length === 2 && links.every(href => href === '#usuario/' + qaAgentId),
       'Both feed sidebar links must open a registered Agent, not an editorial reference');
+    check(await page.locator('.feed-hdr h1').innerText() === 'Feed cultural',
+      'Authenticated desktop experience must present the cultural social feed');
+    check(await page.locator('.feed-create-button[href="#crear"]').count() === 1,
+      'Feed must give a clear, accessible path to the safe publication composer');
+    check(await page.locator('.stories-row-heading').innerText().then(t => t.includes('Descubre perfiles culturales')),
+      'Profile discovery strip must not pretend to be user-authored disappearing stories');
+    check(await page.locator('.stories-row .story-item.is-reference').count() >= 3,
+      'Seed reference profiles must be visibly differentiated from real accounts');
+    check(await page.locator('.feed-aside .aside-reference-label').count() >= 2,
+      'Sidebar must label editorial references instead of offering false follow actions');
+    check(await page.locator('.feed-aside .aside-row').filter({ hasText: 'Pakarina' })
+      .locator('[data-fuser]').count() === 0,
+      'Unclaimed editorial reference must not expose a broken follow action');
+    check(await page.locator('.post-card .post-context-chips').count() === 1,
+      'Signed-in social post must separate cultural context from author and actions');
   }
 
   await page.close();
@@ -1002,9 +1017,8 @@ async function publicProfileStatusChecks() {
       'Self-managed disclosure needs English translation');
     await page.evaluate(() => { location.hash = '#explorar'; });
     await page.locator('#explore-grid .creator-card').first().waitFor();
-    check((await page.locator('#explore-grid .creator-card-footer').first().innerText()).includes('Editorial profile') === false ||
-      (await page.locator('#explore-grid .creator-card-footer').allInnerTexts()).some(t => t.includes('Editorial profile')),
-      'English directory must retain the editorial reference distinction');
+    check((await page.locator('#explore-grid .creator-card-footer').allInnerTexts()).filter(t => t.includes('Editorial profile')).length >= 4,
+      'English directory must retain editorial reference distinctions in four seed profiles');
   } catch (error) {
     failures.push('Public reference trust QA: ' + (error?.message || error));
   } finally {
