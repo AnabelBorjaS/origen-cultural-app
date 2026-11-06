@@ -13,11 +13,21 @@
 - [ ] **Aún no hay nueva ejecución confirmada de GitHub Actions**; inspección visual del despliegue actual y navegación en dispositivo real siguen pendientes.
 - [ ] Confirmar comportamiento del header a 320–360px y ampliación del texto del navegador al 200%.
 
+## Dirección visual v1.2 · Globo permanente en día (6 noviembre 2026)
+
+- [x] Decisión aprobada por la fundadora: **eliminar por completo Auto/Día/Noche**, la lectura UTC y el código de cálculo solar.
+- [x] Mostrar la esfera siempre con **mapa terrestre diurno** tanto en Home como en Mundo Cultural.
+- [x] Conservar búsqueda de país, zoom, giro, resaltado, banderas y ficha cultural bilingüe con enlace a fuente.
+- [x] Reducir el ruido de la cabecera del planeta a un solo buscador, sin barras informativas que desvíen la atención.
+- [x] Reemplazar las capturas Día/Noche por capturas de verificación de portada y Mundo Cultural en tablet.
+- [ ] Confirmar mediante navegador real que la esfera se ve iluminada **a distintas horas**, en móvil y escritorio, y que no quedan controles solares ni desbordamientos.
+- [ ] Confirmar QA de GitHub Actions, legalidad de imágenes y Cloudflare Access antes de cualquier prueba con usuarios reales.
+
 ## P0 — Portada pública (cambios en la rama beta)
 
 - [x] Hero con título más proporcionado y descripción concisa sin tagline repetido.
 - [x] Selector de idioma ES/EN visualmente identificable y búsqueda contrastada en cabecera negra.
-- [x] Barra dedicada al buscador de países + Auto/Día/Noche, **separada del globo**.
+- [x] Buscador de países como único elemento de la barra superior, **separado del globo**; eliminación intencional del selector solar.
 - [x] Ficha de país más compacta; en móvil debajo de la esfera.
 - [x] Selector de países con desplazamiento horizontal en una sola fila cuando falta espacio.
 - [ ] Validar visualmente en Staging **1440, 1024, 768 y 390 px** que ningún control desborde ni oculte el planeta.
@@ -25,7 +35,7 @@
 
 ## P0 — Mundo Cultural
 
-- [x] Modo Auto/Día/Noche, país resaltado y fuentes institucionales ES/EN en seis fichas piloto.
+- [x] **Globo siempre iluminado en modo día** (misma textura diurna a cualquier hora), país resaltado y fuentes institucionales ES/EN en seis fichas piloto.
 - [ ] Aplicar escala de tipografía y márgenes de v1 a la página de Mundo completo.
 - [ ] Comprobar ventana de fuente cultural y mapa usable con toque/teclado/teléfono.
 - [ ] Auditar las condiciones de licencia de las texturas del globo y rendimiento móvil.
