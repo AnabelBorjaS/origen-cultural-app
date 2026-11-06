@@ -35,7 +35,7 @@ La rama beta utiliza únicamente un dato introductorio verificado para cada paí
 ## Próximas fases separadas
 
 - **B aprobado para beta (este commit):** hero refinado, logotipo fiel, fichas institucionales ES/EN, búsqueda de país, selección sin navegar fuera del globo, modo de reserva para móviles sin 3D.
-- **Pendiente:** ciclo día/noche *astronómicamente correcto* con terminador solar, texturas con licencias verificadas, controles Auto/Día/Noche, accesibilidad y límite de consumo GPU. No confundir un fondo oscuro con simulación solar en tiempo real.
+- **Decisión de marca v1.2 (6 Nov 2026):** globo **siempre diurno**, sin terminador solar ni controles Auto/Día/Noche. Priorizar reconocimiento geográfico, accesibilidad, consumo moderado y licencias verificadas de texturas. Esta decisión sustituye la propuesta previa de iluminación astronómica.
 - **Pendiente:** ampliar historias y fuentes con gobernanza y revisión comunitaria, más países, perfiles reales y mecanismo de corrección y atribución.
 - **Pendiente:** pruebas reales en Supabase Staging con dos cuentas sintéticas bajo Cloudflare Access protegido, sin afectar Production.
 
