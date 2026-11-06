@@ -1,6 +1,6 @@
 # ORIGEN Cultural — Brand & UI Manual v1.1
 
-**Versión:** 1.1 · **Estado:** dirección de marca aprobada por la fundadora y especificación de la beta; pendiente de revisión visual/móvil, legal y accesibilidad para publicación pública.  
+**Versión:** 1.2 · **Estado:** dirección de marca aprobada por la fundadora y especificación de la beta; pendiente de revisión visual/móvil, legal y accesibilidad para publicación pública.  
 **Alcance:** sitio web responsive + red social cultural, portada, feed, explorar, perfiles, mundo cultural, creación de publicaciones, registro y páginas de confianza.  
 **Logotipo:** fuente de verdad inalterada: `assets/logo-lockup.svg` y `assets/logo-mark.svg`. Nunca redibujar, sustituir, distorsionar ni utilizar iconos «O» genéricos en su lugar.
 
@@ -9,6 +9,8 @@
 **Propósito:** conectar comunidades culturales y exploradores mediante conocimiento, experiencias e historias con contexto, atribución y consentimiento. ORIGEN no sustituye la voz de las comunidades ni reduce países a una sola curiosidad.
 
 **Promesa del producto:** red social cultural global gratuita durante el piloto, bilingüe y adaptada a web, tablet y móvil; no una landing page ni un marketplace.
+
+**Prioridad de marca:** el globo funciona como medio para reconocer culturas y territorios, no como panel técnico de iluminación. Reducción deliberada de controles por decisión de la fundadora tras evaluar la web de prueba en teléfono.
 
 **Personalidad:** elegante, minimalista, contemporánea, confiable, humana, inclusiva, curiosa y culturalmente respetuosa. *Premium* significa calidad de lectura y atención al detalle, no exclusividad o barreras de acceso.
 
@@ -73,7 +75,7 @@ Esta escala sustituye los mínimos anteriores de 9–11 px detectados en etiquet
 
 **Hero público:** frase de marca clara sin repetición; texto explicativo máximo dos líneas de lectura cómoda cuando el ancho lo permite; acciones “Explorar” / “Compartir mi cultura”; globo interactivo como foco visual, no como decoración.
 
-**Globo cultural:** controles de iluminación Auto/Día/Noche y buscador dentro de una **barra de herramientas separada del planeta**; no tapar hemisferios. Selector de países accesible por teclado y tacto. Cada país muestra bandera, nombre, dato bilingüe y enlace original verificable.
+**Globo cultural — decisión definitiva v1.2 (6 Nov 2026):** el planeta muestra **siempre la textura diurna** con países y continentes identificables, sin importar la hora de visita. **No hay selector Auto/Día/Noche ni texto UTC**: el objetivo es descubrimiento cultural, no visualización astronómica. El buscador de países queda como único control de la barra superior, fuera de la esfera. El globo sigue permitiendo girar, ampliar, seleccionar territorios, ver bandera y datos ES/EN con enlace de fuente. Conserva navegación por teclado/tacto y fallback si no hay WebGL.
 
 **Tarjeta cultural:** ancho de referencia 280–300 px en escritorio; nunca cubrir más de un tercio del espacio visible del globo. En móvil aparece **debajo del globo**, no como un modal gigante encima. Fuente y botón cerrar siempre visibles. Un dato no define toda una cultura.
 
