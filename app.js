@@ -1075,14 +1075,7 @@
                     ].map(([a,b])=>`<option value="${es?a:b}"></option>`).join('')}</datalist>
                     <p id="hero-country-search-status" role="status" aria-live="polite"></p>
                   </form>
-          <div class="globe-light-box hero-globe-light" role="group" aria-label="${es ? 'Iluminación del planeta' : 'Planet lighting'}">
-                    <div class="globe-light-options">
-                      <button type="button" data-globe-light="auto" aria-pressed="true">${es ? 'Auto' : 'Auto'}</button>
-                      <button type="button" data-globe-light="day" aria-pressed="false">${es ? 'Día' : 'Day'}</button>
-                      <button type="button" data-globe-light="night" aria-pressed="false">${es ? 'Noche' : 'Night'}</button>
-                    </div>
-                    <p data-globe-light-status role="status" aria-live="polite"></p>
-                  </div>
+
         </div>
         <div class="hero-globe-stage">
           <div class="hero-globe-container" id="hero-globe-container"></div>
@@ -2558,14 +2551,7 @@
                 <button id="globe-reset" class="globe-ctrl" title="${es ? 'Vista inicial' : 'Reset view'}" aria-label="${es ? 'Restablecer vista del globo' : 'Reset globe view'}">⟳</button>
                 <button id="globe-zoom-out" class="globe-ctrl" title="${es ? 'Alejar' : 'Zoom out'}" aria-label="${es ? 'Alejar globo' : 'Zoom out on globe'}">−</button>
               </div>
-              <div class="globe-light-box mundo-globe-light" role="group" aria-label="${es ? 'Iluminación del planeta' : 'Planet lighting'}">
-                <div class="globe-light-options">
-                  <button type="button" data-globe-light="auto" aria-pressed="true">Auto</button>
-                  <button type="button" data-globe-light="day" aria-pressed="false">${es ? 'Día' : 'Day'}</button>
-                  <button type="button" data-globe-light="night" aria-pressed="false">${es ? 'Noche' : 'Night'}</button>
-                </div>
-                <p data-globe-light-status role="status" aria-live="polite"></p>
-              </div>
+
               <p class="globe-hint">${es ? 'Gira · Acerca · Toca un país' : 'Rotate · Zoom in · Select a country'}</p>
             </div>
           </div>
@@ -2590,7 +2576,6 @@
     const popup     = document.getElementById('hero-globe-popup');
     if (!container || typeof HeroGlobe === 'undefined') return;
 
-    window.OrigenSolarGlobe?.bindControls();
     HeroGlobe.init(container, popup);
 
     document.getElementById('hero-globe-pause')?.addEventListener('click',
@@ -2643,7 +2628,6 @@
     const panelEl = document.getElementById('mundo-panel');
     if (!globeEl || !panelEl || typeof MundoCultural === 'undefined') return;
 
-    window.OrigenSolarGlobe?.bindControls();
     MundoCultural.init(globeEl, panelEl);
 
     document.getElementById('globe-pause')?.addEventListener('click',    () => MundoCultural.toggleRotation());
