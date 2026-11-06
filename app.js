@@ -759,24 +759,37 @@
      STORIES ROW
   ═══════════════════════════════════════════════════════════ */
   function storiesRow() {
-    const user     = me();
-    const myFollow = user ? remoteFollowRefs() : [];
-    const all      = directoryProfiles().slice(0, 14);
-    return `<div class="stories-row"><div class="stories-scroll">
-      ${user ? `<a class="story-item" href="#mi-perfil">
-        <div class="story-ring own">${avatarEl(user, 'story')}</div>
-        <span>Yo</span>
-      </a>` : ''}
-      ${all.map(a => {
-        const isCreator = !!creators.find(c => c.id === a.id);
-        const href      = isCreator ? `#perfil/${a.id}` : `#usuario/${a.id}`;
-        const ring      = myFollow.includes(a.id) ? ' following' : '';
-        return `<a class="story-item" href="${esc(href)}">
-          <div class="story-ring${ring}">${avatarEl(a, 'story')}</div>
-          <span>${esc((a.name || '').split(' ')[0])}</span>
-        </a>`;
-      }).join('')}
-    </div></div>`;
+    const es = state.lang === 'es';
+    const user = me();
+    const follows = user ? remoteFollowRefs() : [];
+    // The top strip is a directory of profiles, NOT a fake 24-hour story feed.
+    const profiles = directoryProfiles().slice(0, 14);
+    return `<nav class="stories-row" aria-label="${es ? 'Descubrir perfiles culturales' : 'Discover cultural profiles'}">
+      <div class="stories-row-heading">
+        <div>
+          <strong>${es ? 'Descubre perfiles culturales' : 'Discover cultural profiles'}</strong>
+          <span>${es ? 'Referencias editoriales y cuentas reales, identificadas por separado' : 'Editorial references and real accounts, clearly identified'}</span>
+        </div>
+        <a href="#explorar">${es ? 'Explorar' : 'Explore'} →</a>
+      </div>
+      <div class="stories-scroll">
+        ${user ? `<a class="story-item" href="#mi-perfil">
+          <div class="story-ring own">${avatarEl(user, 'story')}</div>
+          <span>${es ? 'Mi perfil' : 'My profile'}</span>
+        </a>` : ''}
+        ${profiles.map(p => {
+          const ref = profileTrustInfo(p).kind === 'reference';
+          const href = culturalProfileHref(p);
+          const ring = follows.includes(p.id) ? ' following' : '';
+          return `<a class="story-item${ref ? ' is-reference' : ''}" href="${esc(href)}"
+            aria-label="${esc(p.name)} · ${esc(profileTrustInfo(p).short)}">
+            <div class="story-ring${ring}">${avatarEl(p, 'story')}</div>
+            <span>${esc((p.name || '').split(' ')[0])}</span>
+            ${ref ? `<small>${es ? 'Referencia' : 'Reference'}</small>` : ''}
+          </a>`;
+        }).join('')}
+      </div>
+    </nav>`;
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -808,7 +821,12 @@
         <div class="creator-trust-label">${profileTrustChip(c)}</div>
         <p>${esc(c.short)}</p>
         <div class="creator-tags">${(c.tags || []).map(tg => `<span>${esc(tg)}</span>`).join('')}</div>
-        <div class="creator-card-footer"><span>${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers || 0)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</span><a class="link-arrow" href="${esc(href)}">${t('profile')}</a></div>
+        <div class="creator-card-footer">
+          <span>${profileTrustInfo(c).kind === 'reference'
+            ? (state.lang === 'es' ? 'Perfil editorial · sin representación oficial' : 'Editorial profile · not officially represented')
+            : (Number.isFinite(Number(c.followers)) ? `${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(Number(c.followers))} ${state.lang === 'es' ? 'seguidores' : 'followers'}` : (state.lang === 'es' ? 'Cuenta cultural' : 'Cultural account'))}</span>
+          <a class="link-arrow" href="${esc(href)}">${t('profile')}</a>
+        </div>
       </div>
     </article>`;
   }
@@ -1229,24 +1247,36 @@
       ${storiesRow()}
       <div class="feed-col">
         <div class="feed-hdr">
-          <h2>${es ? 'Feed cultural' : 'Cultural feed'}</h2>
-          <a class="btn" href="#crear" style="min-height:38px;padding:0 20px;font-size:11px;letter-spacing:.1em">＋ ${es ? 'Publicar' : 'Post'}</a>
+          <div class="feed-hdr-copy">
+            <p class="eyebrow">${es ? 'TU ESPACIO CULTURAL' : 'YOUR CULTURAL SPACE'}</p>
+            <h1>${es ? 'Feed cultural' : 'Cultural feed'}</h1>
+            <p>${es ? 'Historias de quienes comparten sus culturas, con contexto y respeto.' : 'Stories shared by people, with cultural context and respect.'}</p>
+          </div>
+          <a class="btn feed-create-button" href="#crear">＋ ${es ? 'Crear publicación' : 'Create post'}</a>
         </div>
         <div id="feed-posts">
           ${posts.length
             ? posts.map(postCard).join('')
-            : `<div class="empty-feed"><p>${es ? 'Sigue agentes culturales para ver su contenido aquí.' : 'Follow Cultural Agents to see their posts here.'}</p><a class="btn" href="#explorar">${es ? 'Explorar agentes culturales' : 'Explore Cultural Agents'}</a></div>`}
+            : `<div class="empty-feed">
+              <span class="empty-feed-mark" aria-hidden="true">◎</span>
+              <h2>${es ? 'Aquí comenzarán las historias' : 'Stories will begin here'}</h2>
+              <p>${es ? 'Todavía no hay publicaciones para mostrar. Descubre perfiles culturales y conoce quiénes podrán compartir sus historias.' : 'There are no posts to show yet. Discover cultural profiles and learn who may share their stories.'}</p>
+              <a class="btn" href="#explorar">${es ? 'Descubrir perfiles culturales' : 'Discover cultural profiles'}</a>
+            </div>`}
           ${posts.length ? `<div id="feed-sentinel" class="feed-sentinel${window.ORIGEN_API?.cache?.postsExhausted ? ' done' : ''}" aria-live="polite"></div>` : ''}
         </div>
       </div>
       <aside class="feed-aside">
         <div class="aside-card">
           <p class="eyebrow">${es ? 'DESCUBRIR' : 'DISCOVER'}</p>
-          <h3>${es ? 'Agentes culturales' : 'Cultural Agents'}</h3>
+          <h3>${es ? 'Perfiles culturales' : 'Cultural profiles'}</h3>
+          <p class="aside-note">${es ? 'Las referencias editoriales no son cuentas verificadas ni representan alianzas.' : 'Editorial references are not verified accounts or partnerships.'}</p>
           ${directoryProfiles().slice(0, 4).map(c => `<div class="aside-row">
             <a href="${esc(culturalProfileHref(c))}">${avatarEl(c, 'sm')}</a>
             <div class="aside-row-info"><a href="${esc(culturalProfileHref(c))}"><strong>${esc(c.name)}</strong></a><p>${esc(c.category)}</p></div>
-            <button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${esc(c.id)}">${myFollows.includes(c.id) ? (es ? 'Siguiendo' : 'Following') : (es ? '+ Seguir' : '+ Follow')}</button>
+            ${profileTrustInfo(c).kind === 'reference'
+              ? `<span class="aside-reference-label">${es ? 'Referencia' : 'Reference'}</span>`
+              : `<button class="btn-follow-sm${myFollows.includes(c.id) ? ' on' : ''}" data-fuser="${esc(c.id)}">${myFollows.includes(c.id) ? (es ? 'Siguiendo' : 'Following') : (es ? '+ Seguir' : '+ Follow')}</button>`}
           </div>`).join('')}
           <a class="link-arrow" href="#explorar" style="display:block;margin-top:18px;font-size:12px">${es ? 'Ver todos' : 'View all'} →</a>
         </div>
@@ -1321,11 +1351,15 @@
         <div class="profile-title">
           <p class="eyebrow">${esc(c.type)} · ${esc(c.location)}</p>
           <h1>${esc(c.name)} ${verBadge(c)}</h1>
-          <p>${esc(c.category)} · ${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers)} ${state.lang === 'es' ? 'seguidores' : 'followers'}</p>
+          <p>${esc(c.category)} · ${profileTrustInfo(c).kind === 'reference'
+            ? (state.lang === 'es' ? 'Referencia editorial · no oficial' : 'Editorial reference · not official')
+            : `${Intl.NumberFormat(state.lang === 'es' ? 'es' : 'en').format(c.followers || 0)} ${state.lang === 'es' ? 'seguidores' : 'followers'}`}</p>
         </div>
         <div class="profile-actions">
-          <button class="btn light" data-fuser="${esc(c.id)}">${isFollowing ? t('following') : t('follow')}</button>
-          <button class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" data-favorite="${esc(c.id)}">${isSaved ? t('saved') : t('save')}</button>
+          ${profileTrustInfo(c).kind === 'reference'
+            ? `<a class="btn light" href="#solicitar-revision/perfil/${encodeURIComponent(c.id)}">${state.lang === 'es' ? 'Solicitar revisión' : 'Request a review'}</a>`
+            : `<button class="btn light" data-fuser="${esc(c.id)}">${isFollowing ? t('following') : t('follow')}</button>
+               <button class="btn" style="border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1)" data-favorite="${esc(c.id)}">${isSaved ? t('saved') : t('save')}</button>`}
         </div>
       </div>
     </section>
@@ -1342,7 +1376,12 @@
           <p class="eyebrow">${state.lang === 'es' ? 'PUBLICACIONES' : 'POSTS'} (${cPosts.length || c.posts.length})</p>
           ${cPosts.length
             ? `<div id="creator-posts" style="margin-top:20px">${cPosts.map(postCard).join('')}</div>`
-            : `<div class="posts-grid" style="margin-top:20px">${c.posts.map(p => `<article class="post-card"><div class="post-media"><img src="${esc(safeMediaUrl(p.image))}" alt="${esc(p.title)}" loading="lazy"></div><div class="post-body"><h3 class="post-title">${esc(p.title)}</h3><p class="post-desc">${esc(p.text)}</p></div></article>`).join('')}</div>`}
+            : `<div class="profile-posts-empty" role="status">
+              <p>${profileTrustInfo(c).kind === 'reference'
+                ? (state.lang === 'es' ? 'Este perfil es una referencia editorial. Todavía no hay publicaciones de un representante autorizado.' : 'This is an editorial reference. There are no posts from an authorised representative yet.')
+                : (state.lang === 'es' ? 'Este perfil aún no tiene publicaciones.' : 'This profile has no posts yet.')}</p>
+              <a href="#explorar">${state.lang === 'es' ? 'Descubrir más perfiles' : 'Discover more profiles'} →</a>
+            </div>`}
         </div>
       </div>
       <aside class="profile-aside">
