@@ -1510,7 +1510,6 @@ async function brandBGlobeChecks() {
       const toolbar = document.querySelector('.hero-globe-toolbar');
       const stage = document.querySelector('.hero-globe-stage');
       const form = document.querySelector('.hero-globe-search');
-      const lighting = document.querySelector('.hero-globe-light');
       const rect = el => el.getBoundingClientRect();
       return {
         switchColor: getComputedStyle(switcher).color,
@@ -1518,7 +1517,6 @@ async function brandBGlobeChecks() {
         toolbarBottom: rect(toolbar).bottom,
         stageTop: rect(stage).top,
         formRight: rect(form).right,
-        lightLeft: rect(lighting).left,
         globeWidth: rect(stage).width,
         switchVisible: rect(switcher).width >= 88,
         hasLogo: !!header.querySelector('img[src="assets/logo-lockup.svg"]')
@@ -1527,31 +1525,22 @@ async function brandBGlobeChecks() {
     check(brandLayout.hasLogo && brandLayout.switchVisible,
       'Brand B must preserve the official SVG and expose a visible ES/EN selector');
     check(brandLayout.toolbarBottom <= brandLayout.stageTop + 2,
-      'Country search and solar controls must be outside the interactive globe');
-    check(brandLayout.formRight <= brandLayout.lightLeft + 2,
-      'Desktop toolbar controls must not visually overlap');
+      'Country search must be outside the interactive globe');
+    check(brandLayout.formRight <= brandLayout.globeWidth + document.querySelector('.hero-globe-right').getBoundingClientRect().left + 2,
+      'Country search must fit inside its own toolbar');
     check(brandLayout.globeWidth > 480,
       'Planet must remain the hero instead of losing space to the controls');
     check(brandLayout.switchColor !== 'rgb(14, 14, 14)' &&
       brandLayout.searchColor !== 'rgb(14, 14, 14)',
       'Language selector and topbar search must have light contrast on dark header');
-    const auto = page.locator('.hero-globe-light [data-globe-light="auto"]');
-    const day = page.locator('.hero-globe-light [data-globe-light="day"]');
-    const night = page.locator('.hero-globe-light [data-globe-light="night"]');
-    check(await auto.getAttribute('aria-pressed') === 'true',
-      'First visit should default to automatic solar illumination');
-    await night.click();
-    check(await night.getAttribute('aria-pressed') === 'true' &&
-      await auto.getAttribute('aria-pressed') === 'false',
-      'Night view selection must be exclusive and accessible');
-    check(await page.evaluate(() => localStorage.getItem('origen-globe-illumination')) === 'night',
-      'Night mode must persist locally without GPS or an account');
-    await day.click();
-    check(await day.getAttribute('aria-pressed') === 'true', 'Day mode must be selectable');
-    await auto.click();
-    check(await auto.getAttribute('aria-pressed') === 'true', 'Auto mode must restore solar view');
-    check((await page.locator('[data-globe-light-status]').innerText()).includes('UTC'),
-      'Auto mode must disclose approximate real-time UTC lighting');
+    check(await page.locator('.globe-light-box, [data-globe-light], [data-globe-light-status]').count() === 0,
+      'Brand direction: remove all Auto/Day/Night controls and descriptions');
+    check(await page.locator('#hero-country-search').isVisible(),
+      'Country search remains available when day/night switch is removed');
+    check(await page.locator('#hero-globe-container').isVisible(),
+      'Interactive globe remains available regardless of local time');
+    check(await page.locator('script[src="solar-globe.js"]').count() === 0,
+      'Deprecated sunlight simulation code must not load on the homepage');
 
     await page.locator('[data-hgt="ecuador"]').click();
     const popup = page.locator('#hero-globe-popup');
@@ -1591,6 +1580,13 @@ async function brandBGlobeChecks() {
     check((await popup.locator('.hpop-source-link').getAttribute('href')).includes('japan.travel'),
       'Japan card must link to the official JNTO source');
 
+    await page.goto(baseURL + '#mundo', { waitUntil: 'domcontentloaded' });
+    await page.locator('#globe-container').waitFor();
+    check(await page.locator('.mundo-globe-light, [data-globe-light]').count() === 0,
+      'Full Cultural World must show the same permanent daylight globe without solar controls');
+    await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded' });
+    await page.locator('.hero-main-title').waitFor();
+
     await page.evaluate(() => localStorage.setItem('origen-lang', 'en'));
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.hero-main-title').waitFor();
@@ -1625,8 +1621,8 @@ async function brandBGlobeChecks() {
       const stage = document.querySelector('.hero-globe-stage').getBoundingClientRect();
       return card.top >= stage.bottom - 2 && card.width < innerWidth;
     }), 'Mobile cultural card must appear BELOW globe instead of obscuring the planet');
-    check(await mobile.locator('.hero-globe-light [data-globe-light="auto"]').isVisible(),
-      'Mobile page must offer Auto, Day and Night without geolocation');
+    check(await mobile.locator('.hero-globe-light, [data-globe-light]').count() === 0,
+      'Mobile globe must have no unnecessary solar controls');
     check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2),
       'Modern ORIGEN home should not have horizontal overflow on a 390px phone');
   } catch (error) {
@@ -1657,8 +1653,6 @@ async function typographyPass2Checks() {
           stats:value('.hero-gstat span'),
           globeSearch:value('.hero-globe-search-input input'),
           globeLabel:value('.hero-globe-search label'),
-          solar:value('.hero-globe-light .globe-light-options button'),
-          status:value('.hero-globe-light [data-globe-light-status]'),
           story:value('.story-card p'),
           metadata:value('.story-card .meta'),
           creator:value('.creator-card-body p'),
@@ -1681,7 +1675,6 @@ async function typographyPass2Checks() {
       pass(sizing.body >= 16, 'hero description readability');
       pass(sizing.stats >= 12, 'stats captions readability');
       pass(sizing.globeSearch >= 14 && sizing.globeLabel >= 12, 'country search readability');
-      pass(sizing.solar >= 12 && sizing.status >= 11, 'lighting controls readability');
       pass(sizing.story >= 15 && sizing.metadata >= 12, 'cultural story readability');
       pass(sizing.creator >= 16 && sizing.creatorMeta >= 13, 'creator cards readability');
       pass(sizing.footer >= 14 && sizing.footerBottom >= 13, 'footer readability');
