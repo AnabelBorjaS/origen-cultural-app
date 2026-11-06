@@ -77,7 +77,7 @@ const checks = [
   ['Cultural Agent feed excludes text-only posts', app.includes("state.createData.type === 'text'") && app.includes('Agentes Culturales requiere foto, carrusel o video')],
   ['Explorer composer is focused on agent discovery and personal cultural experience', app.includes("['agent_discovery'") && app.includes("['explorer_experience'") && app.includes('Compartir un descubrimiento cultural')],
   ['Explorer and Cultural Agent navigation exposes the composer while publication stays paused', app.includes('<a href="#crear" data-route-link="crear">') && app.includes('La publicación está temporalmente pausada para todos los perfiles')],
-  ['Video preview enforces a verified duration of 90 seconds or less before upload', app.includes('videoPreview.duration') && app.includes('videoDurationSeconds > 90') && app.includes('Maximum 90 seconds')],
+  ['Video preview verifies each media duration and rejects >90 seconds before upload', app.includes('Number(video.duration)') && app.includes('videoDurations?.[i]') && app.includes('seconds > 90') && app.includes('state.createData.videoDurationSeconds > 90') && app.includes('The video must have a verifiable duration of 90 seconds or less.') && app.includes('data-duration-valid')],
   ['Explorer purposes are permitted by the prepared schema without granting write access', explorerPurposeMigration.includes("'agent_discovery'") && explorerPurposeMigration.includes("'explorer_experience'") && !/^\s*(?:create\s+policy|grant\s+)/im.test(explorerPurposeMigration)],
   ['Post client rejects non-Cultural-Agent authors', supabase.includes("cache.profile?.role !== 'creator'")],
   ['Upload type/size preflight exists', supabase.includes('UPLOAD_RULES') && supabase.includes('validateUpload(bucket, file)')],
