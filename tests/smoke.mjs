@@ -41,6 +41,10 @@ const checks = [
   ['Auth redirects require HTTPS outside localhost', supabase.includes("ORIGEN Auth requires HTTPS outside local development.") && supabase.includes("url.protocol !== 'https:'")],
   ['CSP allows approved globe CDN images', index.includes("img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net")],
   ['Globe uses a brighter Earth texture against space', mundo.includes("https://cdn.jsdelivr.net/npm/three-globe@2.45.3/example/img/earth-blue-marble.jpg")],
+  ['Both interactive globes use permanent daylight independently of visitor time', (mundo.match(/earth-blue-marble\.jpg/g) || []).length === 2 && !mundo.includes('OrigenSolarGlobe')],
+  ['No solar selector, clock or daylight service is shipped', !app.includes('data-globe-light') && !app.includes('OrigenSolarGlobe') && !index.includes('solar-globe.js') && !buildScript.includes("'solar-globe.js'") && !styles.includes('globe-light-box')],
+  ['Cultural globe retains country search and verified cultural cards', app.includes('id="hero-country-search-form"') && app.includes('id="hero-globe-popup"') && mundo.includes('hpop-source-link')],
+
   ['Globe leaves country surfaces visible above the texture', mundo.includes("return 'rgba(18,18,18,0.04)'") && mundo.includes("'rgba(210,220,235,0.14)'")],
   ['Landing country popup renders a flag and sourced cultural fact', mundo.includes('function hEsc(value)') && mundo.includes('db.microhistorias?.[0]') && mundo.includes('hpop-fact') && mundo.includes('hpop-source')],
   ['Landing country popup does not rely on missing stats or tradition fields', !mundo.includes('function stats(key)') && !mundo.includes('db.traditions.length')],
