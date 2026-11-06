@@ -1308,13 +1308,17 @@
     </section>
     <section class="section">
       <div class="section-inner">
-        <div class="search-toolbar">
-          <input id="explore-search" class="search-input" type="search" placeholder="${t('searchPlaceholder')}" value="${esc(state.query)}">
-          <button class="btn" id="clear-filters">${es ? 'Limpiar filtros' : 'Clear filters'}</button>
+        <div class="search-toolbar" role="search" aria-label="${es ? 'Buscar perfiles culturales' : 'Search cultural profiles'}">
+          <label class="explore-search-label" for="explore-search">${es ? 'Busca por cultura, nombre o territorio' : 'Search by culture, name or territory'}</label>
+          <div class="explore-search-controls">
+            <input id="explore-search" class="search-input" type="search" placeholder="${t('searchPlaceholder')}" value="${esc(state.query)}" autocomplete="off">
+            <button class="btn" id="clear-filters" type="button">${es ? 'Limpiar filtros' : 'Clear filters'}</button>
+          </div>
         </div>
         <div class="category-strip" aria-label="${es ? 'Categorías' : 'Categories'}">
-          ${categories.map(cat => { const labels = { Todos: 'All', Artesanía: 'Crafts', Gastronomía: 'Food', Territorio: 'Territory', 'Música y danza': 'Music and dance', Comunidad: 'Community' }; return `<button class="chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">${es ? cat : (labels[cat] || cat)}</button>`; }).join('')}
+          ${categories.map(cat => { const labels = { Todos: 'All', Artesanía: 'Crafts', Gastronomía: 'Food', Territorio: 'Territory', 'Música y danza': 'Music and dance', Comunidad: 'Community' }; return `<button class="chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}" aria-pressed="${state.activeCategory === cat}">${es ? cat : (labels[cat] || cat)}</button>`; }).join('')}
         </div>
+        <p id="explore-results-count" class="explore-results-count" role="status" aria-live="polite"></p>
         <div id="explore-grid" class="creator-grid"></div>
       </div>
     </section>
@@ -1328,6 +1332,12 @@
       const qOk   = !q || [c.name, c.type, c.category, c.location, c.culturalIdentity, c.short, ...c.tags].join(' ').toLowerCase().includes(q);
       return catOk && qOk;
     });
+    const editorialCount = filtered.filter(p => profileTrustInfo(p).kind === 'reference').length;
+    const countLabel = state.lang === 'es'
+      ? `${filtered.length} ${filtered.length === 1 ? 'perfil encontrado' : 'perfiles encontrados'}${editorialCount ? ` · ${editorialCount} ${editorialCount === 1 ? 'referencia editorial' : 'referencias editoriales'}` : ''}`
+      : `${filtered.length} ${filtered.length === 1 ? 'profile found' : 'profiles found'}${editorialCount ? ` · ${editorialCount} editorial ${editorialCount === 1 ? 'reference' : 'references'}` : ''}`;
+    const countElement = document.getElementById('explore-results-count');
+    if (countElement) countElement.textContent = countLabel;
     grid.innerHTML = filtered.length
       ? filtered.map(creatorCard).join('')
       : `<div class="empty-state"><h3>${t('noResults')}</h3><p>${state.lang === 'es' ? 'Prueba con otra categoría o palabra clave.' : 'Try another category or keyword.'}</p></div>`;
@@ -2989,7 +2999,10 @@
     document.querySelectorAll('[data-category]').forEach(btn => {
       btn.addEventListener('click', () => {
         state.activeCategory = btn.dataset.category;
-        document.querySelectorAll('[data-category]').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('[data-category]').forEach(b => {
+          b.classList.toggle('active', b === btn);
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
         renderExploreGrid();
       });
     });
