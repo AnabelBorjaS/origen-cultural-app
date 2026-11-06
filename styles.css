@@ -2023,87 +2023,10 @@ body:has(.hero-globe-section) .topbar .desktop-nav a::after {
 }
 
 
-/* ── REAL SOLAR LIGHTING · BILINGUAL, ACCESSIBLE, NO GEOLOCATION ── */
-.globe-light-box {
-  border: 1px solid rgba(222,197,165,.33);
-  border-radius: 14px;
-  padding: 9px 10px;
-  background: rgba(15,15,17,.87);
-  color: #f7f4ef;
-  box-shadow: 0 8px 32px rgba(0,0,0,.16);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.globe-light-options {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-.globe-light-options button {
-  min-width: 55px;
-  min-height: 38px;
-  flex: 1;
-  padding: 7px 10px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: rgba(247,244,239,.87);
-  background: transparent;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.globe-light-options button:hover,
-.globe-light-options button:focus-visible {
-  border-color: #dec5a5;
-  color: #dec5a5;
-}
-.globe-light-options button[aria-pressed="true"] {
-  background: #dec5a5;
-  border-color: #dec5a5;
-  color: #111113;
-}
-.globe-light-box [data-globe-light-status] {
-  margin: 4px 3px 0;
-  max-width: 220px;
-  color: rgba(247,244,239,.78);
-  font-size: 10px;
-  line-height: 1.35;
-}
-.hero-globe-light {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  z-index: 25;
-  width: min(218px, calc(100% - 48px));
-}
-.mundo-globe-light {
-  position: relative;
-  flex: 0 0 auto;
-  min-width: 205px;
-  max-width: 230px;
-}
+/* The Cultural World retains compact, readable navigation controls. */
 .globe-ui-bottom { max-width: calc(100% - 40px); }
-@media (max-width: 900px) {
-  .globe-ui-bottom { flex-wrap: wrap; gap: 10px; }
-  .mundo-globe-light { min-width: 190px; }
-}
-@media (max-width: 600px) {
-  .hero-globe-light {
-    left: 12px;
-    top: 107px;
-    width: 186px;
-    padding: 7px;
-  }
-  .globe-light-options button {
-    min-width: 49px;
-    min-height: 36px;
-    padding: 6px;
-  }
-  .globe-light-box [data-globe-light-status] { font-size: 9px; }
-  .mundo-globe-light { min-width: min(190px, 60vw); }
-  .globe-ui-bottom .globe-hint { display: none; }
-}
-
+@media (max-width: 900px) { .globe-ui-bottom { flex-wrap: wrap; gap: 10px; } }
+@media (max-width: 600px) { .globe-ui-bottom .globe-hint { display: none; } }
 
 /* ORIGEN · mixed media is draft-only until per-file rights are server-verified. */
 .create-type-btn[data-ctype="mixed"] { letter-spacing: 0; }
@@ -2313,8 +2236,7 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   background: linear-gradient(180deg,rgba(16,16,18,.98),rgba(22,21,22,.95));
   border-bottom: 1px solid rgba(232,220,200,.18);
 }
-.hero-globe-toolbar .hero-globe-search,
-.hero-globe-toolbar .hero-globe-light {
+.hero-globe-toolbar .hero-globe-search {
   position: static;
   margin: 0;
   transform: none;
@@ -2353,20 +2275,6 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   color: #0e0e0e;
   border-radius: 10px;
   font-size: 22px;
-}
-.hero-globe-toolbar .hero-globe-light {
-  flex: 0 0 212px;
-  width: 212px;
-  max-width: 212px;
-  padding: 8px 10px;
-  border-radius: 12px;
-}
-.hero-globe-toolbar .globe-light-options button { min-height: 35px; min-width: 46px; font-size: 11px; }
-.hero-globe-toolbar .globe-light-box [data-globe-light-status] {
-  font-size: 10px;
-  max-width: none;
-  line-height: 1.4;
-  margin-top: 5px;
 }
 .hero-globe-stage {
   position: relative;
@@ -2448,20 +2356,6 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
     width: 100%;
     padding: 8px 10px;
   }
-  .hero-globe-toolbar .hero-globe-light {
-    width: 100%;
-    max-width: none;
-    padding: 7px 10px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .hero-globe-toolbar .globe-light-options { flex: 0 0 auto; }
-  .hero-globe-toolbar .globe-light-box [data-globe-light-status] {
-    flex: 1 1 auto;
-    font-size: 10px;
-    margin: 0;
-  }
   .hero-globe-stage { min-height: min(116vw, 490px); }
   .hero-globe-stage .hero-globe-ui { left: 12px; bottom: 72px; }
   .hero-globe-popup:not([hidden]) {
@@ -2482,8 +2376,6 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   .topbar #search-button { min-width: 41px; min-height: 41px; }
 }
 @media (max-width: 395px) {
-  .hero-globe-toolbar .hero-globe-light { flex-wrap: wrap; gap: 4px; }
-  .hero-globe-toolbar .globe-light-box [data-globe-light-status] { flex: 1 1 100%; }
   .hero-globe-copy { padding-inline: 18px; }
   .hero-globe-actions .btn { width: 100%; justify-content: center; }
   .topbar { column-gap: 8px; }
@@ -2550,15 +2442,6 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   line-height: 1.45;
 }
 .hero-globe-toolbar .hero-globe-search-input input { font-size: 14px; }
-.hero-globe-toolbar .globe-light-options button {
-  font-size: 12px;
-  min-height: 38px;
-}
-.hero-globe-toolbar .globe-light-box [data-globe-light-status] {
-  font-size: 11px;
-  color: rgba(247,244,239,.87);
-  line-height: 1.45;
-}
 .hero-globe-stage .hgt-pill {
   font-size: 13px;
   min-height: 42px;
@@ -2658,11 +2541,6 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   .hero-gstat span { font-size: 12px; }
 }
 @media (max-width: 700px) {
-  .hero-globe-toolbar .globe-light-options button { font-size: 12px; }
-  .hero-globe-toolbar .globe-light-box [data-globe-light-status] {
-    font-size: 11px;
-    line-height: 1.45;
-  }
   .hero-globe-copy .eyebrow { font-size: 12px; }
   .hero-globe-stage .hgt-pill { font-size: 13px; }
   .hero-globe-popup .hpop-fact { font-size: 15px; }
@@ -2740,5 +2618,32 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
     max-height: none;
     padding: 18px;
     overflow: visible;
+  }
+}
+
+
+/* ORIGEN Brand v1.2 — one useful tool: search; one timeless daylight globe. */
+.hero-globe-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 0;
+  padding: 12px clamp(14px,2vw,24px);
+}
+.hero-globe-toolbar .hero-globe-search {
+  flex: 0 1 320px;
+  max-width: 320px;
+  width: min(100%,320px);
+}
+@media (max-width: 700px) {
+  .hero-globe-toolbar {
+    display: flex;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+  .hero-globe-toolbar .hero-globe-search {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
   }
 }
