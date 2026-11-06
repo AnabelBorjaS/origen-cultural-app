@@ -952,6 +952,17 @@ async function publicProfileStatusChecks() {
   try {
     await page.goto(baseURL + '#explorar', { waitUntil: 'domcontentloaded' });
     await page.locator('#explore-grid .creator-card').first().waitFor({ timeout: 15000 });
+    check(await page.locator('label[for="explore-search"]').count() === 1,
+      'Cultural directory must show a visible label for name, origin and culture search');
+    check((await page.locator('#explore-results-count').innerText()).includes('referencias editoriales'),
+      'Discovery count must make editorial references distinguishable from registered Agents');
+    check(await page.locator('[data-category="Todos"]').getAttribute('aria-pressed') === 'true',
+      'Cultural filters must expose selected state to assistive technology');
+    await page.locator('#explore-search').fill('zz-no-such-culture-qa-zz');
+    check((await page.locator('#explore-results-count').innerText()).startsWith('0 perfiles'),
+      'Empty search must announce zero matches rather than inventing cultural accounts');
+    await page.locator('#clear-filters').click();
+    await page.locator('#explore-grid .creator-card').first().waitFor({ timeout: 12000 });
     check(await page.locator('#explore-grid .profile-trust-reference').count() >= 4,
       'Editorial references need visible status on directory cards');
     check(await page.locator('#explore-grid .creator-card-footer').allInnerTexts().then(texts =>
