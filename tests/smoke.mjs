@@ -16,6 +16,11 @@ const serviceWorker = read('service-worker.js');
 const explorerPurposeMigration = read('supabase/migrations/20261021190000_add_explorer_post_purposes.sql');
 
 const checks = [
+  ['Social Feed has a genuine cultural narrative and readable create entry', app.includes('feed-hdr-copy') && app.includes('feed-create-button') && app.includes('Stories will begin here')],
+  ['Editorial reference profiles never display synthetic follower counts', app.includes("profileTrustInfo(c).kind === 'reference'") && app.includes('Perfil editorial · sin representación oficial') && app.includes('Referencia editorial · no oficial')],
+  ['Editorial profiles disclose no authored posts and provide a correction route', app.includes('profile-posts-empty') && app.includes('Todavía no hay publicaciones de un representante autorizado') && app.includes('Solicitar revisión')],
+  ['Discovery has accessible search labels and explicitly counts reference profiles', app.includes('explore-results-count') && app.includes('aria-pressed=') && app.includes('referencias editoriales')],
+  ['Social UI preserves distinct source/context/action hierarchy and responsive cards', styles.includes('ORIGEN SOCIAL UX PASS 1') && styles.includes('.post-context-chips') && styles.includes('.profile-posts-empty') && styles.includes('.feed-create-button')],
   ['Supabase SDK version is pinned', index.includes('@supabase/supabase-js@2.117.2')],
   ['Trust Center is loaded', index.includes('<script src="trust.js"></script>')],
   ['Offline warning is a bilingual accessible live status', index.includes('id="connection-status"') && index.includes('aria-live="polite"') && app.includes('function updateConnectionStatus()') && app.includes("window.addEventListener('offline', updateConnectionStatus)") && app.includes("window.addEventListener('online', updateConnectionStatus)")],
