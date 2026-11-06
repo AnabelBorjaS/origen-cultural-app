@@ -1515,6 +1515,7 @@ async function brandBGlobeChecks() {
         switchColor: getComputedStyle(switcher).color,
         searchColor: getComputedStyle(searchHeader).color,
         toolbarBottom: rect(toolbar).bottom,
+        toolbarRight: rect(toolbar).right,
         stageTop: rect(stage).top,
         formRight: rect(form).right,
         globeWidth: rect(stage).width,
@@ -1526,7 +1527,7 @@ async function brandBGlobeChecks() {
       'Brand B must preserve the official SVG and expose a visible ES/EN selector');
     check(brandLayout.toolbarBottom <= brandLayout.stageTop + 2,
       'Country search must be outside the interactive globe');
-    check(brandLayout.formRight <= brandLayout.globeWidth + document.querySelector('.hero-globe-right').getBoundingClientRect().left + 2,
+    check(brandLayout.formRight <= brandLayout.toolbarRight + 2,
       'Country search must fit inside its own toolbar');
     check(brandLayout.globeWidth > 480,
       'Planet must remain the hero instead of losing space to the controls');
