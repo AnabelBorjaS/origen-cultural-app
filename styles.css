@@ -2958,3 +2958,77 @@ body:has(.hero-globe-section) .topbar #search-button:hover {
   .creator-card-footer { flex-wrap: wrap; }
   .creator-card-footer > span { flex-basis: 100%; }
 }
+
+
+/* ORIGEN · Cultural Directory UX: readable discovery with honest result status. */
+.search-toolbar {
+  display: block;
+  margin-bottom: 20px;
+}
+.explore-search-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #40372d;
+  line-height: 1.5;
+  margin-bottom: 9px;
+}
+.explore-search-controls {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 10px;
+}
+.explore-search-controls .search-input {
+  min-width: 0;
+  font-size: 16px;
+  min-height: 50px;
+  border-color: #cdc3b7;
+  border-radius: 12px;
+  background: #fff;
+  color: #24201e;
+}
+.explore-search-controls .btn {
+  border-radius: 12px;
+  min-height: 50px;
+  padding: 0 17px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.explore-search-controls :focus-visible,
+.category-strip .chip:focus-visible,
+.creator-card a:focus-visible {
+  outline: 3px solid #b8946a;
+  outline-offset: 2px;
+}
+.category-strip { margin-bottom: 18px; }
+.category-strip .chip {
+  min-height: 42px;
+  font-size: 13px;
+  padding: 10px 15px;
+}
+.category-strip .chip[aria-pressed="true"] {
+  border-color: #191817;
+  color: #fff;
+  background: #191817;
+}
+.explore-results-count {
+  color: #62594f;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+#explore-grid .creator-card {
+  border-radius: 17px;
+  overflow: hidden;
+  border-color: #e5ded5;
+}
+#explore-grid .creator-card-body { padding: 19px; }
+#explore-grid .creator-card h3 { letter-spacing: -.02em; }
+@media (max-width: 640px) {
+  .explore-search-controls { grid-template-columns: 1fr; }
+  .explore-search-controls .btn { justify-self: start; width: auto; min-height: 44px; }
+  .category-strip .chip { min-height: 44px; }
+  .explore-results-count { font-size: 13px; }
+}
