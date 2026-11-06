@@ -731,6 +731,7 @@ window.MundoCultural = (() => {
 
     const points = getCreatorPoints();
 
+    // Always daytime: consistent cultural geography regardless of the hour.
     _globe = Globe({ animateIn: true })
       .width(el.clientWidth || el.offsetWidth || 600)
       .height(el.clientHeight || el.offsetHeight || 600)
@@ -779,7 +780,6 @@ window.MundoCultural = (() => {
       })
       (el);
 
-    if (window.OrigenSolarGlobe) _globe._solarUnregister = window.OrigenSolarGlobe.register(_globe);
 
     /* controls */
     _globe.controls().autoRotate         = true;
@@ -914,7 +914,6 @@ window.MundoCultural = (() => {
   function destroy() {
     _destroyed = true;
     if (_globe) {
-      _globe._solarUnregister?.();
       if (_globe._ro) _globe._ro.disconnect();
       try { _globe._destructor && _globe._destructor(); } catch {}
       _globe = null;
@@ -1045,6 +1044,7 @@ window.HeroGlobe = (() => {
       _geoData = geo;
       container.innerHTML = '';
 
+      // Brand decision: daylight texture stays visible worldwide.
       _globe = Globe({ animateIn: true })
         .width(container.clientWidth  || 640)
         .height(container.clientHeight || 640)
@@ -1091,7 +1091,6 @@ window.HeroGlobe = (() => {
         })
         (container);
 
-      if (window.OrigenSolarGlobe) _globe._solarUnregister = window.OrigenSolarGlobe.register(_globe);
 
       _globe.controls().autoRotate      = !prefersReduced;
       _globe.controls().autoRotateSpeed  = 0.30;
@@ -1123,7 +1122,6 @@ window.HeroGlobe = (() => {
     _destroyed = true;
     hidePopup();
     if (_globe) {
-      _globe._solarUnregister?.();
       if (_globe._hRo) _globe._hRo.disconnect();
       try { _globe._destructor && _globe._destructor(); } catch {}
       _globe = null;
