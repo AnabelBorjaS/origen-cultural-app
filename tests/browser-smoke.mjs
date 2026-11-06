@@ -939,6 +939,12 @@ async function publicProfileStatusChecks() {
     await page.locator('#explore-grid .creator-card').first().waitFor({ timeout: 15000 });
     check(await page.locator('#explore-grid .profile-trust-reference').count() >= 4,
       'Editorial references need visible status on directory cards');
+    check(await page.locator('#explore-grid .creator-card-footer').allInnerTexts().then(texts =>
+      texts.filter(t => t.includes('Perfil editorial')).length >= 4),
+      'Editorial directory cards must identify themselves instead of implying active follower counts');
+    check(await page.locator('#explore-grid .creator-card-footer').allInnerTexts().then(texts =>
+      texts.every(t => !t.includes('0 seguidores'))),
+      'Editorial references must not display zero followers as real social metrics');
     await page.evaluate(() => { location.hash = '#perfil/pakarina'; });
     await page.locator('.profile-trust-notice.profile-trust-reference').waitFor({ timeout: 12000 });
     check((await page.locator('.profile-trust-notice').innerText()).includes('no oficial'),
@@ -949,6 +955,14 @@ async function publicProfileStatusChecks() {
       'Reference metadata must match its explicit status');
     check(!(await page.locator('.profile-aside').innerText()).includes('En proceso'),
       'Reference cannot imply a verification process');
+    check((await page.locator('.profile-title').innerText()).includes('Referencia editorial · no oficial'),
+      'Reference profile title must clearly state its editorial status, not a follower count');
+    check(await page.locator('.profile-actions [data-fuser]').count() === 0,
+      'Unclaimed editorial reference must not expose a follow action implying a live account');
+    check(await page.locator('.profile-actions a[href="#solicitar-revision/perfil/pakarina"]').count() === 1,
+      'Editorial reference should provide a correction path instead of fake engagement');
+    check((await page.locator('.profile-posts-empty').innerText()).includes('no hay publicaciones'),
+      'Unclaimed reference must show an honest no-posts message instead of fabricated content');
 
     const publicId = '99999999-9999-4999-8999-999999999999';
     await page.evaluate(id => {
@@ -986,6 +1000,11 @@ async function publicProfileStatusChecks() {
     await page.waitForFunction(() => document.documentElement.lang === 'en');
     check((await page.locator('.profile-trust-notice').innerText()).includes('Self-managed account'),
       'Self-managed disclosure needs English translation');
+    await page.evaluate(() => { location.hash = '#explorar'; });
+    await page.locator('#explore-grid .creator-card').first().waitFor();
+    check((await page.locator('#explore-grid .creator-card-footer').first().innerText()).includes('Editorial profile') === false ||
+      (await page.locator('#explore-grid .creator-card-footer').allInnerTexts()).some(t => t.includes('Editorial profile')),
+      'English directory must retain the editorial reference distinction');
   } catch (error) {
     failures.push('Public reference trust QA: ' + (error?.message || error));
   } finally {
