@@ -40,12 +40,22 @@
 - [ ] Comprobar ventana de fuente cultural y mapa usable con toque/teclado/teléfono.
 - [ ] Auditar las condiciones de licencia de las texturas del globo y rendimiento móvil.
 
+## Avance social — 6 noviembre 2026
+
+- [x] Feed adaptado a desktop y móvil con H1 legible, CTA de creación accesible y tarjetas de historias culturales ordenadas por autor/contenido/contexto/acciones.
+- [x] Selector superior de perfiles identificado como directorio, no como stories efímeras: referencias editoriales señaladas sin atribuir actividad inexistente.
+- [x] Referencias editoriales sin métricas de seguidores ficticios ni botón seguir que implique una cuenta confirmada; vías claras de revisión y retirada.
+- [x] Directorio con label de búsqueda, filtros `aria-pressed`, contador de resultados e indicación de referencias en ES/EN.
+- [x] `tests/smoke.mjs` pasó **123 comprobaciones estáticas** mediante evaluación sobre el estado actual de GitHub; corrección de test obsoleto de duración de videos por validación actual por archivo.
+- [ ] **Pendiente:** ejecución completa de Browser QA/CodeQL y prueba visual en Staging protegido; no dar por listo el acceso a personas reales.
+- [ ] **Pendiente:** publicación real segura de videos/carruseles mixtos, revisión RLS, permisos de música, moderación y retiradas.
+
 ## P0 — Feed social
 
 - [x] Feed central con publicaciones, videos y perfiles de referencia etiquetados, con navegación de red social.
-- [ ] Unificar jerarquía autor → contenido → contexto cultural → acciones con tarjetas marfil discretas.
+- [x] Unificada la jerarquía autor → contenido → contexto cultural → acciones con tarjetas marfil discretas, controles táctiles más amplios y video ajustado al contenedor.
 - [ ] Garantizar captions, pausa, mute y reproducción solo cuando se ve en pantalla.
-- [ ] Mantener vacío real cuando no hay publicaciones; no crear likes, comentarios o usuarios ficticios.
+- [x] Mantener vacío real cuando no hay publicaciones; no crear likes, comentarios ni usuarios ficticios. El feed muestra un aviso y una ruta hacia Explorar.
 
 ## P0 — Crear publicación
 
@@ -57,10 +67,10 @@
 
 ## P1 — Explorar y perfiles
 
-- [ ] Filtros de país, ciudad, tipo de contenido y agente cultural claros, con ayuda contextual.
+- [ ] Filtros por país/ciudad específicos pendientes. **Ya implementados:** búsqueda por cultura/nombre/territorio, categorías accesibles y contador ES/EN que identifica referencias editoriales.
 - [ ] Grid adaptable 1/2/3 columnas, imagen no distorsionada, texto alternativo y fuente cuando corresponda.
 - [ ] Diferenciar **origen cultural** de **ubicación actual** en perfiles.
-- [ ] Verificar que la identidad comunitaria y la fuente de la historia no se presentan como certificación oficial.
+- [x] Los perfiles editoriales no se presentan como cuentas activas: se quitan métricas de seguidores no representativas, se evita ofrecer seguimiento en referencias no reclamadas y se informa que no hay publicaciones de un representante autorizado.
 
 ## P1 — Registro, seguridad, idiomas
 
