@@ -1,5 +1,19 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Auditoría de infraestructura — 7 noviembre 2026 (Brisbane)
+
+Comprobación de solo lectura posterior al commit `fe9b575505560324736c1f5c53d10b1c9b436ed4`:
+
+- Supabase Staging `egujmptgnrpajgfpjjxu`: **ACTIVE_HEALTHY**; Production: **INACTIVE**. No se reactivó ni modificó Production.
+- Las 11 tablas públicas consultadas tienen RLS habilitado y políticas. El registro privado de derechos tiene RLS, sin políticas y sin grants de tabla a anon/authenticated/PUBLIC: compatible con su aislamiento deliberado, no una prueba completa de privilegios efectivos.
+- Hay **1 usuario Auth con correo confirmado**, 1 perfil y 0 publicaciones. Esto actualiza los conteos históricos de cero usuarios; no demuestra por sí solo un flujo nuevo de entrega/callback de email ni que la cuenta sea sintética.
+- Buckets avatars/covers/post-media siguen públicos; post-media-intake es privado. Faltan las pruebas reales de acceso cruzado y retirada de URLs/archivos.
+- Ocho sondeos anónimos (/, app.js, supabase-client.js, runtime-config.js en dos orígenes): el hostname base de Pages responde 401 y no-store; el alias conocido 07c9a2c9 redirige a Cloudflare Access. Ninguno sirvió esos recursos anónimamente. No equivale a verificar todos los alias ni el despliegue autenticado: el hostname base usa el gate compartido documentado para vista visual.
+- Security Advisor: aviso de protección de contraseñas filtradas deshabilitada; información RLS-sin-políticas en tabla privada. No se contrató plan ni cambió configuración.
+- El último commit no tiene runs PR asociados devueltos por el conector. Los PASS locales no deben presentarse como nuevo PASS de Actions o CodeQL.
+- Progreso visual: **3/6 hitos de preparación verificados** (base MVP en beta; QA local; Staging activo/RLS configurado). Acceso autenticado/despliegue, E2E de cuentas/archivos/derechos y revisión/apertura del piloto permanecen incompletos. Es un conteo de hitos sin ponderar esfuerzo, no porcentaje total de negocio.
+- Estado: **NOT READY para lanzamiento**. Siguiente paso: acceso autorizado de auditoría a Staging para confirmar bundle y configuración Auth/CAPTCHA; después dos cuentas sintéticas y ciclo completo de permisos/retirada/borrado.
+
 ## Verificación local — 7 noviembre 2026 (Brisbane)
 
 - Base revisada: `b2fdf11531e6c634e9c692f5e0bea463399ebedc`, rama Draft PR #3.
