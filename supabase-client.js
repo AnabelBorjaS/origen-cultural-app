@@ -14,11 +14,19 @@
     return;
   }
 
+  // An unconfigured preview is intentionally disconnected. Return an explicit
+  // local error instead of sending placeholder requests through SDK retries,
+  // which can otherwise leave initApp waiting with an empty main element.
+  const previewOnly = new URL(PROJECT_URL).hostname === 'unconfigured-staging.invalid';
   const client = window.supabase.createClient(PROJECT_URL, PUBLISHABLE_KEY, {
+    ...(previewOnly ? { global: { fetch: async () => new Response(JSON.stringify({
+      code: 'ORIGEN_PREVIEW_ONLY',
+      message: 'Vista previa sin conexión / Disconnected preview'
+    }), { status: 400, headers: { 'Content-Type': 'application/json' } }) } } : {}),
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
+      persistSession: !previewOnly,
+      autoRefreshToken: !previewOnly,
+      detectSessionInUrl: !previewOnly
     }
   });
 

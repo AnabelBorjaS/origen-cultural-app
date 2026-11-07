@@ -1,6 +1,17 @@
 # Estado del proyecto — ORIGEN Cultural
 
-## Estado ejecutivo actualizado — 18 octubre 2026
+## Verificación local — 7 noviembre 2026 (Brisbane)
+
+- Base revisada: `b2fdf11531e6c634e9c692f5e0bea463399ebedc`, rama Draft PR #3.
+- Hallazgo reproducido con el SDK real fijado en `index.html`: la vista desconectada consultaba `unconfigured-staging.invalid`; los reintentos de consultas podían mantener vacío `#main-content` y bloquear Browser QA.
+- Corrección: el cliente sin configurar rechaza REST/Auth/Storage localmente con un error explícito no reintentable, sin enviar solicitudes. En esa vista no persiste ni renueva sesiones ni interpreta tokens de retorno. Un build conectado al Staging aprobado conserva transporte y Auth normales.
+- `npm run check:release` PASS local, incluida prueba de aislamiento del transporte y paridad histórica de migraciones. No demuestra estado actual de la base de datos.
+- 16 capturas locales de la revisión inicial generadas, sin datos personales ni conexión real; las esferas usaron fallback simplificado en ese entorno. No constituye verificación WebGL.
+- Browser QA completo PASS en Chromium 140 / Playwright 1.55.0: escritorio, móvil, tipografía, fichas de país, contraseñas, callbacks, historias públicas, roles simulados, moderación y aislamiento de borradores. Por restricciones de salida del navegador local, las dependencias CDN se sirvieron desde sus URLs originales a través de curl en un adaptador temporal de pruebas; sin sustituir lógica de la app, sin conectar Supabase y sin desactivar validación TLS. GitHub Actions/CodeQL y despliegue actual no se dan por aprobados.
+- No se modificaron `main`, Production, DNS, pagos ni `origencultural.com`; no se crearon cuentas ni enviaron correos. PR #3 conserva Draft / NO-GO.
+- Siguiente bloqueo operativo: verificar acceso protegido de Staging y sus alias; después validar Auth/correo y permisos entre dos cuentas sintéticas. Los estados Supabase del 18 de octubre, más abajo, son históricos y requieren nueva consulta.
+
+## Estado ejecutivo histórico — 18 octubre 2026
 
 - Supabase **Staging** `egujmptgnrpajgfpjjxu` está ACTIVE_HEALTHY y separado de Production.
 - El hook Auth **Before User Created** está ENABLED en Staging y llama a `public.origen_before_user_created`. Una consulta read-only confirmó EXECUTE para `supabase_auth_admin`.

@@ -14,11 +14,15 @@ async function desktopChecks() {
   const pageErrors = [];
   const consoleMessages = [];
   const requestFailures = [];
+  const placeholderRequests = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   page.on('console', msg => {
     if (['warning','error'].includes(msg.type())) consoleMessages.push(`${msg.type()}: ${msg.text()}`);
   });
   page.on('requestfailed', request => requestFailures.push(`${request.url()} :: ${request.failure()?.errorText || 'failed'}`));
+  page.on('request', request => {
+    if (new URL(request.url()).hostname === 'unconfigured-staging.invalid') placeholderRequests.push(request.url());
+  });
 
   await page.goto(baseURL + '#inicio', { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => (document.querySelector('#main-content')?.innerText || '').trim().length > 40, null, { timeout: 20000 });
@@ -26,6 +30,8 @@ async function desktopChecks() {
   check(await page.title() === 'Origen Cultural', 'Document title should be Origen Cultural');
   check(await page.locator('html').getAttribute('lang') === 'es', 'Default document language should be es');
   check(await page.locator('#main-content').innerText().then(t => t.trim().length > 40), 'Home should render meaningful content');
+  check(placeholderRequests.length === 0,
+    'Disconnected preview must render without requesting its placeholder backend');
   const desktopOffline = page.locator('#connection-status');
   check(await desktopOffline.isHidden(), 'Connection notice must be hidden when the browser reports online');
   await page.context().setOffline(true);
