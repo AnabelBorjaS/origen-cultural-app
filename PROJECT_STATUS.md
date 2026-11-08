@@ -1,5 +1,16 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Verificación de consentimiento y bloqueo de publicación — 9 noviembre 2026 (Brisbane)
+
+- **11/11 casos PASS** al invocar la función de consentimiento instalada: acepta email + consentimiento booleano verdadero + no anónimo; rechaza consentimiento ausente, falso, cadena, número o null; cuenta anónima, flag ausente, OAuth, proveedor ausente y evento vacío. Solo lectura, sin cuentas ni correos nuevos.
+- Límite: el conector no permite `SET ROLE supabase_auth_admin`; se probó la función con el rol administrativo disponible. No se modificaron grants para superar esa limitación. Los privilegios EXECUTE de Auth se inspeccionaron por separado; esto no demuestra activación del hook ni registro HTTP real.
+- **10/10 comprobaciones de privilegios PASS**: anon/authenticated carecen de INSERT/UPDATE efectivos sobre publicaciones, también por columna; SELECT/DELETE autenticados y UPDATE del servidor se conservan; el cliente no puede insertar recibos legales. Una política UPDATE que parece permisiva no habilita escritura si el rol carece del grant necesario.
+- Función de alta instalada: valida consentimiento booleano, proveedor email y no anónimo; genera recibos con versiones v1.2 controladas por servidor. Revisión de definición, no alta E2E.
+- Consultas reproducibles guardadas en `supabase/proposals/ORIGEN_STAGING_CONSENT_BEHAVIOR_READ_ONLY.sql` y `ORIGEN_STAGING_POST_WRITE_PRIVILEGES_READ_ONLY.sql`. No son migraciones ni cambios de esquema.
+- No se tocaron Production, main, dominio, DNS o pagos. No se abrieron publicaciones.
+- Acceso de auditoría Cloudflare y fixtures A/B no están disponibles en este entorno. El siguiente hito necesita acceso autorizado al despliegue protegido y dos cuentas sintéticas; nunca pegar secretos en el chat.
+- **Progreso: 3/6 hitos de preparación; NOT READY para piloto.** Las nuevas pruebas refuerzan el hito técnico, sin cerrar acceso autenticado ni E2E. No hay nuevo PASS de GitHub Actions/CodeQL confirmado por el conector.
+
 ## Auditoría de infraestructura — 7 noviembre 2026 (Brisbane)
 
 Comprobación de solo lectura posterior al commit `fe9b575505560324736c1f5c53d10b1c9b436ed4`:
