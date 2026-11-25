@@ -3069,19 +3069,36 @@
   function bindRecoverPassword() {
     const form = document.getElementById('recover-form');
     if (!form) return;
+    let pending = false;
     void mountTurnstile('recovery');
     form.addEventListener('submit', async e => {
       e.preventDefault();
+      if (pending) return;
       const email = new FormData(form).get('email');
       const status = document.getElementById('recover-status');
+      const submit = form.querySelector('button[type="submit"]');
+      const originalLabel = submit?.textContent;
+      let requested = false;
+      pending = true;
+      form.setAttribute('aria-busy', 'true');
+      if (submit) { submit.disabled = true; submit.textContent = state.lang === 'es' ? 'Enviando…' : 'Sending…'; }
+      if (status) status.textContent = '';
       try {
         const captchaToken = requireCaptchaToken('recovery');
+        requested = true;
         await window.ORIGEN_API.resetPassword(email, captchaToken);
         if (status) status.textContent = state.lang === 'es' ? 'Revisa tu correo. Si existe una cuenta, recibirás un enlace de recuperación.' : 'Check your email. If an account exists, you will receive a recovery link.';
       } catch (error) {
-        if (status) status.textContent = error.message || (state.lang === 'es' ? 'No pudimos enviar el enlace.' : 'We could not send the recovery link.');
+        // Do not expose backend errors that may reveal account information.
+        const rateLimited = error?.status === 429 || error?.code === 'over_email_send_rate_limit';
+        if (status) status.textContent = !requested && error?.message ? error.message
+          : rateLimited ? (state.lang === 'es' ? 'Espera unos minutos antes de volver a solicitar el enlace.' : 'Wait a few minutes before requesting another link.')
+          : (state.lang === 'es' ? 'No pudimos procesar la solicitud. Inténtalo más tarde. Si el problema continúa, contacta a info.origencultural@gmail.com.' : 'We could not process the request. Try again later. If the problem continues, contact info.origencultural@gmail.com.');
       } finally {
         resetTurnstile('recovery');
+        pending = false;
+        form.removeAttribute('aria-busy');
+        if (submit) { submit.disabled = false; submit.textContent = originalLabel; }
       }
     });
   }

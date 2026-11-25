@@ -1,5 +1,17 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Diagnóstico Auth en panel y mejora de recuperación — 23 noviembre 2026 (Brisbane)
+
+- Acceso al panel de Supabase Staging completado tras un error temporal OAuth/504; inspección real del proyecto `egujmptgnrpajgfpjjxu`.
+- **Site URL observado: `http://localhost:3000`; Redirect URLs: ninguna.** No se modificaron: el destino HTTPS debe verificarse como despliegue conectado y protegido antes de autorizar callbacks de sesiones.
+- **SMTP personalizado desactivado**, confirmado por `aria-checked=false` y uso de plantillas por defecto. La documentación oficial limita el correo integrado a miembros del equipo y 2 mensajes/hora; no es un servicio abierto para participantes externos.
+- El intento de abrir `https://origen-cultural-staging.pages.dev/` devolvió `ERR_INVALID_AUTH_CREDENTIALS`. No se verificó su bundle autenticado, conexión a Staging ni callback. No se retiró su protección.
+- Código: recuperación bloquea solicitudes simultáneas, anuncia estado de envío, restaura botón al terminar y presenta errores de entrega/cuota en ES/EN sin mostrar detalles de cuentas del backend. CAPTCHA conserva su indicación antes de enviar.
+- Prueba nueva ejecuta el binder real con Auth sintético: doble envío, éxito neutro, errores de dirección no autorizada, cuota y cuenta ausente, reintento y CAPTCHA, en ambos idiomas. Sin correos ni usuarios reales.
+- Pendiente: proveedor SMTP con remitente verificado; acceso al sitio protegido y verificación de backend; URLs exactas de confirmación/recuperación; ciclo completo con cuentas de prueba. Esta mejora de interfaz no repara la entrega ni acredita E2E.
+- Sin cambios de configuración de Auth, Production, DNS, permisos ni pagos. La PR de esta mejora apunta a la rama beta, no a main; requiere integración y despliegue posteriores.
+- Referencias: https://supabase.com/docs/guides/auth/auth-smtp y https://supabase.com/docs/guides/auth/redirect-urls (consultadas el 23 noviembre 2026).
+
 ## Verificación de consentimiento y bloqueo de publicación — 9 noviembre 2026 (Brisbane)
 
 - **11/11 casos PASS** al invocar la función de consentimiento instalada: acepta email + consentimiento booleano verdadero + no anónimo; rechaza consentimiento ausente, falso, cadena, número o null; cuenta anónima, flag ausente, OAuth, proveedor ausente y evento vacío. Solo lectura, sin cuentas ni correos nuevos.
