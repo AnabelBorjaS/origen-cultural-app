@@ -55,6 +55,7 @@ No incluye:
 - La autorización de creación de nuevos proyectos o costes es independiente de la autorización para desarrollar código en GitHub.
 
 ## Security & abuse
+- [ ] **Leaked password protection** enabled in Supabase Auth and verified in Staging before public registration.
 Public beta remains NO-GO until:
 - Supabase Security Advisor has no unresolved security lints.
 - CAPTCHA/bot protection is enabled for sign-up, sign-in and password recovery.
