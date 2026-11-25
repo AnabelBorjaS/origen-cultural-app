@@ -683,3 +683,14 @@ No hacer merge a `main` ni migrar `origencultural.com` hasta completar Auth/CAPT
 - Actualizado el workflow de la rama beta `.replit` para que el botón Run construya `build:visual-preview` antes de servir `dist` en puerto 5000; no podrá ejecutar el código fuente directo con un backend accidentalmente conectado.
 - Guía `REPLIT_VISUAL_PREVIEW_SETUP.md` explica los pasos para cargar la rama de desarrollo, habilitar una URL de desarrollo privada, evitar sobrescribir el proyecto antiguo y comprobar costos antes de usar el agente de Replit.
 - El proyecto Replit existente no ha sido modificado ni sincronizado: el coste de una actualización por Agent no está determinado. Sin costo ni publicación o cambios en producción en este avance.
+
+## Checkpoint operativo — 25 Nov 2026
+- ✅ PR #28 (password recovery) integrado al release candidate #3 en commit `2e790256241bb261be88a8ffe9d17cb36976dde8`.
+- ✅ Quality Gate y CodeQL del nuevo head en **success**; Browser QA continúa ejecutándose.
+- ✅ PR #3 vuelve a estar **mergeable**, permanece Draft / NO-GO.
+- ✅ Supabase Staging `egujmptgnrpajgfpjjxu` sigue **ACTIVE_HEALTHY**; Production `xwkjvoyicrrwjybjolld` está **INACTIVE** y no se modificó.
+- 🟡 Staging contiene actualmente 1 cuenta Auth y 1 perfil Explorer, creado el 22 Oct 2026, con email confirmado; 0 publicaciones, 0 claims y 0 reportes. Debe tratarse como cuenta QA hasta verificar su propósito/propietario antes de limpieza o reutilización.
+- ⚠️ Security Advisor de Staging reporta **Leaked Password Protection Disabled**. Debe habilitarse y verificarse en Auth antes de abrir registro público.
+- ℹ️ Permanece 1 INFO intencional: tabla privada `private.cultural_post_rights_events` con RLS habilitado y sin políticas públicas; se mantiene restringida a navegador.
+- ⛔ Bloqueadores externos confirmados: Site URL de Auth aún en localhost, redirect allow-list vacía, SMTP personalizado desactivado, Turnstile no configurado y staging HTTPS protegido aún no auditado end-to-end.
+- ⛔ No fusionar a `main`, no migrar `origencultural.com` y no activar Production hasta completar QA A/B real, Auth/SMTP/CAPTCHA, staging audit y revisión legal proporcional.
