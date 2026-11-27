@@ -1,5 +1,18 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Checkpoint operativo — 27 noviembre 2026 (Brisbane)
+
+Esta sección sustituye los estados incompatibles de las entradas históricas inferiores; las fechas de cada observación se conservan.
+
+- **Beta revisada:** `26cf3c35c604f6f9774f59f2e920ffeb0f389256`, rama `reconcile-main-beta-2026-10-07`. PR #28 de recuperación ya está integrada. Consulta de Actions del 27 noviembre: Quality Gate, CodeQL y Browser QA completados en **success** para ese SHA. Las pruebas automáticas no acreditan correo ni sesiones reales.
+- **SMTP actualizado el 25 noviembre:** Resend mostró `auth.origencultural.com` Verified / Forge Ready. El SMTP personalizado de Supabase Staging quedó habilitado y se verificó tras recargar: remitente `no-reply@auth.origencultural.com`, nombre ORIGEN Cultural, host `smtp.resend.com`, puerto 465, usuario `resend`. La titular introdujo el secreto directamente; no se guarda aquí.
+- **Entrega todavía sin acreditar:** el 27 noviembre, Resend /emails mostró “No sent emails yet”, con filtro visible Nov 12–Nov 26 y todas las claves/estados. Es una observación de esa ventana; no prueba un envío fallido ni ausencia de tráfico fuera del filtro.
+- **Auth pendiente:** la última inspección del 25 noviembre encontró Site URL `http://localhost:3000` y allowlist vacía. No se modifican hasta comprobar el origen HTTPS protegido y conectado solo a Staging.
+- **Acceso bloqueado:** en el intento anterior, el formulario de acceso de Cloudflare devolvió 403 en su solicitud de login. No se atribuye a contraseña incorrecta ni a detección de bots sin evidencia. Se detienen los reintentos automáticos. No se verificó el despliegue autenticado ni se retiraron protecciones.
+- **Siguiente hito verificable:** completar la secuencia de `NEXT_MILESTONE_AUTH.md`: origen protegido y backend correcto; callbacks exactos; registro/confirmación/recuperación reales; aislamiento A/B y retirada de medios.
+- **Estado: NO-GO para piloto público.** Continúan pendientes Turnstile validado en servidor, protección de contraseñas filtradas, moderación, derechos culturales y revisión proporcional legal/cultural. No hay nuevo PASS de estas pruebas reales.
+- Esta actualización es documental: sin cambios a main, Production, DNS, cobros ni permisos. Las entradas antiguas que indican SMTP desactivado describen una fecha anterior a su configuración.
+
 ## Diagnóstico Auth en panel y mejora de recuperación — 23 noviembre 2026 (Brisbane)
 
 - Acceso al panel de Supabase Staging completado tras un error temporal OAuth/504; inspección real del proyecto `egujmptgnrpajgfpjjxu`.
