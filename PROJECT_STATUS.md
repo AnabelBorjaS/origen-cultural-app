@@ -1,5 +1,18 @@
 # Estado del proyecto — ORIGEN Cultural
 
+## Auditoría Auth en panel — 28 noviembre 2026 (Brisbane)
+
+Inspección de solo lectura del proyecto Staging `egujmptgnrpajgfpjjxu`; no se guardó configuración.
+
+- **Turnstile:** CAPTCHA habilitado en Supabase Auth, proveedor Cloudflare Turnstile y secreto guardado (sin revelar). Las capturas de la titular muestran también una site key en Cloudflare Pages. No acredita correspondencia entre claves, validación de tokens ni rechazo HTTP real.
+- **Consentimiento:** Before User Created hook aparece ENABLED y apunta a `public.origen_before_user_created`. Confirma activación visible; sigue pendiente alta HTTP y rechazo directo sin consentimiento.
+- **Registro:** email habilitado, confirmación de email habilitada y acceso anónimo deshabilitado.
+- **Contraseñas filtradas:** deshabilitado; el panel especifica disponibilidad solo en Pro o superior. No se activó plan ni gasto. Este requisito del checklist permanece pendiente de una decisión explícita sobre presupuesto/criterio del piloto; no marcarlo resuelto mediante una comprobación de interfaz.
+- **Cambios de contraseña:** Secure password change y Require current password when updating aparecen deshabilitados en servidor. La lógica cliente no equivale a imponer estos requisitos en la API; revisar compatibilidad del flujo de recuperación antes de cambiar estas opciones.
+- **Retornos:** Site URL sigue `http://localhost:3000` y Redirect URLs está vacía, confirmado en panel. No se autorizaron destinos de sesión aún.
+- **Cloudflare:** capturas aportadas por la titular muestran repositorio correcto, rama `reconcile-main-beta-2026-10-07`, comando `npm run build:static`, salida `dist` y despliegue verde de `26cf3c3`. También muestran la URL del Staging correcto en variables. Evidencia de configuración y carga visual, no auditoría del bundle autenticado ni de todos los alias.
+- Siguiente acción: inspeccionar el formulario real de la beta protegida y sus recursos/configuración efectiva sin crear cuentas todavía; comprobar protección y callbacks antes de la prueba de correo.
+
 ## Checkpoint operativo — 27 noviembre 2026 (Brisbane)
 
 Esta sección sustituye los estados incompatibles de las entradas históricas inferiores; las fechas de cada observación se conservan.
