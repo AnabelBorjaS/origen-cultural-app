@@ -1472,6 +1472,30 @@ async function registrationUploadFailureChecks() {
   }
 }
 
+async function passwordRecoveryRoutingChecks() {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+  try {
+    await page.goto(baseURL + '#login', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.locator('#login-password').waitFor();
+    // Simulate the SDK's verified event after it has consumed the URL tokens.
+    // Password writes remain unavailable in this synthetic browser scenario.
+    await page.evaluate(() => {
+      const api = window.ORIGEN_API;
+      api.hasPasswordRecoverySession = () => true;
+      api.restoreSession = async () => ({ id: '11111111-1111-4111-8111-111111111111', role: 'explorer', name: 'Synthetic QA' });
+      api.updatePassword = async () => { throw new Error('No real password writes in Browser QA'); };
+      window.dispatchEvent(new Event('origen-auth-change'));
+    });
+    await page.locator('#reset-password-form').waitFor();
+    check(await page.evaluate(() => location.hash === '#restablecer'),
+      'Verified recovery event must replace the consumed callback route with reset form');
+    check(await page.locator('#reset-password').getAttribute('type') === 'password',
+      'Recovery callback must open a masked new-password field');
+  } finally {
+    await page.close();
+  }
+}
+
 async function passwordVisibilityChecks() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
   try {
@@ -1746,6 +1770,7 @@ try {
   await typographyPass2Checks();
   await brandBGlobeChecks();
   await passwordVisibilityChecks();
+  await passwordRecoveryRoutingChecks();
   await stagingAuthRedirectChecks();
   await mobileChecks();
   await publicCulturalStoryChecks();

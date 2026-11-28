@@ -9,6 +9,10 @@ const start=app.lastIndexOf("  window.addEventListener('origen-auth-change', asy
 const end=app.indexOf("\n  initDeletePostDialog();",start);
 assert.ok(start>0&&end>start,'Cannot find the real ORIGEN Auth refresh callback');
 const callbackSource=app.slice(start,end);
+const recoveryStart=app.indexOf('  function restorePasswordRecoveryRoute()');
+const recoveryEnd=app.indexOf('\n  // Restricted moderation',recoveryStart);
+assert.ok(recoveryStart>0&&recoveryEnd>recoveryStart);
+const recoverySource=app.slice(recoveryStart,recoveryEnd);
 const UID='11111111-1111-4111-8111-111111111111';
 
 function setup(current,next,slowRefresh=false) {
@@ -47,7 +51,7 @@ function setup(current,next,slowRefresh=false) {
     },
     updateShell:()=>calls.push('update-shell')
   };
-  const program='(function(){ let authUiGeneration=0;\n'+callbackSource+'\n})()';
+  const program='(function(){ let authUiGeneration=0;\n'+recoverySource+'\n'+callbackSource+'\n})()';
   vm.runInNewContext(program,ctx,{filename:'app.js auth listener'});
   assert.equal(typeof events['origen-auth-change'],'function');
   return {run:()=>events['origen-auth-change'](),state,calls,readDOM:()=>dom,unblock};
