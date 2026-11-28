@@ -2407,6 +2407,14 @@
   function currentRoute() { return location.hash.replace(/^#\/?/, '') || (isAuth() ? 'feed' : 'inicio'); }
   function go(route)       { location.hash = '#' + route; }
 
+  function restorePasswordRecoveryRoute() {
+    // Supabase consumes the email-link fragment while establishing a session.
+    // The route must come from its verified recovery event, never URL text.
+    if (!window.ORIGEN_API?.hasPasswordRecoverySession?.()) return false;
+    if (location.hash !== '#restablecer') history.replaceState(null, '', '#restablecer');
+    return true;
+  }
+
   // Restricted moderation inbox: READ ONLY until a reviewed, auditable
   // moderator-decision service exists. Supabase RLS remains authoritative.
   function moderationQueueView() {
@@ -4187,6 +4195,9 @@
       if (generation !== authUiGeneration) return;
       state.user = restored;
 
+      // Recovery is an Auth task; do not wait for feed/directory queries.
+      if (restorePasswordRecoveryRoute()) return;
+
       const tasks = [
         window.ORIGEN_API?.listCulturalProfiles(),
         window.ORIGEN_API?.listPublicProfiles(),
@@ -4227,6 +4238,11 @@
       const roleChanged = !!previousUid && previousUid === nextUid && previousRole !== nextRole;
       if (previousUid && (previousUid !== nextUid || roleChanged)) clearAccountDrafts();
       state.user = refreshedUser;
+      if (restorePasswordRecoveryRoute()) {
+        state.authReady = true;
+        render('restablecer', false);
+        return;
+      }
       if (roleChanged) {
         // A reviewer can lose admin rights without switching account IDs.
         // Immediately destroy the already-rendered private moderation inbox
