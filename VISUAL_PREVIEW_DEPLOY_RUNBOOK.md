@@ -1,0 +1,98 @@
+# ORIGEN Cultural — entrega de vista visual segura (12 oct 2026)
+
+## Objetivo
+Dar a la fundadora un enlace HTTPS que pueda abrir desde su teléfono y ver la **interfaz actual de la rama beta**, sin tocar `origencultural.com` ni `main` y sin permitir altas, publicaciones, transferencias ni acceso a datos reales.
+
+## Estado comprobado
+- Supabase Staging `egujmptgnrpajgfpjjxu` se encuentra activo y aislado. **La vista visual NO se conecta ni siquiera a Staging.**
+- Repo `AnabelBorjaS/origen-cultural-app`; rama **`reconcile-main-beta-2026-10-07`**; PR #3 debe permanecer draft.
+- Replit `origen-cultural-app` NO tiene ninguna publicación activa: no presentar la URL de Replit como preview actual.
+- La web `origencultural.com` mostró HTTP 503 en el navegador de la fundadora; no diagnosticar DNS/hosting sin logs.
+- CI `ORIGEN Quality Gate` ahora prepara adicionalmente un artefacto `origen-visual-only-<numero de ejecución>` construído con `npm run build:visual-preview`.
+- Este archivo **es un bundle estático, no una URL ni una web publicada**. No ofrecer `pages.dev` inventados.
+
+## Artefacto listo para hosting
+1. En `https://github.com/AnabelBorjaS/origen-cultural-app/actions/workflows/quality.yml`, abrir la última ejecución **exitosa** de la PR #3 o rama beta.
+2. Descargar **`origen-visual-only-<numero>`** de `Artifacts` (ZIP). No confundirlo con `origen-static-<numero>`, que tiene políticas de conexión backend diferentes.
+3. Comprobar que el ZIP contiene `index.html` en raíz, `_headers`, scripts y assets; que se generó con `ORIGEN_VISUAL_PREVIEW_ONLY=1` y que la prueba `tests/visual-preview-isolation.mjs` aprobó.
+4. No extraer ni desplegar la raíz del repositorio; exclusivamente el directorio `dist` del artefacto.
+
+## Publicación propuesta, sin ejecución ni gastos autorizados
+Elegir **Cloudflare Pages Free** con nombre reservado si está disponible `origen-cultural-staging`. Dos opciones, **no mezclarlas**:
+- **Git integration**, mejor para iteraciones: conectar repo GitHub, seleccionar rama de beta, framework None, build `npm run build:visual-preview`, directorio `dist`. Requiere conectar Cloudflare con GitHub una vez y configurar Access.
+- **Direct Upload** para una sola visualización rápida: subir el ZIP `origen-visual-only-<numero>` desde el Dashboard de Cloudflare Pages y conservar el origen del archivo/commit. Cloudflare documenta que un proyecto Direct Upload **no puede pasar después a Git integration** sin crear un proyecto nuevo. Para un proyecto de larga duración, preferir Git integration.
+
+**Protección obligatoria:** un `*.pages.dev` recién publicado es público por defecto. Aplicar Cloudflare Access con acceso solo a la fundadora a dominio raíz y previews; revisar desde una ventana privada que pida autenticación ANTES de compartir un enlace. `X-Robots-Tag: noindex` no equivale a control de acceso.
+
+Confirmar `$0` de plan Free antes de cualquier servicio/upgrade; **nunca aceptar complementos, tarjeta o factura no autorizada**. No configurar `ORIGEN_STAGING_SUPABASE_URL`, `ORIGEN_STAGING_SUPABASE_PUBLISHABLE_KEY` ni `ORIGEN_TURNSTILE_SITE_KEY` para la vista visual. El navegador debe mostrar banner bilingüe 'Vista previa interna' y deshabilitar registros y publicaciones reales.
+
+Después del despliegue, **no afirmar éxito** hasta verificar HTTPS 200, CSP y que el HTML/supabase-client desplegados siguen apuntando a `unconfigured-staging.invalid`, sin claves reales. Comprobar móvil/desktop, español/inglés, menú, explorar y Pasaporte, sin operar Auth.
+
+## Siguiente decisión explícita
+Para publicar realmente necesitamos **una sesión o conexión autorizada a la cuenta Cloudflare de la fundadora**, actualmente no disponible en las herramientas conectadas. No pedir contraseñas ni API tokens en el chat. Si ella quiere la alternativa rápida de Direct Upload, acompañar en pantalla y solicitar solo el enlace publicado que genera Cloudflare; entonces auditarlo. No se ha creado aún ningún sitio Cloudflare.
+
+## Fuentes oficiales
+- https://developers.cloudflare.com/pages/get-started/direct-upload/
+- https://developers.cloudflare.com/pages/configuration/preview-deployments/
+- https://developers.cloudflare.com/pages/platform/known-issues/#enable-access-on-your-pagesdev-domain
+
+## Auditoría de la URL protegida — actualización 13 octubre 2026
+
+El auditor `npm run audit:staging` ahora separa explícitamente los dos tipos de revisión:
+
+- **Solo vista visual:** `ORIGEN_STAGING_AUDIT_MODE=visual-only`. Se exige banner visible, cliente desconectado del backend, sin widget de Turnstile, CSP sin orígenes Supabase/Turnstile y `X-Robots-Tag: noindex`. Estas verificaciones **no** sirven como prueba de Auth, RLS o consentimientos reales.
+- **Pruebas con cuentas (modo predeterminado):** `ORIGEN_STAGING_AUDIT_MODE=auth-staging`. Se exige el proyecto Supabase Staging autorizado y el sitio público de Turnstile en configuración y CSP. Nunca utilizar este modo en un paquete de solo demostración.
+
+**Para ambos modos:** el auditor requiere un Cloudflare Access Service Token exclusivo de pruebas, suministrado mediante variables/secretos cifrados, y comprueba sin credenciales que la portada, `index.html`, `app.js`, `supabase-client.js` y `runtime-config.js` devuelvan rechazo o redirección legítima a Cloudflare Access. No valida un despliegue público sin restricciones como si fuese una beta privada. Auditar **por separado** dominio base y alias/preview de despliegue, pues un resultado PASS en una URL no certifica las demás.
+
+El workflow `ORIGEN Staging Audit` ahora ofrece una selección `audit_mode`, pero su ejecución manual sigue dependiendo de la disponibilidad de `workflow_dispatch` en la rama por defecto; no fusionar el PR ni desplegar Production solo para activar el botón. Mantener `NO-GO` hasta que exista URL HTTPS protegida y puedan comprobarse los recorridos funcionales.
+
+## Protección contra copias sin conexión en staging — 13 octubre 2026
+
+El bundle privado de ORIGEN incorpora dos defensas adicionales, **sin necesidad de ningún servicio de pago**:
+
+- **PWA desactivada exclusivamente en el artefacto privado:** `npm run build:visual-preview` y `npm run build:static` generan `window.ORIGEN_CONFIG.disableServiceWorker = true`. Al cargar, `app.js` no registra ningún Service Worker nuevo y trata de desregistrar los ya asociados al origen, eliminando únicamente caches con el prefijo `origen-cultural-v`. El código fuente público/local conserva el registro PWA cuando la bandera no está establecida.
+- **Sin caché HTTP/navegador:** el artefacto `dist/_headers` añade `Cache-Control: no-store` a rutas `/*`; el auditor HTTPS exige esa política tanto para HTML como para archivos principales. Rechaza también un bundle desplegado cuyo `runtime-config.js` no desactive la PWA.
+- **Pruebas automáticas:** `tests/staging-pwa-isolation.mjs`, `tests/staging-build-isolation.mjs`, `tests/visual-preview-isolation.mjs` y `tests/staging-audit-policy.mjs` comprueban la lógica con mocks y builds locales.
+
+**Importante:** esta defensa no garantiza retirar contenidos que una persona haya copiado, capturado, descargado o que ya estén guardados en su dispositivo. Tampoco convierte por sí misma una URL en privada: **Cloudflare Access sigue siendo obligatorio** sobre dominio base y previews; verificar siempre el rechazo desde una sesión anónima nueva. Sin despliegue real, `no-store` y Access en cabeceras siguen sin estar comprobados en HTTP externo.
+
+El alojamiento sigue sin activarse. No cambiar `main`, `origencultural.com`, datos reales o suscripciones; mantener Cloudflare Pages **Free / $0**.
+
+## Auditoría de cobertura de Access (13 octubre de 2026)
+
+La protección de previews en Cloudflare Pages no protege automáticamente el dominio raíz del proyecto. Además, los previews pueden tener un alias de rama y URL inmutable por hash (incluso cuando el alias se actualiza). Véase:
+- https://developers.cloudflare.com/pages/configuration/preview-deployments/
+- https://developers.cloudflare.com/pages/platform/known-issues/#enable-access-on-your-pagesdev-domain
+
+Para **Git integration** (no Direct Upload), se añadió `npm run audit:staging:coverage`. Requiere tres direcciones HTTPS reales y distintas; no inventar la URL de hash y no empezar si Cloudflare no ha sido configurado.
+
+1. Proteger por separado `origen-cultural-staging.pages.dev` y `*.origen-cultural-staging.pages.dev` con Cloudflare Access, según las instrucciones oficiales. Confirmar las políticas desde el panel Cloudflare.
+2. Configurar `ORIGEN_CF_ACCESS_CLIENT_ID` y `ORIGEN_CF_ACCESS_CLIENT_SECRET` **solo en entorno/secretos privados autorizados**, nunca en código fuente, argumentos de comandos, capturas ni chat. El token de servicio requiere una política Access Service Auth apropiada. Para una vista exclusivamente visual, seleccionar `ORIGEN_STAGING_AUDIT_MODE=visual-only`.
+3. Obtener en el Dashboard las URLs reales del proyecto raíz, el alias de esta rama beta y el preview inmutable con hash. Ejecutar:
+   `npm run audit:staging:coverage -- <URL_ROOT_REAL> <URL_ALIAS_REAL> <URL_HASH_REAL>`
+4. Cada URL ejecuta **por separado** el auditor existente `scripts/verify-staging.mjs` sobre HTML y activos, verificando acceso anónimo denegado, Service Auth permitido, CSP, backend aislado y `no-store`. Si una falla, toda la cobertura falla.
+5. Revisar además todas las políticas wildcard y los previews históricos. Aprobar una URL hash individual no acredita protección exhaustiva de enlaces inmutables anteriores.
+
+Los archivos `scripts/staging-coverage.mjs`, `scripts/audit-staging-coverage.mjs` y `tests/staging-coverage.mjs` son seguros sin despliegue; las pruebas CI de cobertura solo validan hosts/configuración y nunca contactan a Cloudflare.
+
+**Todavía no se ha realizado esta auditoría HTTPS:** no existe URL Pages verificada ni autorización Cloudflare conectada. Hito privado #7 **PENDIENTE**; `main`, `origencultural.com`, Production y suscripciones intactos.
+
+## Endurecimiento de la evidencia de Cloudflare Access — 13 octubre de 2026
+
+Un HTTP **401 o 403 genérico no demuestra** que Cloudflare Access proteja el sitio: podría proceder de un WAF, del origen o de un endpoint sin login. El auditor de ORIGEN se ha actualizado para considerar prueba automática de bloqueo solo una redirección HTTP 302/303/307/308 hacia una ruta real `/cdn-cgi/access/login` del mismo origen o del subdominio autenticador `*.cloudflareaccess.com`, siempre bajo HTTPS. Rechaza redirecciones a destinos externos, rutas de login fingidas y códigos de error genéricos.
+
+**Límite deliberado:** si una política Access devuelve directamente 401/403 (sin redirigir), la auditoría falla aunque exista protección real; no se debe relajar el control automáticamente. Revisar la configuración de Cloudflare Access y sus logs, comprobar anónimo/incógnito y actualizar el procedimiento solo mediante revisión de seguridad documentada. La comprobación del dashboard de las dos políticas (dominio raíz y wildcard de previews) continúa siendo obligatoria: incluso una redirección puede simularse desde otro componente.
+
+Pruebas: `tests/staging-audit-policy.mjs` incluye ahora negativos para 401/403, rutas incorrectas, hosts ajenos y redirecciones no HTTPS. **No representa una prueba en la URL desplegada** hasta disponer de un sitio Pages y un token de servicio de auditoría válidos.
+
+## Cloudflare Pages: evitar fallback SPA en rutas inexistentes — 13 octubre de 2026
+
+Cloudflare Pages [documenta](https://developers.cloudflare.com/pages/configuration/serving-pages/) que, si falta `404.html` en la raíz, puede tratar la publicación como una SPA y servir `index.html` para rutas desconocidas. Eso produciría resultados HTTP 200 para documentos internos que **en realidad no existen**, provocando fallos o resultados confusos en la auditoría remota. ORIGEN usa rutas con fragmentos `#feed`, `#confianza`, etc., así que **no necesita** la reescritura de rutas de servidor para navegar.
+
+- El compilador `scripts/build-static.mjs` ahora crea **solo en `dist/404.html`** una respuesta neutra bilingüe ES/EN, sin scripts, datos, credenciales ni enlaces a documentos internos.
+- Se mantiene `Cache-Control: no-store` de Staging en `dist/_headers`, así como el requisito separado de Cloudflare Access. Una página 404 por sí sola **no** protege ningún contenido.
+- `tests/staging-build-isolation.mjs` verifica que el 404 se genera tanto para Staging visual como conectado, y que no modifica el árbol fuente público. `tests/visual-preview-isolation.mjs` prueba el paquete visual.
+- `scripts/verify-staging.mjs` ahora exige que una URL inexistente conocida obtenga **HTTP 404** y la página de error esperada. La auditoría de archivos internos continúa exigiendo HTTP 404 para cada ruta prohibida.
+
+Las verificaciones de build fueron aprobadas en Quality Gate **#488**. **Pendiente** la comprobación del HTTP real cuando exista despliegue privado con Cloudflare Access. La preparación para el piloto se mantiene en **6/10 hitos, 60%**; esta corrección no acredita el hito de hosting protegido.

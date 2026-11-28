@@ -1,3 +1,9 @@
+-- WARNING — LEGACY SNAPSHOT
+-- This root schema.sql does NOT represent the complete current Supabase Production state.
+-- See DATABASE_STATE.md and supabase/migrations/ for tracked production changes.
+-- Do not use this file alone to recreate or overwrite Production.
+-- Last warning added: 7 October 2026.
+
 -- Esquema inicial sugerido para migrar el prototipo a Supabase.
 create extension if not exists "pgcrypto";
 
@@ -11,6 +17,9 @@ create table public.profiles (
   avatar_url text,
   country text,
   city text,
+  city_geoname_id bigint,
+  city_subcountry text,
+  cultural_identity text,
   bio text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

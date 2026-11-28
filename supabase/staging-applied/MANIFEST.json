@@ -1,0 +1,25 @@
+{
+  "label": "ORIGEN Cultural Staging experimental migrations",
+  "environment": "staging-only",
+  "staging_project": "egujmptgnrpajgfpjjxu",
+  "production_project": "xwkjvoyicrrwjybjolld",
+  "retrieved_on": "2026-10-10",
+  "warning": "Historical snapshots, ALREADY applied to Staging; do not replay as new migrations or include in Production migrations automatically.",
+  "entries": [
+    {
+      "version": "20261009112720",
+      "name": "staging_cultural_post_rights_atomic_record_test_only",
+      "file": "supabase/staging-applied/20261009112720_staging_cultural_post_rights_atomic_record_test_only.sql"
+    },
+    {
+      "version": "20261009121201",
+      "name": "staging_strict_signup_consent_trigger_validation",
+      "file": "supabase/staging-applied/20261009121201_staging_strict_signup_consent_trigger_validation.sql"
+    },
+    {
+      "version": "20261009213425",
+      "name": "staging_pre_auth_legal_ack_hook_function_only",
+      "file": "supabase/staging-applied/20261009213425_staging_pre_auth_legal_ack_hook_function_only.sql"
+    }
+  ]
+}
